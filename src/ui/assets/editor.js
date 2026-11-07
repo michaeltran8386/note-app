@@ -50,8 +50,15 @@
             const fullUrl = "https://notelocal.app/" + payload.path;
             if (pendingImages.length > 0) {
                 const img = pendingImages.shift();
-                img.dataset.assetSrc = payload.path;
-                img.src = fullUrl;
+                if (img && img.parentNode) {
+                    img.dataset.assetSrc = payload.path;
+                    // Nạp ảnh qua virtual host mapping
+                    const tester = new Image();
+                    tester.onload = function() {
+                        img.src = fullUrl;
+                    };
+                    tester.src = fullUrl;
+                }
             } else {
                 insertImage(fullUrl);
             }
@@ -89,7 +96,7 @@
             const closeEl = document.createElement("span");
             closeEl.className = "tab-close";
             closeEl.textContent = "×";
-            closeEl.title = "Đóng tab";
+            closeEl.title = "Đóng";
             tabEl.appendChild(closeEl);
 
             // Click chọn tab
@@ -115,7 +122,6 @@
 
     function switchTab(newTabId) {
         if (currentTabId === newTabId) return;
-        // Lưu tab cũ trước khi chuyển
         sendIPC("save_note", { tab_id: currentTabId, html: editor.innerHTML });
 
         currentTabId = newTabId;
@@ -232,13 +238,12 @@
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
 
-        // Kiểm tra text node hiện tại
         const node = range.startContainer;
         if (node && node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent;
             const offset = range.startOffset;
 
-            // Nếu vừa gõ xong '[]'
+            // Khi người dùng vừa gõ xong '[]'
             if (offset >= 2 && text.substring(offset - 2, offset) === "[]") {
                 const before = text.substring(0, offset - 2);
                 const after = text.substring(offset);
@@ -246,20 +251,17 @@
                 node.textContent = before;
 
                 const { div, span } = createTodoElement(after);
-                
-                // Chèn todo item sau text node
+
                 if (node.nextSibling) {
                     node.parentNode.insertBefore(div, node.nextSibling);
                 } else {
                     node.parentNode.appendChild(div);
                 }
 
-                // Nếu node cha trước đó rỗng, xóa thẻ P thừa
                 if (before.trim() === "" && node.parentNode && node.parentNode !== editor && node.parentNode.tagName === "P") {
                     node.parentNode.replaceWith(div);
                 }
 
-                // Đặt con trỏ vào trong span của todo
                 const newRange = document.createRange();
                 newRange.setStart(span, 0);
                 newRange.collapse(true);
@@ -281,14 +283,13 @@
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
 
-        // Kiểm tra xem con trỏ có đang trong span.todo-text không
         const todoText = range.startContainer.parentElement?.closest(".todo-text") ||
                          (range.startContainer.classList?.contains("todo-text") ? range.startContainer : null);
 
         if (todoText) {
             const todoItem = todoText.closest(".todo-item");
 
-            // Phím Backspace: nếu text rỗng, xóa todo-item
+            // Phím Backspace: nếu text rỗng, xóa ô checkbox
             if (e.key === "Backspace") {
                 if (todoText.textContent.length === 0 || (range.startOffset === 0 && range.endOffset === 0)) {
                     e.preventDefault();
@@ -311,7 +312,6 @@
             if (e.key === "Enter") {
                 e.preventDefault();
                 if (todoText.textContent.trim() === "") {
-                    // Dòng rỗng -> biến thành dòng văn bản thường
                     const p = document.createElement("p");
                     p.innerHTML = "<br>";
                     todoItem.replaceWith(p);
@@ -321,7 +321,6 @@
                     sel.removeAllRanges();
                     sel.addRange(newRange);
                 } else {
-                    // Tạo todo tiếp theo
                     const { div, span } = createTodoElement("");
                     if (todoItem.nextSibling) {
                         todoItem.parentNode.insertBefore(div, todoItem.nextSibling);
@@ -340,56 +339,24 @@
         }
     });
 
-    // Xử lý dán ảnh Ctrl+V từ clipboard
-    editor.addEventListener("paste", function(e) {
-        const clipboardData = e.clipboardData || window.clipboardData;
-        if (!clipboardData) return;
-        const items = clipboardData.items;
-        if (!items) return;
-
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type && items[i].type.indexOf("image") !== -1) {
-                e.preventDefault();
-                const blob = items[i].getAsFile();
-                if (!blob) continue;
-
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const dataUrl = event.target.result;
-                    // Chèn ảnh vào editor ngay lập tức với Data URL để người dùng nhìn thấy tức thì
-                    const img = insertImage(dataUrl);
-
-                    // Gửi Base64 sang C++ để lưu vào assets/img_xxx.png
-                    sendIPC("save_image", {
-                        data: dataUrl,
-                        ext: "png"
-                    });
-
-                    pendingImages.push(img);
-                };
-                reader.readAsDataURL(blob);
-                return;
-            }
-        }
-    });
-
     // Chèn ảnh vào vị trí con trỏ
     function insertImage(src) {
+        editor.focus();
         const img = document.createElement("img");
         img.src = src;
         img.className = "note-image";
-        img.alt = "Ảnh ghi chú";
+        img.alt = ""; // Để trống alt để không bị hiện chữ 'ảnh ghi chú'
 
         const sel = window.getSelection();
-        if (sel.rangeCount) {
+        if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
             const range = sel.getRangeAt(0);
+            range.deleteContents();
             range.insertNode(img);
             range.collapse(false);
         } else {
             editor.appendChild(img);
         }
 
-        // Tạo thêm dòng mới dưới ảnh để viết tiếp
         const p = document.createElement("p");
         p.innerHTML = "<br>";
         if (img.nextSibling) {
@@ -398,18 +365,71 @@
             img.parentNode.appendChild(p);
         }
 
-        // Chuyển con trỏ xuống dòng mới
         try {
             const newRange = document.createRange();
             newRange.setStart(p, 0);
             newRange.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
+            const newSel = window.getSelection();
+            newSel.removeAllRanges();
+            newSel.addRange(newRange);
         } catch (err) {}
 
         triggerSave();
         return img;
     }
+
+    // Xử lý dán ảnh Ctrl+V từ clipboard (bắt cả editor và document)
+    document.addEventListener("paste", function(e) {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        if (!clipboardData) return;
+
+        let imageFile = null;
+
+        // 1. Kiểm tra items
+        if (clipboardData.items) {
+            for (let i = 0; i < clipboardData.items.length; i++) {
+                const item = clipboardData.items[i];
+                if (item.type && item.type.startsWith("image/")) {
+                    imageFile = item.getAsFile();
+                    break;
+                }
+            }
+        }
+
+        // 2. Kiểm tra files nếu items không có
+        if (!imageFile && clipboardData.files && clipboardData.files.length > 0) {
+            for (let i = 0; i < clipboardData.files.length; i++) {
+                const file = clipboardData.files[i];
+                if (file.type && file.type.startsWith("image/")) {
+                    imageFile = file;
+                    break;
+                }
+            }
+        }
+
+        if (imageFile) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                if (!dataUrl) return;
+
+                // Hiển thị trực tiếp Data URL ngay lập tức (0ms delay, không thể lỗi)
+                const img = insertImage(dataUrl);
+
+                // Gửi sang C++ để lưu file vật lý vào assets/
+                sendIPC("save_image", {
+                    data: dataUrl,
+                    ext: "png"
+                });
+
+                pendingImages.push(img);
+            };
+            reader.readAsDataURL(imageFile);
+        }
+    });
 
     // Khởi tạo ban đầu
     sendIPC("request_init", {});

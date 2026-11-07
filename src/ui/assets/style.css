@@ -1,13 +1,14 @@
 :root {
-    --bg-primary: #18181b;
-    --bg-secondary: #27272a;
-    --bg-tertiary: #3f3f46;
-    --text-primary: #f4f4f5;
-    --text-secondary: #a1a1aa;
+    --bg-main: #111113;
+    --bg-header: #17171a;
+    --bg-card: #1f1f23;
+    --text-main: #f4f4f5;
+    --text-muted: #71717a;
+    --text-subtle: #52525b;
     --accent: #38bdf8;
-    --accent-hover: #0ea5e9;
     --accent-pinned: #f59e0b;
-    --border-color: #3f3f46;
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(255, 255, 255, 0.15);
     --danger: #ef4444;
 }
 
@@ -18,25 +19,27 @@
 }
 
 body {
-    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     user-select: none;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Header & Tab Bar */
+/* Header & Minimalist Tab Bar */
 #app-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    padding: 6px 8px 0 8px;
-    height: 42px;
+    background-color: var(--bg-header);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 8px;
+    height: 36px;
+    flex-shrink: 0;
 }
 
 #tabs-container {
@@ -53,123 +56,133 @@ body {
 
 #tabs-list {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: 2px;
 }
 
 .tab-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background-color: transparent;
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: 6px 6px 0 0;
-    font-size: 13px;
+    gap: 5px;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 4px 9px;
+    border-radius: 5px;
+    font-size: 12.5px;
     cursor: pointer;
     white-space: nowrap;
+    transition: all 0.12s ease;
     border: 1px solid transparent;
-    border-bottom: none;
-    transition: all 0.15s ease;
 }
 
 .tab-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.04);
 }
 
 .tab-item.active {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    border-color: var(--border-color);
-    font-weight: 600;
+    color: var(--text-main);
+    background-color: var(--bg-card);
+    border-color: var(--border-subtle);
+    font-weight: 500;
 }
 
 .tab-title {
-    max-width: 140px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .tab-close {
-    font-size: 14px;
-    color: var(--text-secondary);
-    border-radius: 4px;
-    padding: 0 4px;
-    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-subtle);
+    border-radius: 3px;
+    padding: 0 3px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.1s ease, color 0.1s ease;
+}
+
+.tab-item:hover .tab-close {
+    opacity: 1;
 }
 
 .tab-close:hover {
-    background-color: rgba(239, 68, 68, 0.2);
     color: var(--danger);
+    background-color: rgba(239, 68, 68, 0.15);
 }
 
 #btn-add-tab {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    font-size: 18px;
-    font-weight: bold;
+    color: var(--text-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 4px 8px;
+    width: 22px;
+    height: 22px;
     border-radius: 4px;
-    margin-left: 4px;
+    margin-left: 3px;
+    transition: all 0.12s ease;
 }
 
 #btn-add-tab:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 #header-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding-bottom: 6px;
+    gap: 2px;
 }
 
+/* Lucide Pin Icon Button */
 .action-btn {
     background: transparent;
     border: 1px solid transparent;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     cursor: pointer;
-    padding: 5px;
-    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
 }
 
 .pin-icon {
     display: block;
-    width: 18px;
-    height: 18px;
-    stroke: var(--text-secondary);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease, fill 0.2s ease;
+    width: 15px;
+    height: 15px;
+    stroke: var(--text-muted);
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.15s ease, fill 0.15s ease;
 }
 
 .action-btn:hover .pin-icon {
-    stroke: var(--text-primary);
+    stroke: var(--text-main);
 }
 
-/* Khi Pin được kích hoạt */
+/* Kích hoạt Pin */
 .action-btn.pinned {
-    background-color: rgba(245, 158, 11, 0.18);
-    border-color: var(--accent-pinned);
+    background-color: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.3);
 }
 
 .action-btn.pinned .pin-icon {
     stroke: var(--accent-pinned);
-    fill: rgba(245, 158, 11, 0.4);
+    fill: rgba(245, 158, 11, 0.35);
     transform: rotate(45deg);
 }
 
-/* Editor Container */
+/* Editor Canvas */
 #editor-container {
     flex: 1;
     overflow-y: auto;
@@ -177,24 +190,44 @@ body {
     user-select: text;
 }
 
+/* Minimalist Scrollbar */
+#editor-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+#editor-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#editor-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+#editor-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 #editor {
     outline: none;
     min-height: 100%;
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--text-primary);
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--text-main);
     word-break: break-word;
 }
 
 #editor:empty:before {
     content: attr(data-placeholder);
-    color: #71717a;
+    color: var(--text-subtle);
     pointer-events: none;
     display: block;
+    font-style: italic;
+    opacity: 0.8;
 }
 
 #editor p {
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 }
 
 /* Checkbox & Todo Items */
@@ -202,23 +235,28 @@ body {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin: 4px 0;
+    margin: 3px 0;
 }
 
 .todo-check {
     appearance: none;
     -webkit-appearance: none;
-    width: 17px;
-    height: 17px;
-    border: 1.5px solid #71717a;
-    border-radius: 4px;
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid var(--text-subtle);
+    border-radius: 3.5px;
     outline: none;
     cursor: pointer;
     vertical-align: middle;
     position: relative;
     top: 2px;
-    transition: all 0.15s ease;
+    transition: all 0.12s ease;
     flex-shrink: 0;
+    background: transparent;
+}
+
+.todo-check:hover {
+    border-color: var(--text-muted);
 }
 
 .todo-check:checked {
@@ -229,47 +267,47 @@ body {
 .todo-check:checked:after {
     content: "✓";
     position: absolute;
-    color: #0f172a;
-    font-size: 12px;
+    color: #0c121e;
+    font-size: 11px;
     font-weight: 900;
-    top: -2px;
+    top: -3px;
     left: 2px;
 }
 
 .todo-text {
     flex: 1;
     outline: none;
-    min-width: 50px;
+    min-width: 40px;
+    transition: color 0.12s ease;
 }
 
 .todo-item.checked .todo-text {
     text-decoration: line-through;
-    color: var(--text-secondary);
+    color: var(--text-subtle);
 }
 
-/* Images Responsive */
+/* Minimalist Image Display */
 img.note-image {
     max-width: 100%;
     height: auto;
-    border-radius: 8px;
+    border-radius: 6px;
     display: block;
-    margin: 10px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
+    margin: 8px 0;
+    border: 1px solid var(--border-subtle);
 }
 
-/* Modal Rename */
+/* Minimal Rename Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
     z-index: 1000;
 }
 
@@ -278,30 +316,24 @@ img.note-image {
 }
 
 .modal-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 18px;
-    width: 280px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.modal-card h3 {
-    font-size: 15px;
-    margin-bottom: 12px;
-    color: var(--text-primary);
+    background: var(--bg-card);
+    border: 1px solid var(--border-hover);
+    border-radius: 8px;
+    padding: 14px;
+    width: 250px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .modal-card input {
     width: 100%;
-    padding: 8px 10px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 14px;
+    padding: 6px 9px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    color: var(--text-main);
+    font-size: 13.5px;
     outline: none;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .modal-card input:focus {
@@ -311,24 +343,28 @@ img.note-image {
 .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
 }
 
 .modal-actions button {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12.5px;
     cursor: pointer;
     border: none;
 }
 
-.btn-secondary {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+.btn-text {
+    background: transparent;
+    color: var(--text-muted);
 }
 
-.btn-primary {
+.btn-text:hover {
+    color: var(--text-main);
+}
+
+.btn-accent {
     background: var(--accent);
-    color: #0f172a;
+    color: #0c121e;
     font-weight: 600;
 }
