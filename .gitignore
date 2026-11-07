@@ -1,0 +1,10 @@
+build/
+bin/
+.cache/
+*.exe
+*.obj
+*.o
+*.pdb
+data/
+notes/
+assets/
