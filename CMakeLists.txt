@@ -30,3 +30,9 @@ add_executable(test_window_controller
     src/platform/window_controller.cpp
 )
 target_link_libraries(test_window_controller PRIVATE user32 dwmapi)
+
+# Test Runner: IPC Message
+add_executable(test_ipc_message
+    tests/test_ipc_message.cpp
+    src/platform/ipc_message.cpp
+)
