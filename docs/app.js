@@ -153,10 +153,18 @@
                 continue;
             }
 
-            // Images ![alt](url)
-            const imgMatch = line.match(/^!\[(.*?)\]\((.*?)\)$/);
+            // Images ![alt|width](url)
+            const trimmedLine = line.trim();
+            const imgMatch = trimmedLine.match(/^!\[(.*?)\]\((.+)\)$/);
             if (imgMatch) {
-                html += `<img src="${escapeHtml(imgMatch[2])}" alt="${escapeHtml(imgMatch[1])}">`;
+                const label = imgMatch[1];
+                const src = imgMatch[2];
+                let style = "";
+                if (label.includes("|")) {
+                    const w = label.split("|")[1].trim();
+                    if (w) style = ` style="width: ${w}; max-width: 100%;"`;
+                }
+                html += `<p><img src="${src}" alt="" class="note-image"${style}></p>`;
                 continue;
             }
 
@@ -176,7 +184,19 @@
     }
 
     function parseInline(text) {
-        return escapeHtml(text)
+        let out = escapeHtml(text);
+        // Parse inline images first before links
+        out = out.replace(/!\[(.*?)\]\((.+?)\)/g, (m, label, src) => {
+            let style = "";
+            if (label.includes("|")) {
+                const w = label.split("|")[1].trim();
+                if (w) style = ` style="width: ${w}; max-width: 100%;"`;
+            }
+            return `<img src="${src}" alt="" class="note-image"${style}>`;
+        });
+
+        // Then parse links, bold, italic, strikethrough, inline code
+        return out
             .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*(.*?)\*/g, "<em>$1</em>")
             .replace(/~~(.*?)~~/g, "<del>$1</del>")
@@ -282,3 +302,4 @@
     // Bắt đầu
     loadFromHash();
 })();
+

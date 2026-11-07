@@ -88,11 +88,10 @@
                 const img = pendingImages.shift();
                 if (img && img.parentNode) {
                     img.dataset.assetSrc = payload.path;
-                    const tester = new Image();
-                    tester.onload = function() {
+                    // Giữ Data URL để hiển thị tức thì không bị nhấp nháy
+                    if (!img.src || !img.src.startsWith("data:")) {
                         img.src = fullUrl;
-                    };
-                    tester.src = fullUrl;
+                    }
                 }
             } else {
                 insertImage(fullUrl);
@@ -767,9 +766,51 @@
     });
 
     // ==========================================
-    // XUẤT URL LÊN TRÌNH DUYỆT (GITHUB GIST)
+    // XỬ LÝ ẢNH TỰ ĐỘNG CHUYỂN THÀNH DATA URL KHI CHIA SẺ
     // ==========================================
-    function getNoteMarkdown() {
+    function compressImageViaCanvas(imgNode) {
+        try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            let w = imgNode.naturalWidth || imgNode.width || 800;
+            let h = imgNode.naturalHeight || imgNode.height || 600;
+            const maxDim = 960;
+            if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(imgNode, 0, 0, w, h);
+            return canvas.toDataURL("image/jpeg", 0.82);
+        } catch (err) {
+            console.warn("Canvas compression fallback:", err);
+            return imgNode.src;
+        }
+    }
+
+    async function getImageShareSrc(imgNode) {
+        // 1. Nếu là URL web công khai (không phải notelocal.app)
+        if (imgNode.src && imgNode.src.startsWith("http") && !imgNode.src.includes("notelocal.app")) {
+            return imgNode.src;
+        }
+        // 2. Nếu đã là Data URL trực tiếp
+        if (imgNode.src && imgNode.src.startsWith("data:image/")) {
+            if (imgNode.src.length > 500000) {
+                return compressImageViaCanvas(imgNode);
+            }
+            return imgNode.src;
+        }
+        // 3. Nếu là ảnh nội bộ https://notelocal.app/assets/xxx.png
+        return compressImageViaCanvas(imgNode);
+    }
+
+    async function getNoteMarkdown() {
         let lines = [];
         const children = Array.from(editor.childNodes);
         for (const node of children) {
@@ -784,12 +825,16 @@
                     const text = span ? span.textContent.trim() : "";
                     lines.push(`- [${mark}] ${text}`);
                 } else if (node.tagName === "IMG") {
-                    const src = node.dataset.assetSrc ? ("https://notelocal.app/" + node.dataset.assetSrc) : node.src;
-                    lines.push(`![](${src})`);
+                    const src = await getImageShareSrc(node);
+                    let label = "image";
+                    if (node.style.width && node.style.width !== "100%") {
+                        label = `image|${node.style.width}`;
+                    }
+                    lines.push(`![${label}](${src})`);
                 } else if (node.tagName === "P" || node.tagName === "DIV") {
                     let subtext = "";
                     let hasSub = false;
-                    node.childNodes.forEach(child => {
+                    for (const child of Array.from(node.childNodes)) {
                         if (child.nodeType === Node.ELEMENT_NODE) {
                             if (child.classList && child.classList.contains("todo-item")) {
                                 hasSub = true;
@@ -800,15 +845,19 @@
                                 lines.push(`- [${mark}] ${text}`);
                             } else if (child.tagName === "IMG") {
                                 hasSub = true;
-                                const src = child.dataset.assetSrc ? ("https://notelocal.app/" + child.dataset.assetSrc) : child.src;
-                                lines.push(`![](${src})`);
+                                const src = await getImageShareSrc(child);
+                                let label = "image";
+                                if (child.style.width && child.style.width !== "100%") {
+                                    label = `image|${child.style.width}`;
+                                }
+                                lines.push(`![${label}](${src})`);
                             } else {
                                 subtext += child.textContent;
                             }
                         } else if (child.nodeType === Node.TEXT_NODE) {
                             subtext += child.textContent;
                         }
-                    });
+                    }
                     if (!hasSub) {
                         const clean = node.textContent.trim();
                         if (clean) lines.push(clean);
@@ -850,7 +899,7 @@
     btnExportUrl.addEventListener("click", async function() {
         const activeTab = tabs.find(t => t.id === currentTabId);
         const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
-        const mdContent = getNoteMarkdown();
+        const mdContent = await getNoteMarkdown();
 
         let fullText = mdContent;
         if (title) {
