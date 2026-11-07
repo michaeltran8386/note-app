@@ -4,7 +4,9 @@
     let isPinned = false;
     let saveTimeout = null;
     let pendingImages = [];
+    let selectedImage = null;
 
+    const editorContainer = document.getElementById("editor-container");
     const editor = document.getElementById("editor");
     const tabsList = document.getElementById("tabs-list");
     const btnAddTab = document.getElementById("btn-add-tab");
@@ -13,6 +15,9 @@
     const renameInput = document.getElementById("rename-input");
     const btnCancelRename = document.getElementById("btn-cancel-rename");
     const btnConfirmRename = document.getElementById("btn-confirm-rename");
+    const resizerBox = document.getElementById("image-resizer-box");
+    const resizerHandle = document.querySelector(".resizer-handle.br");
+    const sizePills = document.querySelectorAll(".size-pill");
     let renamingTabId = null;
 
     // Gửi thông điệp tới C++ Host
@@ -46,13 +51,13 @@
             renderTabs();
             editor.innerHTML = payload.content_html || "<p><br></p>";
             setupCheckboxListeners();
+            hideImageResizer();
         } else if (action === "image_saved") {
             const fullUrl = "https://notelocal.app/" + payload.path;
             if (pendingImages.length > 0) {
                 const img = pendingImages.shift();
                 if (img && img.parentNode) {
                     img.dataset.assetSrc = payload.path;
-                    // Nạp ảnh qua virtual host mapping
                     const tester = new Image();
                     tester.onload = function() {
                         img.src = fullUrl;
@@ -99,18 +104,15 @@
             closeEl.title = "Đóng";
             tabEl.appendChild(closeEl);
 
-            // Click chọn tab
             tabEl.addEventListener("click", function(e) {
                 if (e.target === closeEl) return;
                 switchTab(tab.id);
             });
 
-            // Double click đổi tên tab
             tabEl.addEventListener("dblclick", function() {
                 openRenameModal(tab.id, tab.title);
             });
 
-            // Click đóng tab
             closeEl.addEventListener("click", function(e) {
                 e.stopPropagation();
                 closeTab(tab.id);
@@ -122,6 +124,7 @@
 
     function switchTab(newTabId) {
         if (currentTabId === newTabId) return;
+        hideImageResizer();
         sendIPC("save_note", { tab_id: currentTabId, html: editor.innerHTML });
 
         currentTabId = newTabId;
@@ -130,6 +133,7 @@
     }
 
     function closeTab(tabId) {
+        hideImageResizer();
         sendIPC("delete_tab", { tab_id: tabId });
         tabs = tabs.filter(t => t.id !== tabId);
         if (tabs.length === 0) {
@@ -177,6 +181,7 @@
 
     // Thêm Tab mới
     btnAddTab.addEventListener("click", function() {
+        hideImageResizer();
         const newId = "tab_" + Date.now();
         const newTitle = "Ghi chú " + (tabs.length + 1);
         tabs.push({ id: newId, title: newTitle });
@@ -234,6 +239,7 @@
 
     // Tự động nhận diện [] thành ô Checkbox
     editor.addEventListener("input", function(e) {
+        hideImageResizer();
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
@@ -243,7 +249,6 @@
             const text = node.textContent;
             const offset = range.startOffset;
 
-            // Khi người dùng vừa gõ xong '[]'
             if (offset >= 2 && text.substring(offset - 2, offset) === "[]") {
                 const before = text.substring(0, offset - 2);
                 const after = text.substring(offset);
@@ -289,7 +294,7 @@
         if (todoText) {
             const todoItem = todoText.closest(".todo-item");
 
-            // Phím Backspace: nếu text rỗng, xóa ô checkbox
+            // Phím Backspace: xóa ô checkbox nếu text rỗng
             if (e.key === "Backspace") {
                 if (todoText.textContent.length === 0 || (range.startOffset === 0 && range.endOffset === 0)) {
                     e.preventDefault();
@@ -308,7 +313,7 @@
                 }
             }
 
-            // Phím Enter: tạo todo tiếp theo hoặc thoát todo nếu dòng rỗng
+            // Phím Enter: tạo todo tiếp theo hoặc thoát todo
             if (e.key === "Enter") {
                 e.preventDefault();
                 if (todoText.textContent.trim() === "") {
@@ -339,13 +344,125 @@
         }
     });
 
+    // ==========================================
+    // TÍNH NĂNG RESIZE ẢNH TƯƠNG TÁC
+    // ==========================================
+
+    function updateResizerPosition() {
+        if (!selectedImage || !selectedImage.parentNode) {
+            hideImageResizer();
+            return;
+        }
+
+        const imgRect = selectedImage.getBoundingClientRect();
+        const containerRect = editorContainer.getBoundingClientRect();
+
+        const top = imgRect.top - containerRect.top + editorContainer.scrollTop;
+        const left = imgRect.left - containerRect.left + editorContainer.scrollLeft;
+
+        resizerBox.style.top = top + "px";
+        resizerBox.style.left = left + "px";
+        resizerBox.style.width = imgRect.width + "px";
+        resizerBox.style.height = imgRect.height + "px";
+        resizerBox.classList.remove("hidden");
+
+        // Cập nhật trạng thái active của các nút kích thước
+        const currentW = selectedImage.style.width || "100%";
+        sizePills.forEach(pill => {
+            pill.classList.toggle("active", pill.dataset.width === currentW);
+        });
+    }
+
+    function selectImage(img) {
+        selectedImage = img;
+        updateResizerPosition();
+    }
+
+    function hideImageResizer() {
+        selectedImage = null;
+        resizerBox.classList.add("hidden");
+    }
+
+    // Click chọn ảnh để hiển thị khung resize
+    editor.addEventListener("click", function(e) {
+        if (e.target.tagName === "IMG" && e.target.classList.contains("note-image")) {
+            e.stopPropagation();
+            selectImage(e.target);
+        } else {
+            hideImageResizer();
+        }
+    });
+
+    // Double-click vào ảnh để toggle vừa khung (100%) vs kích thước tự do (50%)
+    editor.addEventListener("dblclick", function(e) {
+        if (e.target.tagName === "IMG" && e.target.classList.contains("note-image")) {
+            const img = e.target;
+            img.style.width = (img.style.width === "100%" || !img.style.width) ? "50%" : "100%";
+            selectImage(img);
+            triggerSave();
+        }
+    });
+
+    // Kéo thả góc để resize ảnh mượt mà
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    resizerHandle.addEventListener("pointerdown", function(e) {
+        if (!selectedImage) return;
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = selectedImage.getBoundingClientRect().width;
+        resizerHandle.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener("pointermove", function(e) {
+        if (!isResizing || !selectedImage) return;
+        const deltaX = e.clientX - startX;
+        const containerWidth = editor.getBoundingClientRect().width;
+        const newWidth = Math.max(60, Math.min(containerWidth, startWidth + deltaX));
+        
+        selectedImage.style.width = Math.round(newWidth) + "px";
+        updateResizerPosition();
+    });
+
+    window.addEventListener("pointerup", function(e) {
+        if (isResizing) {
+            isResizing = false;
+            triggerSave();
+        }
+    });
+
+    // Nút chỉnh nhanh: 30%, 60%, Vừa khung (100%)
+    sizePills.forEach(pill => {
+        pill.addEventListener("click", function(e) {
+            e.stopPropagation();
+            if (!selectedImage) return;
+            const w = pill.dataset.width;
+            selectedImage.style.width = w;
+            updateResizerPosition();
+            triggerSave();
+        });
+    });
+
+    // Tự động cập nhật vị trí khung resize khi cuộn hoặc thay đổi kích thước cửa sổ
+    editorContainer.addEventListener("scroll", function() {
+        if (selectedImage) updateResizerPosition();
+    });
+
+    window.addEventListener("resize", function() {
+        if (selectedImage) updateResizerPosition();
+    });
+
     // Chèn ảnh vào vị trí con trỏ
     function insertImage(src) {
         editor.focus();
         const img = document.createElement("img");
         img.src = src;
         img.className = "note-image";
-        img.alt = ""; // Để trống alt để không bị hiện chữ 'ảnh ghi chú'
+        img.alt = "";
 
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
@@ -378,14 +495,13 @@
         return img;
     }
 
-    // Xử lý dán ảnh Ctrl+V từ clipboard (bắt cả editor và document)
+    // Xử lý dán ảnh Ctrl+V từ clipboard
     document.addEventListener("paste", function(e) {
         const clipboardData = e.clipboardData || window.clipboardData;
         if (!clipboardData) return;
 
         let imageFile = null;
 
-        // 1. Kiểm tra items
         if (clipboardData.items) {
             for (let i = 0; i < clipboardData.items.length; i++) {
                 const item = clipboardData.items[i];
@@ -396,7 +512,6 @@
             }
         }
 
-        // 2. Kiểm tra files nếu items không có
         if (!imageFile && clipboardData.files && clipboardData.files.length > 0) {
             for (let i = 0; i < clipboardData.files.length; i++) {
                 const file = clipboardData.files[i];
@@ -416,10 +531,8 @@
                 const dataUrl = event.target.result;
                 if (!dataUrl) return;
 
-                // Hiển thị trực tiếp Data URL ngay lập tức (0ms delay, không thể lỗi)
                 const img = insertImage(dataUrl);
 
-                // Gửi sang C++ để lưu file vật lý vào assets/
                 sendIPC("save_image", {
                     data: dataUrl,
                     ext: "png"

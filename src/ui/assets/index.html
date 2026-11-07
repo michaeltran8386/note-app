@@ -31,6 +31,17 @@
     <!-- Ultra-Minimal Editor -->
     <main id="editor-container">
         <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo việc cần làm, dán ảnh Ctrl+V)"></div>
+        
+        <!-- Image Resizer Overlay -->
+        <div id="image-resizer-box" class="hidden">
+            <div class="resizer-outline"></div>
+            <div class="resizer-handle br" title="Kéo để chỉnh kích thước ảnh"></div>
+            <div class="resizer-toolbar">
+                <button class="size-pill" data-width="30%">30%</button>
+                <button class="size-pill" data-width="60%">60%</button>
+                <button class="size-pill" data-width="100%">Vừa khung</button>
+            </div>
+        </div>
     </main>
 
     <!-- Minimal Rename Modal -->

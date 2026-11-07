@@ -170,7 +170,6 @@ body {
     stroke: var(--text-main);
 }
 
-/* Kích hoạt Pin */
 .action-btn.pinned {
     background-color: rgba(245, 158, 11, 0.14);
     border-color: rgba(245, 158, 11, 0.3);
@@ -188,6 +187,7 @@ body {
     overflow-y: auto;
     padding: 16px 20px;
     user-select: text;
+    position: relative;
 }
 
 /* Minimalist Scrollbar */
@@ -294,6 +294,92 @@ img.note-image {
     display: block;
     margin: 8px 0;
     border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: box-shadow 0.15s ease;
+}
+
+img.note-image:hover {
+    border-color: var(--border-hover);
+}
+
+/* Interactive Image Resizer Overlay */
+#image-resizer-box {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+}
+
+#image-resizer-box.hidden {
+    display: none;
+}
+
+.resizer-outline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1.5px solid var(--accent);
+    border-radius: 6px;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.resizer-handle.br {
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #111113;
+    cursor: se-resize;
+    pointer-events: auto;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    transition: transform 0.1s ease;
+}
+
+.resizer-handle.br:hover {
+    transform: scale(1.25);
+}
+
+.resizer-toolbar {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 3px;
+    background: rgba(23, 23, 26, 0.95);
+    padding: 3px 6px;
+    border-radius: 16px;
+    border: 1px solid var(--border-hover);
+    pointer-events: auto;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.size-pill {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+}
+
+.size-pill:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.size-pill.active {
+    color: #0c121e;
+    background: var(--accent);
+    font-weight: 600;
 }
 
 /* Minimal Rename Modal */

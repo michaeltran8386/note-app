@@ -116,6 +116,12 @@ void HandleWebMessage(const std::string& raw_json) {
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
+        case WM_GETMINMAXINFO: {
+            LPMINMAXINFO mmi = (LPMINMAXINFO)lParam;
+            mmi->ptMinTrackSize.x = 280; // Giới hạn chiều rộng tối thiểu 280px
+            mmi->ptMinTrackSize.y = 200; // Giới hạn chiều cao tối thiểu 200px
+            return 0;
+        }
         case WM_SIZE: {
             int w = LOWORD(lParam);
             int h = HIWORD(lParam);
@@ -127,7 +133,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         case WM_CLOSE: {
-            // Lưu lại vị trí và kích thước cửa sổ
             RECT r;
             if (GetWindowRect(hwnd, &r)) {
                 g_config.window_x = r.left;
@@ -154,7 +159,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wchar_t exe_path[MAX_PATH];
     GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
     fs::path app_dir = fs::path(exe_path).parent_path();
-    // Nếu đang chạy trong bin/, chuyển về thư mục gốc dự án
     if (app_dir.filename() == "bin") {
         app_dir = app_dir.parent_path().parent_path();
     }
@@ -193,7 +197,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(g_hwnd, nCmdShow);
     UpdateWindow(g_hwnd);
 
-    // Sử dụng virtual host https://notelocal.app/ ánh xạ trực tiếp tới g_base_dir
+    // Sử dụng virtual host https://notelocal.app/
     fs::path base_path = fs::absolute(app_dir);
     std::wstring base_dir_w = base_path.wstring();
     std::wstring initial_url = L"https://notelocal.app/src/ui/assets/index.html";

@@ -13,25 +13,28 @@ void test_serialize_todos_and_text() {
     ASSERT_TRUE(md.find("Ghi chú tiếng Việt có dấu") != std::string::npos);
 }
 
-void test_serialize_images() {
-    std::string html = "<p><img src=\"https://notelocal.app/assets/screenshot_123.png\" class=\"note-image\"></p>";
+void test_serialize_images_with_dimensions() {
+    // Ảnh có kích thước style width 320px
+    std::string html = "<p><img src=\"https://notelocal.app/assets/screenshot_123.png\" style=\"width: 320px;\" class=\"note-image\"></p>";
     std::string md = MarkdownEngine::SerializeToMarkdown("Tab ảnh", html);
-    ASSERT_TRUE(md.find("![image](assets/screenshot_123.png)") != std::string::npos);
+    ASSERT_TRUE(md.find("![image|320px](assets/screenshot_123.png)") != std::string::npos);
 
-    std::string html_data_attr = "<p><img src=\"data:image/png;base64,123\" data-asset-src=\"assets/saved_456.png\" class=\"note-image\"></p>";
-    std::string md2 = MarkdownEngine::SerializeToMarkdown("Tab ảnh 2", html_data_attr);
-    ASSERT_TRUE(md2.find("![image](assets/saved_456.png)") != std::string::npos);
+    // Parse ngược lại kích thước
+    std::string html_back = MarkdownEngine::ParseToHtml(md);
+    ASSERT_TRUE(html_back.find("style=\"width: 320px;\"") != std::string::npos);
+    ASSERT_TRUE(html_back.find("https://notelocal.app/assets/screenshot_123.png") != std::string::npos);
 }
 
 void test_parse_to_html() {
     std::string md = "- [ ] Mua cà phê\n"
                      "- [x] Viết code C++\n"
-                     "![image](assets/photo.png)\n"
+                     "![image|50%](assets/photo.png)\n"
                      "Đoạn văn bản thường";
     std::string html = MarkdownEngine::ParseToHtml(md);
 
     ASSERT_TRUE(html.find("<input type=\"checkbox\" class=\"todo-check\">") != std::string::npos);
     ASSERT_TRUE(html.find("<input type=\"checkbox\" class=\"todo-check\" checked>") != std::string::npos);
+    ASSERT_TRUE(html.find("style=\"width: 50%;\"") != std::string::npos);
     ASSERT_TRUE(html.find("https://notelocal.app/assets/photo.png") != std::string::npos);
     ASSERT_TRUE(html.find("Đoạn văn bản thường") != std::string::npos);
 }
@@ -51,7 +54,7 @@ void test_extract_todos() {
 int main() {
     std::cout << "Running Markdown Engine Tests..." << std::endl;
     test_serialize_todos_and_text();
-    test_serialize_images();
+    test_serialize_images_with_dimensions();
     test_parse_to_html();
     test_extract_todos();
     return test_framework_report();

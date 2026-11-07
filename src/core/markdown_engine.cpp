@@ -40,7 +40,6 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
     std::sregex_iterator end;
 
     if (begin == end) {
-        // Fallback: nếu không có thẻ bao ngoài
         std::string raw = UnescapeHtml(StripHtmlTags(body_html));
         return Trim(raw);
     }
@@ -51,15 +50,18 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
         std::string inner = match[3].str();
 
         // Kiểm tra xem có phải ảnh <img>
-        std::regex img_regex("<img[^>]*src=[\"']([^\"']+)[\"'][^>]*>", std::regex::icase);
+        std::regex img_regex("<img([^>]*)src=[\"']([^\"']+)[\"']([^>]*)>", std::regex::icase);
         std::smatch img_match;
         if (std::regex_search(inner, img_match, img_regex)) {
-            std::string src = img_match[1].str();
-            
+            std::string before_src = img_match[1].str();
+            std::string src = img_match[2].str();
+            std::string after_src = img_match[3].str();
+            std::string all_attrs = before_src + " " + after_src;
+
             // Kiểm tra thuộc tính data-asset-src nếu có
             std::regex asset_attr_regex("data-asset-src=[\"']([^\"']+)[\"']", std::regex::icase);
             std::smatch asset_match;
-            if (std::regex_search(inner, asset_match, asset_attr_regex)) {
+            if (std::regex_search(all_attrs, asset_match, asset_attr_regex)) {
                 src = asset_match[1].str();
             }
 
@@ -71,7 +73,24 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
                 src = src.substr(1);
             }
 
-            md << "![image](" << src << ")\n";
+            // Kiểm tra kích thước chiều rộng (width)
+            std::string width_val = "";
+            std::regex style_w_regex("width:\\s*([^;\"'\\s]+)", std::regex::icase);
+            std::smatch w_match;
+            if (std::regex_search(all_attrs, w_match, style_w_regex)) {
+                width_val = w_match[1].str();
+            } else {
+                std::regex attr_w_regex("width=[\"']?([^\"'\\s>]+)", std::regex::icase);
+                if (std::regex_search(all_attrs, w_match, attr_w_regex)) {
+                    width_val = w_match[1].str();
+                }
+            }
+
+            if (!width_val.empty() && width_val != "100%") {
+                md << "![image|" << width_val << "](" << src << ")\n";
+            } else {
+                md << "![image](" << src << ")\n";
+            }
             continue;
         }
 
@@ -82,7 +101,6 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
             std::string check_attrs = check_match[1].str();
             bool is_checked = (check_attrs.find("checked") != std::string::npos);
             
-            // Lấy text của todo
             std::string text = UnescapeHtml(StripHtmlTags(inner));
             text = Trim(text);
             md << (is_checked ? "- [x] " : "- [ ] ") << text << "\n";
@@ -133,16 +151,30 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
-        // Image
+        // Image (có hỗ trợ kích thước width dạng ![image|300px](path) hoặc ![image](path))
         std::regex md_img_regex("!\\[([^\\]]*)\\]\\(([^\\)]+)\\)");
         std::smatch img_match;
         if (std::regex_match(trimmed, img_match, md_img_regex)) {
+            std::string label = img_match[1].str();
             std::string src = img_match[2].str();
             std::string render_src = src;
             if (src.rfind("assets/", 0) == 0) {
                 render_src = "https://notelocal.app/" + src;
             }
-            html << "<p><img src=\"" << render_src << "\" data-asset-src=\"" << src << "\" class=\"note-image\"></p>";
+
+            std::string style_attr = "";
+            size_t pipe_pos = label.find('|');
+            if (pipe_pos != std::string::npos) {
+                std::string width_spec = label.substr(pipe_pos + 1);
+                if (!width_spec.empty()) {
+                    if (width_spec.find('%') == std::string::npos && width_spec.find("px") == std::string::npos) {
+                        width_spec += "px";
+                    }
+                    style_attr = " style=\"width: " + width_spec + ";\"";
+                }
+            }
+
+            html << "<p><img src=\"" << render_src << "\" data-asset-src=\"" << src << "\"" << style_attr << " class=\"note-image\"></p>";
             continue;
         }
 
