@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Note Local</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,15 +13,40 @@
         <div id="tabs-container">
             <div id="tabs-list"></div>
             <button id="btn-add-tab" title="Thêm tab mới (Ctrl+N)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </button>
         </div>
         <div id="header-actions">
+            <!-- Tìm kiếm tab (Ctrl + /) -->
+            <button id="btn-search-tab" class="action-btn" title="Tìm tab nhanh (Ctrl + /)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.3-4.3"/>
+                </svg>
+            </button>
+            <!-- Xuất URL qua GitHub -->
+            <button id="btn-export-url" class="action-btn" title="Xuất URL lên trình duyệt (chia sẻ qua GitHub)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+            </button>
+            <!-- Nút Cài đặt -->
+            <button id="btn-settings" class="action-btn" title="Cài đặt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+            <!-- Ghim Always on Top -->
             <button id="btn-pin" class="action-btn" title="Ghim cửa sổ (Always on Top)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin pin-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin pin-icon">
                     <path d="M12 17v5"/>
                     <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
                 </svg>
@@ -44,7 +70,7 @@
         </div>
     </main>
 
-    <!-- Minimal Rename Modal -->
+    <!-- Modal Rename Tab -->
     <div id="rename-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <input type="text" id="rename-input" placeholder="Tên tab mới...">
@@ -54,6 +80,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Quick Tab Search Modal (Ctrl + /) -->
+    <div id="tab-search-modal" class="modal-overlay hidden">
+        <div class="modal-card search-card">
+            <div class="search-input-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search search-icon">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input type="text" id="tab-search-input" placeholder="Tìm tên tab... (Ctrl + /)">
+            </div>
+            <div id="tab-search-results" class="search-results-list"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-card settings-card">
+            <div class="modal-header">
+                <h3>Cài đặt</h3>
+                <button id="btn-close-settings" class="icon-btn-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-group">
+                    <label>Phím tắt điều hướng:</label>
+                    <ul class="shortcut-list">
+                        <li><span>Tìm tên tab</span> <kbd>Ctrl + /</kbd></li>
+                        <li><span>Chuyển tiếp tab (Cycle)</span> <kbd>Ctrl + Tab</kbd></li>
+                        <li><span>Chuyển lùi tab</span> <kbd>Ctrl + Shift + Tab</kbd></li>
+                        <li><span>Tạo tab mới</span> <kbd>Ctrl + N</kbd></li>
+                        <li><span>Tạo ô việc cần làm</span> <kbd>[]</kbd></li>
+                        <li><span>Xóa ô việc cần làm</span> <kbd>Backspace</kbd></li>
+                        <li><span>Xem ảnh gốc phóng to</span> <kbd>Double-click ảnh</kbd></li>
+                    </ul>
+                </div>
+                <div class="setting-group">
+                    <label for="github-token-input">GitHub Token (Tùy chọn xuất URL Gist):</label>
+                    <input type="password" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx (để tạo Gist riêng tư)">
+                    <small class="helper-text">Nếu để trống, ứng dụng sẽ tạo Gist ẩn danh công khai.</small>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-save-settings" class="btn-accent">Xong</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal (Phóng to ảnh xem gốc rõ nét) -->
+    <div id="image-lightbox-modal" class="lightbox-overlay hidden">
+        <button id="btn-close-lightbox" class="lightbox-close-btn" title="Đóng (Esc)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
+                <path d="M18 6 6 18"/>
+                <path d="m6 6 12 12"/>
+            </svg>
+        </button>
+        <img id="lightbox-img" src="" alt="Ảnh phóng to chi tiết">
+    </div>
+
+    <!-- Minimal Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
 
     <script src="editor.js"></script>
 </body>

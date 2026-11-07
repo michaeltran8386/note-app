@@ -111,6 +111,14 @@ void HandleWebMessage(const std::string& raw_json) {
         nlohmann::json reply;
         reply["always_on_top"] = pin;
         g_webview.PostWebMessage(IPCBridge::Serialize("update_pin", reply));
+    } else if (msg.action == "open_url") {
+        std::string url = msg.payload.value("url", "");
+        if (!url.empty()) {
+            int len = MultiByteToWideChar(CP_UTF8, 0, url.c_str(), -1, nullptr, 0);
+            std::wstring wurl(len - 1, 0);
+            MultiByteToWideChar(CP_UTF8, 0, url.c_str(), -1, &wurl[0], len);
+            ShellExecuteW(nullptr, L"open", wurl.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        }
     }
 }
 

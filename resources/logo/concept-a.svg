@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Note Local - Concept A (Folded Note N)</title>
+  <!-- Background Tile -->
+  <rect x="28" y="28" width="200" height="200" rx="48" fill="#18181b" stroke="#27272a" stroke-width="4"/>
+  <!-- Folded Page & N Monogram in Cyan & Amber -->
+  <path d="M72 184V72h24l64 88V72h24v112h-24L96 96v88H72z" fill="#38bdf8"/>
+  <circle cx="184" cy="72" r="14" fill="#f59e0b"/>
+</svg>

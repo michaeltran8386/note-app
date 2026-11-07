@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Note Local - Concept B (Pinned Sticky Pad)</title>
+  <!-- Background Tile -->
+  <rect x="24" y="24" width="208" height="208" rx="44" fill="#18181b"/>
+  <!-- Note Sheet -->
+  <path d="M64 76a12 12 0 0 1 12-12h104a12 12 0 0 1 12 12v92a12 12 0 0 1-12 12H76a12 12 0 0 1-12-12V76z" fill="#27272a"/>
+  <!-- Minimal Todo Lines -->
+  <rect x="84" y="100" width="88" height="12" rx="6" fill="#38bdf8"/>
+  <rect x="84" y="128" width="60" height="12" rx="6" fill="#52525b"/>
+  <!-- Pin Head on Top -->
+  <circle cx="128" cy="56" r="14" fill="#f59e0b"/>
+  <rect x="125" y="68" width="6" height="14" rx="3" fill="#f59e0b"/>
+</svg>

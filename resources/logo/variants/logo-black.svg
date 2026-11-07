@@ -1,0 +1,9 @@
+<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Note Local</title>
+  
+  <!-- Background Tile -->
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#000000"/>
+  <!-- N Monogram (Note) -->
+  <path d="M72 184V72h24l64 88V72h24v112h-24L96 96v88H72z" fill="#000000"/>
+  <!-- Pin Dot Indicator -->
+  <circle cx="184" cy="72" r="14" fill="#000000"/>
+</svg>

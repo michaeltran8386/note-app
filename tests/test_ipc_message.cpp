@@ -36,11 +36,23 @@ void test_ipc_malformed_json() {
     ASSERT_FALSE(IPCBridge::Parse("{\"no_action\": 123}", msg));
 }
 
+void test_ipc_open_url_message() {
+    nlohmann::json payload;
+    payload["url"] = "https://gist.github.com/michaeltran8386/test-note";
+    std::string json_str = IPCBridge::Serialize("open_url", payload);
+
+    IPCMessage msg;
+    ASSERT_TRUE(IPCBridge::Parse(json_str, msg));
+    ASSERT_STR_EQ(msg.action.c_str(), "open_url");
+    ASSERT_STR_EQ(msg.payload["url"].get<std::string>().c_str(), "https://gist.github.com/michaeltran8386/test-note");
+}
+
 int main() {
     std::cout << "Running IPC Message Tests..." << std::endl;
     test_ipc_serialize_parse();
     test_ipc_base64_roundtrip();
     test_ipc_malformed_json();
+    test_ipc_open_url_message();
     return test_framework_report();
 }
 

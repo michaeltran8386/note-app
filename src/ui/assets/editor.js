@@ -20,6 +20,36 @@
     const sizePills = document.querySelectorAll(".size-pill");
     let renamingTabId = null;
 
+    // Các phần tử UI mới: Tìm tab, Cài đặt, Lightbox ảnh, Toast
+    const btnSearchTab = document.getElementById("btn-search-tab");
+    const tabSearchModal = document.getElementById("tab-search-modal");
+    const tabSearchInput = document.getElementById("tab-search-input");
+    const tabSearchResults = document.getElementById("tab-search-results");
+
+    const btnExportUrl = document.getElementById("btn-export-url");
+
+    const btnSettings = document.getElementById("btn-settings");
+    const settingsModal = document.getElementById("settings-modal");
+    const btnCloseSettings = document.getElementById("btn-close-settings");
+    const btnSaveSettings = document.getElementById("btn-save-settings");
+    const githubTokenInput = document.getElementById("github-token-input");
+
+    const imageLightboxModal = document.getElementById("image-lightbox-modal");
+    const lightboxImg = document.getElementById("lightbox-img");
+    const btnCloseLightbox = document.getElementById("btn-close-lightbox");
+
+    const toast = document.getElementById("toast");
+    let toastTimeout = null;
+
+    function showToast(message, duration = 3000) {
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.add("hidden");
+        }, duration);
+    }
+
     // Gửi thông điệp tới C++ Host
     function sendIPC(action, payload) {
         if (window.chrome && window.chrome.webview) {
@@ -393,13 +423,30 @@
         }
     });
 
-    // Double-click vào ảnh để toggle vừa khung (100%) vs kích thước tự do (50%)
+    // Double-click vào ảnh để phóng to toàn màn hình xem ảnh gốc rõ nét (Lightbox)
+    function openLightbox(src) {
+        if (!src) return;
+        hideImageResizer();
+        lightboxImg.src = src;
+        imageLightboxModal.classList.remove("hidden");
+    }
+
+    function closeLightbox() {
+        imageLightboxModal.classList.add("hidden");
+        lightboxImg.src = "";
+    }
+
     editor.addEventListener("dblclick", function(e) {
         if (e.target.tagName === "IMG" && e.target.classList.contains("note-image")) {
-            const img = e.target;
-            img.style.width = (img.style.width === "100%" || !img.style.width) ? "50%" : "100%";
-            selectImage(img);
-            triggerSave();
+            e.stopPropagation();
+            openLightbox(e.target.src);
+        }
+    });
+
+    btnCloseLightbox.addEventListener("click", closeLightbox);
+    imageLightboxModal.addEventListener("click", function(e) {
+        if (e.target !== lightboxImg) {
+            closeLightbox();
         }
     });
 
@@ -541,6 +588,296 @@
                 pendingImages.push(img);
             };
             reader.readAsDataURL(imageFile);
+        }
+    });
+
+    // ==========================================
+    // TÌM KIẾM TAB NHANH (Ctrl + /)
+    // ==========================================
+    let searchSelectedIndex = 0;
+    let filteredTabs = [];
+
+    function openTabSearchModal() {
+        tabSearchInput.value = "";
+        tabSearchModal.classList.remove("hidden");
+        tabSearchInput.focus();
+        renderTabSearchResults("");
+    }
+
+    function closeTabSearchModal() {
+        tabSearchModal.classList.add("hidden");
+    }
+
+    function renderTabSearchResults(query) {
+        const q = query.trim().toLowerCase();
+        filteredTabs = tabs.filter(t => t.title.toLowerCase().includes(q));
+        searchSelectedIndex = 0;
+        tabSearchResults.innerHTML = "";
+
+        if (filteredTabs.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "search-result-item";
+            empty.textContent = "Không tìm thấy tab nào phù hợp";
+            empty.style.color = "var(--text-subtle)";
+            empty.style.pointerEvents = "none";
+            tabSearchResults.appendChild(empty);
+            return;
+        }
+
+        filteredTabs.forEach((tab, idx) => {
+            const item = document.createElement("div");
+            item.className = "search-result-item" + (idx === searchSelectedIndex ? " active" : "");
+
+            const titleSpan = document.createElement("span");
+            titleSpan.textContent = tab.title;
+            item.appendChild(titleSpan);
+
+            if (tab.id === currentTabId) {
+                const tag = document.createElement("span");
+                tag.className = "search-result-tag";
+                tag.textContent = "Đang mở";
+                item.appendChild(tag);
+            }
+
+            item.addEventListener("click", () => {
+                switchTab(tab.id);
+                closeTabSearchModal();
+            });
+
+            tabSearchResults.appendChild(item);
+        });
+    }
+
+    function updateSearchSelectionUI() {
+        const items = tabSearchResults.querySelectorAll(".search-result-item");
+        items.forEach((item, idx) => {
+            item.classList.toggle("active", idx === searchSelectedIndex);
+            if (idx === searchSelectedIndex) {
+                item.scrollIntoView({ block: "nearest" });
+            }
+        });
+    }
+
+    tabSearchInput.addEventListener("input", (e) => {
+        renderTabSearchResults(e.target.value);
+    });
+
+    tabSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (filteredTabs.length > 0) {
+                searchSelectedIndex = (searchSelectedIndex + 1) % filteredTabs.length;
+                updateSearchSelectionUI();
+            }
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (filteredTabs.length > 0) {
+                searchSelectedIndex = (searchSelectedIndex - 1 + filteredTabs.length) % filteredTabs.length;
+                updateSearchSelectionUI();
+            }
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (filteredTabs[searchSelectedIndex]) {
+                switchTab(filteredTabs[searchSelectedIndex].id);
+                closeTabSearchModal();
+            }
+        } else if (e.key === "Escape") {
+            closeTabSearchModal();
+        }
+    });
+
+    btnSearchTab.addEventListener("click", openTabSearchModal);
+
+    // ==========================================
+    // CYCLE TAB (Ctrl + Tab / Ctrl + Shift + Tab)
+    // ==========================================
+    function cycleTab(forward = true) {
+        if (tabs.length <= 1) return;
+        const currentIndex = tabs.findIndex(t => t.id === currentTabId);
+        if (currentIndex === -1) return;
+        const nextIndex = forward 
+            ? (currentIndex + 1) % tabs.length 
+            : (currentIndex - 1 + tabs.length) % tabs.length;
+        switchTab(tabs[nextIndex].id);
+    }
+
+    // ==========================================
+    // CÀI ĐẶT (SETTINGS MODAL)
+    // ==========================================
+    function openSettingsModal() {
+        githubTokenInput.value = localStorage.getItem("note_local_github_token") || "";
+        settingsModal.classList.remove("hidden");
+        githubTokenInput.focus();
+    }
+
+    function closeSettingsModal() {
+        settingsModal.classList.add("hidden");
+    }
+
+    btnSettings.addEventListener("click", openSettingsModal);
+    btnCloseSettings.addEventListener("click", closeSettingsModal);
+    btnSaveSettings.addEventListener("click", () => {
+        const token = githubTokenInput.value.trim();
+        localStorage.setItem("note_local_github_token", token);
+        closeSettingsModal();
+        showToast("Đã lưu cài đặt thành công!");
+    });
+
+    // ==========================================
+    // GLOBAL KEYBOARD SHORTCUTS
+    // ==========================================
+    window.addEventListener("keydown", function(e) {
+        // Ctrl + / : Tìm kiếm tab nhanh
+        if (e.ctrlKey && (e.key === "/" || e.code === "Slash")) {
+            e.preventDefault();
+            if (tabSearchModal.classList.contains("hidden")) {
+                openTabSearchModal();
+            } else {
+                closeTabSearchModal();
+            }
+            return;
+        }
+
+        // Ctrl + Tab / Ctrl + Shift + Tab : Chuyển tiếp / cycle tab
+        if (e.ctrlKey && e.key === "Tab") {
+            e.preventDefault();
+            cycleTab(!e.shiftKey);
+            return;
+        }
+
+        // Ctrl + N : Tạo tab mới
+        if (e.ctrlKey && (e.key === "n" || e.key === "N")) {
+            e.preventDefault();
+            btnAddTab.click();
+            return;
+        }
+
+        // Escape: Đóng các modal đang mở
+        if (e.key === "Escape") {
+            if (!imageLightboxModal.classList.contains("hidden")) {
+                closeLightbox();
+            } else if (!tabSearchModal.classList.contains("hidden")) {
+                closeTabSearchModal();
+            } else if (!settingsModal.classList.contains("hidden")) {
+                closeSettingsModal();
+            } else if (!renameModal.classList.contains("hidden")) {
+                closeRenameModal();
+            }
+        }
+    });
+
+    // ==========================================
+    // XUẤT URL LÊN TRÌNH DUYỆT (GITHUB GIST)
+    // ==========================================
+    function getNoteMarkdown() {
+        let lines = [];
+        const children = Array.from(editor.childNodes);
+        for (const node of children) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const txt = node.textContent.trim();
+                if (txt) lines.push(txt);
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.classList.contains("todo-item")) {
+                    const cb = node.querySelector(".todo-check");
+                    const span = node.querySelector(".todo-text");
+                    const mark = (cb && cb.checked) ? "x" : " ";
+                    const text = span ? span.textContent.trim() : "";
+                    lines.push(`- [${mark}] ${text}`);
+                } else if (node.tagName === "IMG") {
+                    const src = node.dataset.assetSrc ? ("https://notelocal.app/" + node.dataset.assetSrc) : node.src;
+                    lines.push(`![](${src})`);
+                } else if (node.tagName === "P" || node.tagName === "DIV") {
+                    let subtext = "";
+                    let hasSub = false;
+                    node.childNodes.forEach(child => {
+                        if (child.nodeType === Node.ELEMENT_NODE) {
+                            if (child.classList && child.classList.contains("todo-item")) {
+                                hasSub = true;
+                                const cb = child.querySelector(".todo-check");
+                                const span = child.querySelector(".todo-text");
+                                const mark = (cb && cb.checked) ? "x" : " ";
+                                const text = span ? span.textContent.trim() : "";
+                                lines.push(`- [${mark}] ${text}`);
+                            } else if (child.tagName === "IMG") {
+                                hasSub = true;
+                                const src = child.dataset.assetSrc ? ("https://notelocal.app/" + child.dataset.assetSrc) : child.src;
+                                lines.push(`![](${src})`);
+                            } else {
+                                subtext += child.textContent;
+                            }
+                        } else if (child.nodeType === Node.TEXT_NODE) {
+                            subtext += child.textContent;
+                        }
+                    });
+                    if (!hasSub) {
+                        const clean = node.textContent.trim();
+                        if (clean) lines.push(clean);
+                    } else if (subtext.trim()) {
+                        lines.push(subtext.trim());
+                    }
+                }
+            }
+        }
+        return lines.join("\n\n");
+    }
+
+    btnExportUrl.addEventListener("click", async function() {
+        const activeTab = tabs.find(t => t.id === currentTabId);
+        const title = (activeTab && activeTab.title) ? activeTab.title : "Ghi chú";
+        const mdContent = getNoteMarkdown();
+        const token = localStorage.getItem("note_local_github_token") || "";
+
+        if (!token) {
+            showToast("Vui lòng cấu hình GitHub Token trong Cài đặt để tạo URL chia sẻ!", 4000);
+            openSettingsModal();
+            return;
+        }
+
+        showToast("Đang tạo URL công khai trên GitHub Gist...");
+
+        try {
+            const cleanName = title.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1EA0-\u1EF9 ]/g, "_") || "Note";
+            const filename = cleanName + ".md";
+            const payload = {
+                description: "Note Local: " + title,
+                public: true,
+                files: {
+                    [filename]: {
+                        content: `# ${title}\n\n${mdContent || "*(Nội dung trống)*"}`
+                    }
+                }
+            };
+
+            const response = await fetch("https://api.github.com/gists", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": `Bearer ${token}`,
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `HTTP ${response.status}`);
+            }
+
+            const gist = await response.json();
+            const gistUrl = gist.html_url;
+
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(gistUrl);
+            }
+
+            // Mở link trên trình duyệt mặc định của hệ thống Windows
+            sendIPC("open_url", { url: gistUrl });
+
+            showToast("Đã xuất URL và mở trên trình duyệt! Link đã sao chép vào Clipboard.", 4500);
+        } catch (err) {
+            console.error("Export URL Error:", err);
+            showToast("Lỗi xuất URL: " + err.message, 5000);
         }
     });
 
