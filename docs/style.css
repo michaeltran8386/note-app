@@ -229,6 +229,33 @@ body {
     color: var(--text-subtle);
 }
 
+.reminder-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 12px;
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.reminder-badge.overdue {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.reminder-badge.completed {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-subtle);
+    border-color: var(--border-subtle);
+    text-decoration: none !important;
+}
+
 /* Code & Pre */
 .markdown-body code {
     background: var(--bg-code);
@@ -292,6 +319,43 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+/* Table */
+.table-wrapper {
+    position: relative;
+    margin: 16px 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+table.note-table {
+    border-collapse: collapse;
+    width: auto;
+    font-size: 13.5px;
+    table-layout: fixed;
+    background: #18181c;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+table.note-table th {
+    background: #222227;
+    font-weight: 600;
+    color: #d4d4d8;
+    padding: 8px 12px;
+    border: 1px solid var(--border-subtle);
+    text-align: left;
+    min-width: 60px;
+}
+
+table.note-table td {
+    padding: 7px 12px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    min-width: 60px;
+    word-break: break-word;
 }
 
 /* Toast */

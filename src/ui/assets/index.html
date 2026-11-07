@@ -27,8 +27,17 @@
                     <path d="m21 21-4.3-4.3"/>
                 </svg>
             </button>
-            <!-- Chia sẻ URL Clean Text (TxtUrl) -->
-            <button id="btn-export-url" class="action-btn" title="Sao chép URL Clean Text">
+            <!-- Chèn Bảng (Table) phong cách Office -->
+            <button id="btn-insert-table" class="action-btn" title="Chèn bảng biểu (Table)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table">
+                    <path d="M12 3v18"/>
+                    <rect width="18" height="18" x="3" y="3" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M3 15h18"/>
+                </svg>
+            </button>
+            <!-- 1-Click Share Web 100% Nội dung & Ảnh -->
+            <button id="btn-export-url" class="action-btn" title="Chia sẻ ghi chú lên Web (100% nội dung & ảnh)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2">
                     <circle cx="18" cy="5" r="3"/>
                     <circle cx="6" cy="12" r="3"/>
@@ -56,7 +65,7 @@
 
     <!-- Ultra-Minimal Editor -->
     <main id="editor-container">
-        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo việc cần làm, dán ảnh Ctrl+V)"></div>
+        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo việc cần làm, gõ @15:30 để hẹn giờ, dán ảnh Ctrl+V)"></div>
         
         <!-- Image Resizer Overlay -->
         <div id="image-resizer-box" class="hidden">
@@ -69,6 +78,54 @@
             </div>
         </div>
     </main>
+
+    <!-- Table Grid Picker Popover (Chèn bảng Office-style) -->
+    <div id="table-picker-popover" class="table-popover hidden">
+        <div class="table-popover-title">Chèn Bảng</div>
+        <div id="table-grid-picker" class="table-grid-picker"></div>
+        <div id="table-grid-label" class="table-grid-label">1 x 1</div>
+        <div class="table-preset-row">
+            <button type="button" class="tbl-preset-btn" data-rows="2" data-cols="2">2x2</button>
+            <button type="button" class="tbl-preset-btn" data-rows="3" data-cols="3">3x3</button>
+            <button type="button" class="tbl-preset-btn" data-rows="4" data-cols="3">4x3</button>
+            <button type="button" class="tbl-preset-btn" data-rows="5" data-cols="4">5x4</button>
+        </div>
+    </div>
+
+    <!-- Table Context Menu (Chuột phải vào ô) -->
+    <div id="table-context-menu" class="table-context-menu hidden">
+        <div class="table-menu-item" data-action="insert-row-above">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Thêm hàng phía trên</span>
+        </div>
+        <div class="table-menu-item" data-action="insert-row-below">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Thêm hàng phía dưới</span>
+        </div>
+        <div class="table-menu-divider"></div>
+        <div class="table-menu-item" data-action="insert-col-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Thêm cột bên trái</span>
+        </div>
+        <div class="table-menu-item" data-action="insert-col-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Thêm cột bên phải</span>
+        </div>
+        <div class="table-menu-divider"></div>
+        <div class="table-menu-item danger" data-action="delete-row">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Xóa hàng này</span>
+        </div>
+        <div class="table-menu-item danger" data-action="delete-col">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Xóa cột này</span>
+        </div>
+        <div class="table-menu-divider"></div>
+        <div class="table-menu-item danger" data-action="delete-table">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <span>Xóa toàn bộ bảng</span>
+        </div>
+    </div>
 
     <!-- Modal Rename Tab -->
     <div id="rename-modal" class="modal-overlay hidden">
@@ -95,6 +152,42 @@
         </div>
     </div>
 
+    <!-- Reminder Date/Time Picker Modal -->
+    <div id="reminder-modal" class="modal-overlay hidden">
+        <div class="modal-card reminder-card">
+            <div class="modal-header">
+                <h3>Hẹn giờ nhắc việc</h3>
+                <button id="btn-close-reminder" class="icon-btn-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="reminder-body">
+                <div class="reminder-row">
+                    <label for="reminder-date-input">Ngày nhắc:</label>
+                    <input type="date" id="reminder-date-input">
+                </div>
+                <div class="reminder-row">
+                    <label for="reminder-time-input">Giờ nhắc:</label>
+                    <input type="time" id="reminder-time-input">
+                </div>
+                <div class="preset-chips">
+                    <button type="button" class="preset-chip" data-preset="1m">+1 phút (test)</button>
+                    <button type="button" class="preset-chip" data-preset="15m">+15 phút</button>
+                    <button type="button" class="preset-chip" data-preset="1h">+1 giờ</button>
+                    <button type="button" class="preset-chip" data-preset="tomorrow">Ngày mai 09:00</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-delete-reminder" class="btn-text danger-text">Xóa lịch</button>
+                <button id="btn-cancel-reminder" class="btn-text">Hủy</button>
+                <button id="btn-confirm-reminder" class="btn-accent">Lưu nhắc nhở</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal-overlay hidden">
         <div class="modal-card settings-card">
@@ -116,14 +209,14 @@
                         <li><span>Chuyển lùi tab</span> <kbd>Ctrl + Shift + Tab</kbd></li>
                         <li><span>Tạo tab mới</span> <kbd>Ctrl + N</kbd></li>
                         <li><span>Tạo ô việc cần làm</span> <kbd>[]</kbd></li>
-                        <li><span>Xóa ô việc cần làm</span> <kbd>Backspace</kbd></li>
-                        <li><span>Xem ảnh gốc phóng to</span> <kbd>Double-click ảnh</kbd></li>
+                        <li><span>Cú pháp hẹn giờ</span> <kbd>@15:30 15/11</kbd> hoặc <kbd>@mai 09:00</kbd></li>
+                        <li><span>Xem ảnh phóng to</span> <kbd>Double-click ảnh</kbd></li>
                     </ul>
                 </div>
                 <div class="setting-group">
-                    <label for="txturl-service-input">Trình duyệt Clean Text (GitHub Pages):</label>
-                    <input type="text" id="txturl-service-input" placeholder="https://michaeltran8386.github.io/note-app/">
-                    <small class="helper-text">Mã hóa ghi chú vào URL Hash (#) mở trên trình duyệt Clean Text hosted ngay trong GitHub repo.</small>
+                    <label for="txturl-service-input">Trình duyệt Web Viewer (GitHub Pages):</label>
+                    <input type="text" id="txturl-service-input" placeholder="https://michaeltran8386.github.io/note-app/docs/viewer/">
+                    <small class="helper-text">Địa chỉ web đọc ghi chú công khai hiển thị 100% nội dung và hình ảnh.</small>
                 </div>
             </div>
             <div class="modal-actions">
@@ -132,7 +225,7 @@
         </div>
     </div>
 
-    <!-- Image Lightbox Modal (Phóng to ảnh xem gốc rõ nét) -->
+    <!-- Image Lightbox Modal -->
     <div id="image-lightbox-modal" class="lightbox-overlay hidden">
         <button id="btn-close-lightbox" class="lightbox-close-btn" title="Đóng (Esc)">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">

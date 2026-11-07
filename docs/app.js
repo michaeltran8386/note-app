@@ -133,10 +133,19 @@
             const todoMatch = line.match(/^[-*]?\s*\[([ xX])\]\s*(.*)$/);
             if (todoMatch) {
                 const checked = todoMatch[1].toLowerCase() === "x";
-                const text = todoMatch[2];
+                let text = todoMatch[2];
+                let badgeHtml = "";
+                
+                // Detect @reminder pattern, e.g. @15:30 15/11/2026 or @15:30 15/11 or @15:30
+                const remMatch = text.match(/@([0-1]?[0-9]|2[0-3]):[0-5][0-9](?:\s+[0-3]?[0-9]\/[0-1]?[0-9](?:\/[0-9]{4})?)?/);
+                if (remMatch) {
+                    badgeHtml = ` <span class="reminder-badge${checked ? ' completed' : ''}">⏱ ${escapeHtml(remMatch[0].substring(1))}</span>`;
+                    text = text.replace(remMatch[0], "").trim();
+                }
+
                 html += `<div class="todo-item ${checked ? 'checked' : ''}">
                     <input type="checkbox" class="todo-check" ${checked ? 'checked' : ''} disabled>
-                    <span>${parseInline(text)}</span>
+                    <span>${parseInline(text)}</span>${badgeHtml}
                 </div>`;
                 continue;
             }
@@ -144,6 +153,21 @@
             // Quotes
             if (line.startsWith("> ")) {
                 html += `<blockquote>${parseInline(line.slice(2))}</blockquote>`;
+                continue;
+            }
+
+            // Tables (HTML block <table...)
+            if (line.trim().startsWith("<table") || line.trim().startsWith("<div class=\"table-wrapper\"")) {
+                let tableHtml = line;
+                while (!tableHtml.includes("</table>") && i + 1 < lines.length) {
+                    i++;
+                    tableHtml += " " + lines[i];
+                }
+                if (!tableHtml.includes("class=\"table-wrapper\"")) {
+                    html += `<div class="table-wrapper">${tableHtml}</div>`;
+                } else {
+                    html += tableHtml;
+                }
                 continue;
             }
 
@@ -220,7 +244,18 @@
         if (hash) {
             currentRawText = await decompress(hash);
         } else {
-            currentRawText = "";
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareId = urlParams.get("share");
+            if (shareId) {
+                try {
+                    const res = await fetch(`viewer/shares/${shareId}.json`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        currentRawText = data.markdown || "";
+                    }
+                } catch (e) {}
+            }
+            if (!currentRawText) currentRawText = "";
         }
 
         updateDisplay();

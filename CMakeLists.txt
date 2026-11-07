@@ -39,14 +39,37 @@ add_executable(test_ipc_message
     src/platform/ipc_message.cpp
 )
 
+# Test Runner: Reminder Parser Unit Test
+add_executable(test_reminder_parser
+    tests/unit/test_reminder_parser.cpp
+    src/core/markdown_engine.cpp
+)
+
+# Test Runner: Reminder Manager Unit Test
+add_executable(test_reminder_manager
+    tests/unit/test_reminder_manager.cpp
+    src/core/reminder_manager.cpp
+    src/core/markdown_engine.cpp
+)
+
+# Test Runner: Share Contract Unit Test
+add_executable(test_share_contract
+    tests/unit/test_share_contract.cpp
+    src/core/share_service.cpp
+    src/platform/ipc_message.cpp
+)
+
 # Main Executable: NoteLocal
 add_executable(NoteLocal WIN32
     src/main.cpp
     src/core/markdown_engine.cpp
     src/core/storage_manager.cpp
+    src/core/reminder_manager.cpp
+    src/core/share_service.cpp
     src/platform/window_controller.cpp
     src/platform/webview_host.cpp
     src/platform/ipc_message.cpp
+    src/platform/notification_service.cpp
 )
 
 target_link_libraries(NoteLocal PRIVATE

@@ -51,11 +51,34 @@ void test_extract_todos() {
     ASSERT_TRUE(todos[1].is_checked);
 }
 
+void test_table_serialization_and_parsing() {
+    // 1. Kiểm tra serialize table có colgroup và col width
+    std::string html = "<div class=\"table-wrapper\"><table class=\"note-table\">"
+                       "<colgroup><col style=\"width: 140px;\"><col style=\"width: 200px;\"></colgroup>"
+                       "<thead><tr><th>Cột A</th><th>Cột B</th></tr></thead>"
+                       "<tbody><tr><td>Dữ liệu 1</td><td>Dữ liệu 2</td></tr></tbody>"
+                       "</table></div>";
+    std::string md = MarkdownEngine::SerializeToMarkdown("Tab có bảng", html);
+
+    ASSERT_TRUE(md.find("<table class=\"note-table\">") != std::string::npos);
+    ASSERT_TRUE(md.find("width: 140px;") != std::string::npos);
+    ASSERT_TRUE(md.find("width: 200px;") != std::string::npos);
+    ASSERT_TRUE(md.find("Cột A") != std::string::npos);
+    ASSERT_TRUE(md.find("Dữ liệu 1") != std::string::npos);
+
+    // 2. Parse ngược lại thành HTML
+    std::string html_back = MarkdownEngine::ParseToHtml(md);
+    ASSERT_TRUE(html_back.find("class=\"table-wrapper\"") != std::string::npos);
+    ASSERT_TRUE(html_back.find("<table class=\"note-table\">") != std::string::npos);
+    ASSERT_TRUE(html_back.find("width: 140px;") != std::string::npos);
+}
+
 int main() {
     std::cout << "Running Markdown Engine Tests..." << std::endl;
     test_serialize_todos_and_text();
     test_serialize_images_with_dimensions();
     test_parse_to_html();
     test_extract_todos();
+    test_table_serialization_and_parsing();
     return test_framework_report();
 }

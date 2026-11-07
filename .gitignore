@@ -10,3 +10,5 @@ config.json
 /notes/
 /assets/
 third_party/webview2/
+graphify-out/cache/
+

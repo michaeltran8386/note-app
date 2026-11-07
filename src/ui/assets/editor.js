@@ -28,6 +28,18 @@
 
     const btnExportUrl = document.getElementById("btn-export-url");
 
+    // Modal Hẹn giờ nhắc việc
+    const reminderModal = document.getElementById("reminder-modal");
+    const reminderDateInput = document.getElementById("reminder-date-input");
+    const reminderTimeInput = document.getElementById("reminder-time-input");
+    const btnCloseReminder = document.getElementById("btn-close-reminder");
+    const btnCancelReminder = document.getElementById("btn-cancel-reminder");
+    const btnConfirmReminder = document.getElementById("btn-confirm-reminder");
+    const btnDeleteReminder = document.getElementById("btn-delete-reminder");
+    const presetChips = document.querySelectorAll(".preset-chip");
+    let currentEditingBadge = null;
+    let currentEditingItem = null;
+
     const btnSettings = document.getElementById("btn-settings");
     const settingsModal = document.getElementById("settings-modal");
     const btnCloseSettings = document.getElementById("btn-close-settings");
@@ -40,6 +52,14 @@
 
     const toast = document.getElementById("toast");
     let toastTimeout = null;
+
+    // Các phần tử Bảng biểu (Table) Office-style
+    const btnInsertTable = document.getElementById("btn-insert-table");
+    const tablePickerPopover = document.getElementById("table-picker-popover");
+    const tableGridPicker = document.getElementById("table-grid-picker");
+    const tableGridLabel = document.getElementById("table-grid-label");
+    const tableContextMenu = document.getElementById("table-context-menu");
+    let contextMenuTargetCell = null;
 
     function showToast(message, duration = 3000) {
         toast.textContent = message;
@@ -81,35 +101,156 @@
             renderTabs();
             editor.innerHTML = payload.content_html || "<p><br></p>";
             setupCheckboxListeners();
+            setupAllTables();
             hideImageResizer();
         } else if (action === "image_saved") {
+            const imgId = payload.img_id;
             const fullUrl = "https://notelocal.app/" + payload.path;
-            if (pendingImages.length > 0) {
-                const img = pendingImages.shift();
-                if (img && img.parentNode) {
-                    img.dataset.assetSrc = payload.path;
-                    // Giữ Data URL để hiển thị tức thì không bị nhấp nháy
-                    if (!img.src || !img.src.startsWith("data:")) {
-                        img.src = fullUrl;
-                    }
-                }
-            } else {
+
+            let img = null;
+            if (imgId) {
+                img = editor.querySelector(`img[data-img-id="${imgId}"]`);
+            }
+            if (!img && pendingImages.length > 0) {
+                img = pendingImages.shift();
+            }
+
+            if (img && img.parentNode) {
+                img.dataset.assetSrc = payload.path;
+                img.src = fullUrl;
+            } else if (!img) {
                 insertImage(fullUrl);
             }
             triggerSave();
         } else if (action === "update_pin") {
             isPinned = payload.always_on_top;
             btnPin.classList.toggle("pinned", isPinned);
+        } else if (action === "web_share_completed") {
+            btnExportUrl.classList.remove("loading");
+            if (payload.success) {
+                showToast("Đã tạo link Web và sao chép vào Clipboard!", 3500);
+            } else {
+                showToast("Lỗi chia sẻ: " + (payload.error_message || "Thất bại"), 3000);
+            }
+        } else if (action === "reminder_triggered") {
+            showToast("🔔 Nhắc việc: " + (payload.text || ""), 5000);
+            const badges = editor.querySelectorAll(".reminder-badge");
+            badges.forEach(function(b) {
+                if (b.dataset.display === payload.display_time || b.textContent.includes(payload.display_time)) {
+                    b.classList.add("overdue");
+                }
+            });
+        } else if (action === "notification_clicked") {
+            editor.focus();
+            const overdue = editor.querySelector(".reminder-badge.overdue, .reminder-badge");
+            if (overdue) {
+                overdue.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
         }
+    }
+
+    // Tuần tự hóa DOM sang Markdown chuẩn xác 100% không làm xáo trộn thứ tự
+    function serializeEditorToMarkdown() {
+        const lines = [];
+        const children = Array.from(editor.childNodes);
+        for (const node of children) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const txt = node.textContent.trim();
+                if (txt) lines.push(txt);
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName.toUpperCase();
+
+                // 1. To-Do Item
+                if (node.classList && node.classList.contains("todo-item")) {
+                    const cb = node.querySelector(".todo-check");
+                    const span = node.querySelector(".todo-text");
+                    const mark = (cb && cb.checked) ? "x" : " ";
+                    let text = span ? span.textContent.trim() : "";
+                    const badge = node.querySelector(".reminder-badge");
+                    if (badge && badge.dataset.display) {
+                        text = text.replace(/@\d{1,2}:\d{2}.*$/, "").trim();
+                        text += ` @${badge.dataset.display}`;
+                    }
+                    lines.push(`- [${mark}] ${text}`);
+                }
+                // 2. Headings
+                else if (tag === "H1") {
+                    lines.push(`# ${node.textContent.trim()}`);
+                } else if (tag === "H2") {
+                    lines.push(`## ${node.textContent.trim()}`);
+                } else if (tag === "H3") {
+                    lines.push(`### ${node.textContent.trim()}`);
+                }
+                // 3. Blockquote
+                else if (tag === "BLOCKQUOTE") {
+                    lines.push(`> ${node.textContent.trim()}`);
+                }
+                // 4. HR
+                else if (tag === "HR") {
+                    lines.push("---");
+                }
+                // 5. Image trực tiếp
+                else if (tag === "IMG") {
+                    const assetSrc = node.dataset.assetSrc || (node.src.includes("assets/") ? node.src.substring(node.src.indexOf("assets/")) : node.src);
+                    let label = "image";
+                    if (node.style.width && node.style.width !== "100%") {
+                        label = `image|${node.style.width}`;
+                    }
+                    lines.push(`![${label}](${assetSrc})`);
+                }
+                // 6. Paragraph hoặc Div
+                else if (tag === "P" || tag === "DIV") {
+                    const img = node.querySelector("img");
+                    const todo = node.querySelector(".todo-item");
+
+                    if (img) {
+                        const assetSrc = img.dataset.assetSrc || (img.src.includes("assets/") ? img.src.substring(img.src.indexOf("assets/")) : img.src);
+                        let label = "image";
+                        if (img.style.width && img.style.width !== "100%") {
+                            label = `image|${img.style.width}`;
+                        }
+                        lines.push(`![${label}](${assetSrc})`);
+                    } else if (todo) {
+                        const cb = todo.querySelector(".todo-check");
+                        const span = todo.querySelector(".todo-text");
+                        const mark = (cb && cb.checked) ? "x" : " ";
+                        let text = span ? span.textContent.trim() : "";
+                        const badge = todo.querySelector(".reminder-badge");
+                        if (badge && badge.dataset.display) {
+                            text = text.replace(/@\d{1,2}:\d{2}.*$/, "").trim();
+                            text += ` @${badge.dataset.display}`;
+                        }
+                        lines.push(`- [${mark}] ${text}`);
+                    } else {
+                        const clean = node.textContent.trim();
+                        if (clean) {
+                            lines.push(clean);
+                        } else if (node.querySelector("br")) {
+                            lines.push("");
+                        }
+                    }
+                }
+                // 7. Bảng biểu (Table hoặc .table-wrapper)
+                else if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || node.querySelector("table.note-table")) {
+                    const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
+                    if (tbl) {
+                        lines.push(serializeTableToCleanHtml(tbl));
+                    }
+                }
+            }
+        }
+        return lines.join("\n");
     }
 
     // Tự động lưu ghi chú với debounce 300ms
     function triggerSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(function() {
+            const md = serializeEditorToMarkdown();
             sendIPC("save_note", {
                 tab_id: currentTabId,
-                html: editor.innerHTML
+                html: editor.innerHTML,
+                markdown: md
             });
         }, 300);
     }
@@ -225,19 +366,326 @@
         sendIPC("toggle_pin", { always_on_top: isPinned });
     });
 
-    // Xử lý Checkbox Tick
-    function setupCheckboxListeners() {
-        const checkboxes = editor.querySelectorAll(".todo-check");
-        checkboxes.forEach(function(cb) {
-            const item = cb.closest(".todo-item");
-            if (item) {
-                item.classList.toggle("checked", cb.checked);
+    // ==========================================
+    // PARSER NHẮC HẸN (REMINDER PARSER IN JS)
+    // ==========================================
+    function parseReminderScheduleJs(text) {
+        if (!text) return null;
+        const now = new Date();
+        
+        // Pattern 1: @HH:mm dd/MM(/YYYY)? (e.g., @15:30 15/11 or @15:30 15/11/2026)
+        let match = text.match(/@([0-1]?[0-9]|2[0-3]):([0-5][0-9])\s+([0-3]?[0-9])\/([0-1]?[0-9])(?:\/([0-9]{4}))?/);
+        if (match) {
+            const hh = parseInt(match[1]);
+            const min = parseInt(match[2]);
+            const dd = parseInt(match[3]);
+            const mm = parseInt(match[4]);
+            const yyyy = match[5] ? parseInt(match[5]) : now.getFullYear();
+            const d = new Date(yyyy, mm - 1, dd, hh, min, 0);
+            const display = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")} ${String(dd).padStart(2, "0")}/${String(mm).padStart(2, "0")}/${yyyy}`;
+            const cleanText = text.replace(match[0], "").trim();
+            return {
+                epochSec: Math.floor(d.getTime() / 1000),
+                displayStr: display,
+                cleanText: cleanText
+            };
+        }
+        
+        // Pattern 2: @dd/MM(/YYYY)? HH:mm (e.g., @15/11 15:30)
+        match = text.match(/@([0-3]?[0-9])\/([0-1]?[0-9])(?:\/([0-9]{4}))?\s+([0-1]?[0-9]|2[0-3]):([0-5][0-9])/);
+        if (match) {
+            const dd = parseInt(match[1]);
+            const mm = parseInt(match[2]);
+            const yyyy = match[3] ? parseInt(match[3]) : now.getFullYear();
+            const hh = parseInt(match[4]);
+            const min = parseInt(match[5]);
+            const d = new Date(yyyy, mm - 1, dd, hh, min, 0);
+            const display = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")} ${String(dd).padStart(2, "0")}/${String(mm).padStart(2, "0")}/${yyyy}`;
+            const cleanText = text.replace(match[0], "").trim();
+            return {
+                epochSec: Math.floor(d.getTime() / 1000),
+                displayStr: display,
+                cleanText: cleanText
+            };
+        }
+
+        // Pattern 3: @(tomorrow|mai|today|homnay) HH:mm
+        match = text.match(/@(tomorrow|mai|today|homnay)\s+([0-1]?[0-9]|2[0-3]):([0-5][0-9])/i);
+        if (match) {
+            const kw = match[1].toLowerCase();
+            const hh = parseInt(match[2]);
+            const min = parseInt(match[3]);
+            const d = new Date(now);
+            if (kw === "tomorrow" || kw === "mai") {
+                d.setDate(d.getDate() + 1);
             }
-            cb.onchange = function() {
-                if (item) item.classList.toggle("checked", cb.checked);
-                triggerSave();
+            d.setHours(hh, min, 0, 0);
+            const display = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+            const cleanText = text.replace(match[0], "").trim();
+            return {
+                epochSec: Math.floor(d.getTime() / 1000),
+                displayStr: display,
+                cleanText: cleanText
+            };
+        }
+
+        // Pattern 4: @HH:mm (e.g., @15:30)
+        match = text.match(/@([0-1]?[0-9]|2[0-3]):([0-5][0-9])/);
+        if (match) {
+            const hh = parseInt(match[1]);
+            const min = parseInt(match[2]);
+            const d = new Date(now);
+            d.setHours(hh, min, 0, 0);
+            if (d.getTime() < now.getTime()) {
+                d.setDate(d.getDate() + 1);
+            }
+            const display = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+            const cleanText = text.replace(match[0], "").trim();
+            return {
+                epochSec: Math.floor(d.getTime() / 1000),
+                displayStr: display,
+                cleanText: cleanText
+            };
+        }
+
+        return null;
+    }
+
+    function checkAndApplyReminder(item) {
+        if (!item) return false;
+        const span = item.querySelector(".todo-text");
+        if (!span) return false;
+        const text = span.textContent;
+        const remData = parseReminderScheduleJs(text);
+        if (remData) {
+            span.textContent = remData.cleanText;
+            let badge = item.querySelector(".reminder-badge");
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.className = "reminder-badge";
+                const remBtn = item.querySelector(".todo-reminder-btn");
+                if (remBtn) item.insertBefore(badge, remBtn);
+                else item.appendChild(badge);
+            }
+            badge.dataset.display = remData.displayStr;
+            badge.dataset.timestamp = String(remData.epochSec);
+            badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${remData.displayStr}`;
+            badge.classList.remove("overdue");
+
+            const index = Array.from(editor.querySelectorAll(".todo-item")).indexOf(item);
+            const itemId = currentTabId + "_line_" + (index + 1);
+            sendIPC("schedule_reminder", {
+                note_id: currentTabId,
+                item_id: itemId,
+                text: remData.cleanText,
+                target_timestamp: remData.epochSec,
+                display_time: remData.displayStr
+            });
+            setupReminderBadgeListeners();
+            triggerSave();
+            showToast("Đã lên lịch nhắc: " + remData.displayStr, 2500);
+            return true;
+        }
+        return false;
+    }
+
+    // Xử lý Checkbox Tick, Reminder Buttons & Badges
+    function setupCheckboxListeners() {
+        const todoItems = editor.querySelectorAll(".todo-item");
+        todoItems.forEach(function(item, index) {
+            const cb = item.querySelector(".todo-check");
+            if (cb) {
+                item.classList.toggle("checked", cb.checked);
+                const badge = item.querySelector(".reminder-badge");
+                if (badge) badge.classList.toggle("completed", cb.checked);
+
+                cb.onchange = function() {
+                    item.classList.toggle("checked", cb.checked);
+                    const b = item.querySelector(".reminder-badge");
+                    if (b) {
+                        b.classList.toggle("completed", cb.checked);
+                        if (cb.checked) {
+                            const itemId = currentTabId + "_line_" + (index + 1);
+                            sendIPC("cancel_reminder", { note_id: currentTabId, item_id: itemId });
+                        }
+                    }
+                    triggerSave();
+                };
+            }
+
+            // Gắn nút Hẹn giờ (⏱) cho từng To-Do item
+            let remBtn = item.querySelector(".todo-reminder-btn");
+            if (!remBtn) {
+                remBtn = document.createElement("button");
+                remBtn.type = "button";
+                remBtn.className = "todo-reminder-btn";
+                remBtn.title = "Hẹn giờ nhắc việc";
+                remBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+                item.appendChild(remBtn);
+            }
+            remBtn.onclick = function(e) {
+                e.stopPropagation();
+                const badge = item.querySelector(".reminder-badge");
+                openReminderModal(badge, item);
             };
         });
+        setupReminderBadgeListeners();
+    }
+
+    function setupReminderBadgeListeners() {
+        const badges = editor.querySelectorAll(".reminder-badge");
+        badges.forEach(function(badge) {
+            badge.onclick = function(e) {
+                e.stopPropagation();
+                const item = badge.closest(".todo-item");
+                openReminderModal(badge, item);
+            };
+        });
+    }
+
+    function openReminderModal(badge, item) {
+        currentEditingBadge = badge || (item ? item.querySelector(".reminder-badge") : null);
+        currentEditingItem = item || (badge ? badge.closest(".todo-item") : null);
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 15);
+
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const min = String(now.getMinutes()).padStart(2, "0");
+
+        if (currentEditingBadge && currentEditingBadge.dataset.display) {
+            const parts = currentEditingBadge.dataset.display.split(" ");
+            if (parts.length === 2) {
+                reminderTimeInput.value = parts[0];
+                const dateParts = parts[1].split("/");
+                if (dateParts.length >= 2) {
+                    const d = dateParts[0].padStart(2, "0");
+                    const m = dateParts[1].padStart(2, "0");
+                    const y = dateParts[2] || String(yyyy);
+                    reminderDateInput.value = `${y}-${m}-${d}`;
+                }
+            } else {
+                reminderDateInput.value = `${yyyy}-${mm}-${dd}`;
+                reminderTimeInput.value = `${hh}:${min}`;
+            }
+            if (btnDeleteReminder) btnDeleteReminder.style.display = "inline-block";
+        } else {
+            reminderDateInput.value = `${yyyy}-${mm}-${dd}`;
+            reminderTimeInput.value = `${hh}:${min}`;
+            if (btnDeleteReminder) btnDeleteReminder.style.display = "none";
+        }
+
+        reminderModal.classList.remove("hidden");
+        reminderTimeInput.focus();
+    }
+
+    function closeReminderModal() {
+        reminderModal.classList.add("hidden");
+        currentEditingBadge = null;
+        currentEditingItem = null;
+    }
+
+    if (btnCloseReminder) btnCloseReminder.onclick = closeReminderModal;
+    if (btnCancelReminder) btnCancelReminder.onclick = closeReminderModal;
+
+    presetChips.forEach(function(chip) {
+        chip.onclick = function() {
+            const preset = chip.dataset.preset;
+            const target = new Date();
+            if (preset === "1m") {
+                target.setMinutes(target.getMinutes() + 1);
+            } else if (preset === "15m") {
+                target.setMinutes(target.getMinutes() + 15);
+            } else if (preset === "1h") {
+                target.setHours(target.getHours() + 1);
+            } else if (preset === "tomorrow") {
+                target.setDate(target.getDate() + 1);
+                target.setHours(9, 0, 0, 0);
+            }
+            const yyyy = target.getFullYear();
+            const mm = String(target.getMonth() + 1).padStart(2, "0");
+            const dd = String(target.getDate()).padStart(2, "0");
+            const hh = String(target.getHours()).padStart(2, "0");
+            const min = String(target.getMinutes()).padStart(2, "0");
+            reminderDateInput.value = `${yyyy}-${mm}-${dd}`;
+            reminderTimeInput.value = `${hh}:${min}`;
+        };
+    });
+
+    if (btnConfirmReminder) {
+        btnConfirmReminder.onclick = function() {
+            const dateVal = reminderDateInput.value;
+            const timeVal = reminderTimeInput.value;
+            if (!dateVal || !timeVal || !currentEditingItem) {
+                closeReminderModal();
+                return;
+            }
+
+            const [yyyy, mm, dd] = dateVal.split("-");
+            const [hh, min] = timeVal.split(":");
+            const displayStr = `${hh}:${min} ${dd}/${mm}/${yyyy}`;
+            const targetDate = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd), parseInt(hh), parseInt(min));
+            const epochSec = Math.floor(targetDate.getTime() / 1000);
+
+            if (!currentEditingBadge) {
+                currentEditingBadge = currentEditingItem.querySelector(".reminder-badge");
+            }
+            if (!currentEditingBadge) {
+                currentEditingBadge = document.createElement("span");
+                currentEditingBadge.className = "reminder-badge";
+                const remBtn = currentEditingItem.querySelector(".todo-reminder-btn");
+                if (remBtn) {
+                    currentEditingItem.insertBefore(currentEditingBadge, remBtn);
+                } else {
+                    currentEditingItem.appendChild(currentEditingBadge);
+                }
+                setupReminderBadgeListeners();
+            }
+
+            currentEditingBadge.dataset.display = displayStr;
+            currentEditingBadge.dataset.timestamp = String(epochSec);
+            currentEditingBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${displayStr}`;
+            currentEditingBadge.classList.remove("overdue");
+
+            const todoTextSpan = currentEditingItem.querySelector(".todo-text");
+            const taskText = todoTextSpan ? todoTextSpan.textContent.trim() : "";
+            const index = Array.from(editor.querySelectorAll(".todo-item")).indexOf(currentEditingItem);
+            const itemId = currentTabId + "_line_" + (index + 1);
+
+            sendIPC("schedule_reminder", {
+                note_id: currentTabId,
+                item_id: itemId,
+                text: taskText,
+                target_timestamp: epochSec,
+                display_time: displayStr
+            });
+
+            closeReminderModal();
+            triggerSave();
+            showToast("Đã đặt nhắc hẹn: " + displayStr, 2500);
+        };
+    }
+
+    if (btnDeleteReminder) {
+        btnDeleteReminder.onclick = function() {
+            if (!currentEditingBadge && currentEditingItem) {
+                currentEditingBadge = currentEditingItem.querySelector(".reminder-badge");
+            }
+            if (currentEditingBadge) {
+                currentEditingBadge.remove();
+            }
+            if (currentEditingItem) {
+                const index = Array.from(editor.querySelectorAll(".todo-item")).indexOf(currentEditingItem);
+                const itemId = currentTabId + "_line_" + (index + 1);
+                sendIPC("cancel_reminder", { note_id: currentTabId, item_id: itemId });
+            }
+            closeReminderModal();
+            triggerSave();
+            showToast("Đã xóa nhắc việc!", 2000);
+        };
     }
 
     // Chèn Todo Item mới
@@ -255,15 +703,43 @@
         span.contentEditable = "true";
         span.textContent = text || "";
 
+        const remBtn = document.createElement("button");
+        remBtn.type = "button";
+        remBtn.className = "todo-reminder-btn";
+        remBtn.title = "Hẹn giờ nhắc việc";
+        remBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
         div.appendChild(cb);
         div.appendChild(span);
+        div.appendChild(remBtn);
 
         cb.onchange = function() {
             div.classList.toggle("checked", cb.checked);
+            const badge = div.querySelector(".reminder-badge");
+            if (badge) badge.classList.toggle("completed", cb.checked);
             triggerSave();
         };
 
-        return { div, cb, span };
+        remBtn.onclick = function(e) {
+            e.stopPropagation();
+            const badge = div.querySelector(".reminder-badge");
+            openReminderModal(badge, div);
+        };
+
+        // Phân tích cú pháp @reminder nếu có sẵn trong text
+        const remData = parseReminderScheduleJs(span.textContent);
+        if (remData) {
+            span.textContent = remData.cleanText;
+            const badge = document.createElement("span");
+            badge.className = "reminder-badge";
+            badge.dataset.display = remData.displayStr;
+            badge.dataset.timestamp = String(remData.epochSec);
+            badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${remData.displayStr}`;
+            div.insertBefore(badge, remBtn);
+            setupReminderBadgeListeners();
+        }
+
+        return { div, cb, span, remBtn };
     }
 
     // Tự động nhận diện [] thành ô Checkbox
@@ -282,18 +758,27 @@
                 const before = text.substring(0, offset - 2);
                 const after = text.substring(offset);
 
-                node.textContent = before;
-
                 const { div, span } = createTodoElement(after);
+                const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
 
-                if (node.nextSibling) {
-                    node.parentNode.insertBefore(div, node.nextSibling);
+                if (parentBlock) {
+                    if (before.trim() === "") {
+                        parentBlock.replaceWith(div);
+                    } else {
+                        node.textContent = before;
+                        if (parentBlock.nextSibling) {
+                            parentBlock.parentNode.insertBefore(div, parentBlock.nextSibling);
+                        } else {
+                            parentBlock.parentNode.appendChild(div);
+                        }
+                    }
                 } else {
-                    node.parentNode.appendChild(div);
-                }
-
-                if (before.trim() === "" && node.parentNode && node.parentNode !== editor && node.parentNode.tagName === "P") {
-                    node.parentNode.replaceWith(div);
+                    node.textContent = before;
+                    if (node.nextSibling) {
+                        editor.insertBefore(div, node.nextSibling);
+                    } else {
+                        editor.appendChild(div);
+                    }
                 }
 
                 const newRange = document.createRange();
@@ -304,6 +789,14 @@
 
                 triggerSave();
                 return;
+            }
+
+            // Tự động nhận diện @... khi gõ trong .todo-text kết thúc bằng khoảng trắng
+            const parentTodo = node.parentElement?.closest(".todo-item");
+            if (parentTodo && (text.endsWith(" ") || text.endsWith("\u00A0"))) {
+                if (checkAndApplyReminder(parentTodo)) {
+                    return;
+                }
             }
         }
 
@@ -345,6 +838,7 @@
             // Phím Enter: tạo todo tiếp theo hoặc thoát todo
             if (e.key === "Enter") {
                 e.preventDefault();
+                checkAndApplyReminder(todoItem);
                 if (todoText.textContent.trim() === "") {
                     const p = document.createElement("p");
                     p.innerHTML = "<br>";
@@ -502,30 +996,87 @@
         if (selectedImage) updateResizerPosition();
     });
 
-    // Chèn ảnh vào vị trí con trỏ
-    function insertImage(src) {
+    // Nén ảnh clipboard qua Canvas: giảm kích thước từ 20MB xuống ~150KB giúp máy không bị giật lag
+    function compressClipboardImage(file, callback) {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = function() {
+            URL.revokeObjectURL(objectUrl);
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            const MAX_WIDTH = 1440;
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            if (w > MAX_WIDTH) {
+                h = Math.round((h * MAX_WIDTH) / w);
+                w = MAX_WIDTH;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // JPEG 0.85: Hình ảnh rất sắc nét, đọc rõ chữ nhưng dung lượng siêu nhẹ
+            const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+            callback(compressedDataUrl);
+        };
+        img.onerror = function() {
+            URL.revokeObjectURL(objectUrl);
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                callback(evt.target.result);
+            };
+            reader.readAsDataURL(file);
+        };
+        img.src = objectUrl;
+    }
+
+    // Chèn ảnh vào vị trí con trỏ theo khối chuẩn
+    function insertImage(src, imgId) {
         editor.focus();
         const img = document.createElement("img");
         img.src = src;
         img.className = "note-image";
         img.alt = "";
+        if (imgId) {
+            img.dataset.imgId = imgId;
+        }
+
+        const wrapper = document.createElement("p");
+        wrapper.className = "image-wrapper";
+        wrapper.appendChild(img);
 
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
             const range = sel.getRangeAt(0);
             range.deleteContents();
-            range.insertNode(img);
-            range.collapse(false);
+
+            // Tìm block chứa con trỏ hiện tại
+            let currentBlock = sel.anchorNode;
+            while (currentBlock && currentBlock.parentNode !== editor && currentBlock !== editor) {
+                currentBlock = currentBlock.parentNode;
+            }
+
+            if (currentBlock && currentBlock !== editor) {
+                if (currentBlock.textContent.trim() === "") {
+                    currentBlock.replaceWith(wrapper);
+                } else {
+                    currentBlock.parentNode.insertBefore(wrapper, currentBlock.nextSibling);
+                }
+            } else {
+                range.insertNode(wrapper);
+            }
         } else {
-            editor.appendChild(img);
+            editor.appendChild(wrapper);
         }
 
+        // Tạo sẵn một dòng mới bên dưới ảnh để gõ tiếp
         const p = document.createElement("p");
         p.innerHTML = "<br>";
-        if (img.nextSibling) {
-            img.parentNode.insertBefore(p, img.nextSibling);
+        if (wrapper.nextSibling) {
+            wrapper.parentNode.insertBefore(p, wrapper.nextSibling);
         } else {
-            img.parentNode.appendChild(p);
+            wrapper.parentNode.appendChild(p);
         }
 
         try {
@@ -541,7 +1092,7 @@
         return img;
     }
 
-    // Xử lý dán ảnh Ctrl+V từ clipboard
+    // Xử lý dán ảnh Ctrl+V từ clipboard mượt mà, không giật máy
     document.addEventListener("paste", function(e) {
         const clipboardData = e.clipboardData || window.clipboardData;
         if (!clipboardData) return;
@@ -572,21 +1123,18 @@
             e.preventDefault();
             e.stopPropagation();
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const dataUrl = event.target.result;
+            compressClipboardImage(imageFile, function(dataUrl) {
                 if (!dataUrl) return;
 
-                const img = insertImage(dataUrl);
+                const imgId = "img_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+                const img = insertImage(dataUrl, imgId);
 
                 sendIPC("save_image", {
+                    img_id: imgId,
                     data: dataUrl,
-                    ext: "png"
+                    ext: "jpg"
                 });
-
-                pendingImages.push(img);
-            };
-            reader.readAsDataURL(imageFile);
+            });
         }
     });
 
@@ -822,7 +1370,11 @@
                     const cb = node.querySelector(".todo-check");
                     const span = node.querySelector(".todo-text");
                     const mark = (cb && cb.checked) ? "x" : " ";
-                    const text = span ? span.textContent.trim() : "";
+                    let text = span ? span.textContent.trim() : "";
+                    const badge = node.querySelector(".reminder-badge");
+                    if (badge && badge.dataset.display) {
+                        text += ` @${badge.dataset.display}`;
+                    }
                     lines.push(`- [${mark}] ${text}`);
                 } else if (node.tagName === "IMG") {
                     const src = await getImageShareSrc(node);
@@ -841,7 +1393,11 @@
                                 const cb = child.querySelector(".todo-check");
                                 const span = child.querySelector(".todo-text");
                                 const mark = (cb && cb.checked) ? "x" : " ";
-                                const text = span ? span.textContent.trim() : "";
+                                let text = span ? span.textContent.trim() : "";
+                                const badge = child.querySelector(".reminder-badge");
+                                if (badge && badge.dataset.display) {
+                                    text += ` @${badge.dataset.display}`;
+                                }
                                 lines.push(`- [${mark}] ${text}`);
                             } else if (child.tagName === "IMG") {
                                 hasSub = true;
@@ -863,6 +1419,11 @@
                         if (clean) lines.push(clean);
                     } else if (subtext.trim()) {
                         lines.push(subtext.trim());
+                    }
+                } else if (node.tagName === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || node.querySelector("table.note-table")) {
+                    const tbl = (node.tagName === "TABLE") ? node : node.querySelector("table.note-table");
+                    if (tbl) {
+                        lines.push(serializeTableToCleanHtml(tbl));
                     }
                 }
             }
@@ -897,39 +1458,603 @@
     }
 
     btnExportUrl.addEventListener("click", async function() {
-        const activeTab = tabs.find(t => t.id === currentTabId);
-        const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
-        const mdContent = await getNoteMarkdown();
-
-        let fullText = mdContent;
-        if (title) {
-            fullText = `# ${title}\n\n${mdContent}`;
-        }
-        if (!fullText.trim()) {
-            fullText = title ? `# ${title}` : "";
-        }
+        btnExportUrl.classList.add("loading");
+        showToast("Đang tạo link chia sẻ Web 100% nội dung & ảnh...", 2000);
 
         try {
-            const hash = await compressToTxtUrl(fullText);
-            let serviceUrl = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
-            if (!serviceUrl.endsWith("/")) serviceUrl += "/";
-            const cleanTxtUrl = `${serviceUrl}#${hash}`;
+            const activeTab = tabs.find(t => t.id === currentTabId);
+            const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
+            const mdContent = await getNoteMarkdown();
 
-            // 1. Sao chép vào Clipboard qua Web API
-            if (navigator.clipboard) {
-                await navigator.clipboard.writeText(cleanTxtUrl).catch(() => {});
+            // 1. Nén toàn bộ nội dung (bao gồm cả ảnh data URL nếu có) thành hash deflate-raw base64url
+            const hash = await compressToTxtUrl(mdContent);
+            const serviceBase = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
+            const cleanBase = serviceBase.endsWith("/") ? serviceBase : (serviceBase + "/");
+            const publicUrl = `${cleanBase}#${hash}`;
+
+            // 2. Sao chép vào Clipboard của trình duyệt
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(publicUrl);
+                } catch (e) {}
             }
 
-            // 2. Đảm bảo sao chép vào Clipboard qua Windows Win32 Native API
-            sendIPC("copy_to_clipboard", { text: cleanTxtUrl });
+            // 3. Sao chép vào Win32 System Clipboard qua C++ IPC để chắc chắn 100%
+            sendIPC("copy_to_clipboard", { text: publicUrl });
 
-            // 3. Hiển thị thông báo đúng chuẩn chức năng: "Đã sao chép URL vào Clipboard của bạn"
-            showToast("Đã sao chép URL vào Clipboard của bạn", 3000);
+            // 4. Thu thập danh sách ảnh cục bộ và gửi lưu snapshot local
+            const imgNodes = editor.querySelectorAll("img");
+            const imagePaths = [];
+            imgNodes.forEach(function(img) {
+                const assetSrc = img.dataset.assetSrc || img.getAttribute("src");
+                if (assetSrc && assetSrc.includes("assets/")) {
+                    const rel = assetSrc.substring(assetSrc.indexOf("assets/"));
+                    imagePaths.push(rel);
+                }
+            });
+
+            sendIPC("publish_web_share", {
+                note_id: currentTabId,
+                title: title,
+                markdown_content: mdContent,
+                referenced_images: imagePaths,
+                public_url: publicUrl
+            });
+
+            btnExportUrl.classList.remove("loading");
+            showToast("Đã sao chép link Web 100% vào Clipboard!", 3500);
         } catch (err) {
-            console.error("TxtUrl Compress Error:", err);
-            showToast("Không thể tạo URL: " + err.message, 3000);
+            console.error("Lỗi chia sẻ:", err);
+            btnExportUrl.classList.remove("loading");
+            showToast("Lỗi khi tạo link chia sẻ: " + err.message, 3000);
         }
     });
+
+    // ==========================================
+    // TÍNH NĂNG BẢNG BIỂU (TABLE) PHONG CÁCH OFFICE
+    // ==========================================
+
+    function serializeTableToCleanHtml(tableEl) {
+        const clone = tableEl.cloneNode(true);
+        // Xóa các thanh kéo resizer và nút thao tác nhanh
+        clone.querySelectorAll(".col-resizer, .tbl-btn-add-col, .tbl-btn-add-row").forEach(el => el.remove());
+        clone.removeAttribute("contenteditable");
+        clone.querySelectorAll("*").forEach(el => {
+            el.removeAttribute("contenteditable");
+            el.classList.remove("resizing");
+        });
+        if (!clone.classList.contains("note-table")) {
+            clone.classList.add("note-table");
+        }
+        return clone.outerHTML.replace(/\n\s*/g, " ").trim();
+    }
+
+    function createTableElement(rows, cols) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "table-wrapper";
+        wrapper.setAttribute("contenteditable", "false");
+
+        const table = document.createElement("table");
+        table.className = "note-table";
+
+        // Tạo colgroup
+        const colgroup = document.createElement("colgroup");
+        const defaultWidth = Math.max(90, Math.min(180, Math.floor(480 / cols)));
+        for (let c = 0; c < cols; c++) {
+            const col = document.createElement("col");
+            col.style.width = defaultWidth + "px";
+            colgroup.appendChild(col);
+        }
+        table.appendChild(colgroup);
+
+        // Tạo thead
+        const thead = document.createElement("thead");
+        const headTr = document.createElement("tr");
+        for (let c = 0; c < cols; c++) {
+            const th = document.createElement("th");
+            th.setAttribute("contenteditable", "true");
+            th.textContent = "Cột " + (c + 1);
+            headTr.appendChild(th);
+        }
+        thead.appendChild(headTr);
+        table.appendChild(thead);
+
+        // Tạo tbody
+        const tbody = document.createElement("tbody");
+        for (let r = 0; r < rows; r++) {
+            const tr = document.createElement("tr");
+            for (let c = 0; c < cols; c++) {
+                const td = document.createElement("td");
+                td.setAttribute("contenteditable", "true");
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+
+        return wrapper;
+    }
+
+    function insertTable(rows, cols) {
+        const wrapper = createTableElement(rows, cols);
+
+        // Vị trí chèn
+        const sel = window.getSelection();
+        let inserted = false;
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editor.contains(range.commonAncestorContainer)) {
+                let node = range.commonAncestorContainer;
+                if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+                
+                while (node && node.parentNode !== editor) {
+                    node = node.parentNode;
+                }
+
+                if (node && node.parentNode === editor) {
+                    if (node.tagName === "P" && (!node.textContent.trim() || node.innerHTML === "<br>")) {
+                        editor.replaceChild(wrapper, node);
+                    } else {
+                        node.parentNode.insertBefore(wrapper, node.nextSibling);
+                    }
+                    inserted = true;
+                }
+            }
+        }
+
+        if (!inserted) {
+            editor.appendChild(wrapper);
+        }
+
+        // Luôn tạo dòng văn bản dưới bảng để tiếp tục soạn thảo
+        const afterP = document.createElement("p");
+        afterP.innerHTML = "<br>";
+        if (wrapper.nextSibling) {
+            editor.insertBefore(afterP, wrapper.nextSibling);
+        } else {
+            editor.appendChild(afterP);
+        }
+
+        setupTableWrapper(wrapper);
+
+        // Focus vào ô đầu tiên
+        const firstTh = wrapper.querySelector("th");
+        if (firstTh) {
+            firstTh.focus();
+        }
+
+        triggerSave();
+    }
+
+    function appendColumn(table) {
+        return insertColumn(table, undefined, true);
+    }
+
+    function insertColumn(table, colIndex, isRight) {
+        const colgroup = table.querySelector("colgroup");
+        const theadTr = table.querySelector("thead tr");
+        const tbodyRows = table.querySelectorAll("tbody tr");
+
+        const newCol = document.createElement("col");
+        newCol.style.width = "120px";
+
+        const newTh = document.createElement("th");
+        newTh.setAttribute("contenteditable", "true");
+        newTh.textContent = "Cột " + ((theadTr ? theadTr.children.length : 0) + 1);
+
+        if (colIndex === undefined || colIndex < 0) {
+            if (colgroup) colgroup.appendChild(newCol);
+            if (theadTr) theadTr.appendChild(newTh);
+            tbodyRows.forEach(tr => {
+                const td = document.createElement("td");
+                td.setAttribute("contenteditable", "true");
+                tr.appendChild(td);
+            });
+        } else {
+            const insertPos = isRight ? colIndex + 1 : colIndex;
+            if (colgroup) {
+                if (insertPos < colgroup.children.length) {
+                    colgroup.insertBefore(newCol, colgroup.children[insertPos]);
+                } else {
+                    colgroup.appendChild(newCol);
+                }
+            }
+            if (theadTr) {
+                if (insertPos < theadTr.children.length) {
+                    theadTr.insertBefore(newTh, theadTr.children[insertPos]);
+                } else {
+                    theadTr.appendChild(newTh);
+                }
+            }
+            tbodyRows.forEach(tr => {
+                const td = document.createElement("td");
+                td.setAttribute("contenteditable", "true");
+                if (insertPos < tr.children.length) {
+                    tr.insertBefore(td, tr.children[insertPos]);
+                } else {
+                    tr.appendChild(td);
+                }
+            });
+        }
+
+        const wrapper = table.closest(".table-wrapper");
+        if (wrapper) setupTableWrapper(wrapper);
+        triggerSave();
+        return newTh;
+    }
+
+    function appendRow(table) {
+        return insertRow(table, undefined, true);
+    }
+
+    function insertRow(table, rowIndex, isBelow) {
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return null;
+
+        const numCols = table.querySelectorAll("thead th").length || (tbody.rows[0] ? tbody.rows[0].cells.length : 3);
+        const tr = document.createElement("tr");
+        for (let c = 0; c < numCols; c++) {
+            const td = document.createElement("td");
+            td.setAttribute("contenteditable", "true");
+            tr.appendChild(td);
+        }
+
+        if (rowIndex === undefined || rowIndex < 0) {
+            tbody.appendChild(tr);
+        } else {
+            const targetRow = table.rows[rowIndex];
+            if (targetRow && targetRow.parentNode) {
+                if (isBelow) {
+                    targetRow.parentNode.insertBefore(tr, targetRow.nextSibling);
+                } else {
+                    targetRow.parentNode.insertBefore(tr, targetRow);
+                }
+            } else {
+                tbody.appendChild(tr);
+            }
+        }
+
+        const wrapper = table.closest(".table-wrapper");
+        if (wrapper) setupTableWrapper(wrapper);
+        triggerSave();
+        return tr;
+    }
+
+    function deleteColumn(table, colIndex) {
+        const colgroup = table.querySelector("colgroup");
+        const theadTr = table.querySelector("thead tr");
+        const tbodyRows = table.querySelectorAll("tbody tr");
+
+        if (theadTr && theadTr.children.length <= 1) {
+            showToast("Bảng cần ít nhất 1 cột!");
+            return;
+        }
+
+        if (colgroup && colgroup.children[colIndex]) {
+            colgroup.children[colIndex].remove();
+        }
+        if (theadTr && theadTr.children[colIndex]) {
+            theadTr.children[colIndex].remove();
+        }
+        tbodyRows.forEach(tr => {
+            if (tr.children[colIndex]) {
+                tr.children[colIndex].remove();
+            }
+        });
+
+        const wrapper = table.closest(".table-wrapper");
+        if (wrapper) setupTableWrapper(wrapper);
+        triggerSave();
+    }
+
+    function deleteRow(table, rowIndex) {
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+
+        if (tbody.rows.length <= 1) {
+            showToast("Bảng cần ít nhất 1 hàng dữ liệu!");
+            return;
+        }
+
+        const targetRow = table.rows[rowIndex];
+        if (targetRow && targetRow.parentNode === tbody) {
+            targetRow.remove();
+            triggerSave();
+        }
+    }
+
+    function deleteTable(table) {
+        const wrapper = table.closest(".table-wrapper");
+        if (wrapper) {
+            wrapper.remove();
+        } else {
+            table.remove();
+        }
+        triggerSave();
+    }
+
+    function setupTableWrapper(wrapper) {
+        const table = wrapper.querySelector("table.note-table");
+        if (!table) return;
+
+        // 1. Đảm bảo colgroup
+        let colgroup = table.querySelector("colgroup");
+        const headThs = table.querySelectorAll("thead th");
+        if (!colgroup && headThs.length > 0) {
+            colgroup = document.createElement("colgroup");
+            headThs.forEach(() => {
+                const col = document.createElement("col");
+                col.style.width = "120px";
+                colgroup.appendChild(col);
+            });
+            table.insertBefore(colgroup, table.firstChild);
+        }
+
+        // 2. Nút thêm cột nhanh (+)
+        let btnAddCol = wrapper.querySelector(".tbl-btn-add-col");
+        if (!btnAddCol) {
+            btnAddCol = document.createElement("button");
+            btnAddCol.type = "button";
+            btnAddCol.className = "tbl-btn-add-col";
+            btnAddCol.title = "Thêm cột mới";
+            btnAddCol.textContent = "+";
+            btnAddCol.setAttribute("contenteditable", "false");
+            wrapper.appendChild(btnAddCol);
+        }
+        btnAddCol.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            appendColumn(table);
+        };
+
+        // 3. Nút thêm hàng nhanh (+)
+        let btnAddRow = wrapper.querySelector(".tbl-btn-add-row");
+        if (!btnAddRow) {
+            btnAddRow = document.createElement("button");
+            btnAddRow.type = "button";
+            btnAddRow.className = "tbl-btn-add-row";
+            btnAddRow.title = "Thêm hàng mới";
+            btnAddRow.textContent = "+";
+            btnAddRow.setAttribute("contenteditable", "false");
+            wrapper.appendChild(btnAddRow);
+        }
+        btnAddRow.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            appendRow(table);
+        };
+
+        // 4. Cột Resizer trên từng <th>
+        headThs.forEach((th) => {
+            th.setAttribute("contenteditable", "true");
+            let resizer = th.querySelector(".col-resizer");
+            if (!resizer) {
+                resizer = document.createElement("div");
+                resizer.className = "col-resizer";
+                resizer.setAttribute("contenteditable", "false");
+                th.appendChild(resizer);
+            }
+
+            resizer.onpointerdown = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const colIndex = th.cellIndex;
+                const cols = table.querySelectorAll("colgroup col");
+                const targetCol = cols[colIndex];
+                if (!targetCol) return;
+
+                const startX = e.clientX;
+                const startWidth = th.getBoundingClientRect().width;
+                resizer.setPointerCapture(e.pointerId);
+                resizer.classList.add("resizing");
+
+                function onPointerMove(moveEvent) {
+                    const dx = moveEvent.clientX - startX;
+                    const newWidth = Math.max(45, Math.round(startWidth + dx));
+                    targetCol.style.width = newWidth + "px";
+                }
+
+                function onPointerUp(upEvent) {
+                    resizer.classList.remove("resizing");
+                    resizer.removeEventListener("pointermove", onPointerMove);
+                    resizer.removeEventListener("pointerup", onPointerUp);
+                    try { resizer.releasePointerCapture(e.pointerId); } catch (_) {}
+                    triggerSave();
+                }
+
+                resizer.addEventListener("pointermove", onPointerMove);
+                resizer.addEventListener("pointerup", onPointerUp);
+            };
+        });
+
+        // 5. Thiết lập contenteditable cho các ô <td>
+        table.querySelectorAll("tbody td").forEach(td => {
+            td.setAttribute("contenteditable", "true");
+        });
+
+        // 6. Điều hướng phím Tab / Shift+Tab giữa các ô (Office style)
+        table.onkeydown = function(e) {
+            if (e.key === "Tab") {
+                const activeCell = document.activeElement;
+                if (!activeCell || (activeCell.tagName !== "TH" && activeCell.tagName !== "TD")) return;
+                e.preventDefault();
+
+                const allCells = Array.from(table.querySelectorAll("th, td"));
+                const currentIndex = allCells.indexOf(activeCell);
+
+                if (!e.shiftKey) {
+                    if (currentIndex < allCells.length - 1) {
+                        allCells[currentIndex + 1].focus();
+                    } else {
+                        // Đang ở ô cuối cùng -> Tự động thêm dòng mới và nhảy vào ô đầu
+                        const newRow = appendRow(table);
+                        if (newRow && newRow.cells && newRow.cells[0]) {
+                            newRow.cells[0].focus();
+                        }
+                    }
+                } else {
+                    if (currentIndex > 0) {
+                        allCells[currentIndex - 1].focus();
+                    }
+                }
+            }
+        };
+
+        // 7. Chuột phải hiển thị Context Menu
+        table.oncontextmenu = function(e) {
+            const cell = e.target.closest("th, td");
+            if (!cell) return;
+            e.preventDefault();
+            e.stopPropagation();
+            contextMenuTargetCell = cell;
+
+            const x = Math.min(window.innerWidth - 185, e.clientX);
+            const y = Math.min(window.innerHeight - 260, e.clientY);
+            tableContextMenu.style.left = x + "px";
+            tableContextMenu.style.top = y + "px";
+            tableContextMenu.classList.remove("hidden");
+        };
+
+        // 8. Tự động lưu khi sửa dữ liệu ô
+        table.oninput = function() {
+            triggerSave();
+        };
+    }
+
+    function setupAllTables() {
+        const wrappers = editor.querySelectorAll(".table-wrapper");
+        wrappers.forEach(w => setupTableWrapper(w));
+
+        const bareTables = editor.querySelectorAll("table.note-table");
+        bareTables.forEach(t => {
+            if (!t.closest(".table-wrapper")) {
+                const wrapper = document.createElement("div");
+                wrapper.className = "table-wrapper";
+                wrapper.setAttribute("contenteditable", "false");
+                t.parentNode.insertBefore(wrapper, t);
+                wrapper.appendChild(t);
+                setupTableWrapper(wrapper);
+            }
+        });
+    }
+
+    function initTableControls() {
+        // Xây dựng 6x6 grid picker
+        if (!tableGridPicker) return;
+        tableGridPicker.innerHTML = "";
+        for (let r = 1; r <= 6; r++) {
+            for (let c = 1; c <= 6; c++) {
+                const cell = document.createElement("div");
+                cell.className = "grid-cell";
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+                cell.addEventListener("mouseenter", () => highlightGrid(r, c));
+                cell.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    insertTable(r, c);
+                    tablePickerPopover.classList.add("hidden");
+                });
+                tableGridPicker.appendChild(cell);
+            }
+        }
+
+        function highlightGrid(maxR, maxC) {
+            tableGridLabel.textContent = `${maxC} x ${maxR} (${maxC} cột, ${maxR} hàng)`;
+            const cells = tableGridPicker.querySelectorAll(".grid-cell");
+            cells.forEach(cell => {
+                const r = parseInt(cell.dataset.r);
+                const c = parseInt(cell.dataset.c);
+                if (r <= maxR && c <= maxC) {
+                    cell.classList.add("active");
+                } else {
+                    cell.classList.remove("active");
+                }
+            });
+        }
+
+        const presetBtns = tablePickerPopover.querySelectorAll(".tbl-preset-btn");
+        presetBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const r = parseInt(btn.dataset.rows);
+                const c = parseInt(btn.dataset.cols);
+                insertTable(r, c);
+                tablePickerPopover.classList.add("hidden");
+            });
+        });
+
+        btnInsertTable.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isHidden = tablePickerPopover.classList.contains("hidden");
+            if (isHidden) {
+                highlightGrid(2, 2);
+                const rect = btnInsertTable.getBoundingClientRect();
+                tablePickerPopover.style.top = (rect.bottom + 6) + "px";
+                tablePickerPopover.style.right = Math.max(8, window.innerWidth - rect.right) + "px";
+                tablePickerPopover.classList.remove("hidden");
+            } else {
+                tablePickerPopover.classList.add("hidden");
+            }
+        });
+
+        // Xử lý các thao tác trong Context Menu
+        tableContextMenu.addEventListener("click", (e) => {
+            const item = e.target.closest(".table-menu-item");
+            if (!item || !contextMenuTargetCell) return;
+            e.stopPropagation();
+
+            const action = item.dataset.action;
+            const cell = contextMenuTargetCell;
+            const table = cell.closest("table");
+            if (!table) return;
+
+            const colIndex = cell.cellIndex;
+            const tr = cell.closest("tr");
+            const rowIndex = tr ? tr.rowIndex : -1;
+
+            if (action === "insert-row-above") {
+                insertRow(table, rowIndex, false);
+            } else if (action === "insert-row-below") {
+                insertRow(table, rowIndex, true);
+            } else if (action === "insert-col-left") {
+                insertColumn(table, colIndex, false);
+            } else if (action === "insert-col-right") {
+                insertColumn(table, colIndex, true);
+            } else if (action === "delete-row") {
+                deleteRow(table, rowIndex);
+            } else if (action === "delete-col") {
+                deleteColumn(table, colIndex);
+            } else if (action === "delete-table") {
+                deleteTable(table);
+            }
+
+            tableContextMenu.classList.add("hidden");
+            contextMenuTargetCell = null;
+        });
+
+        // Đóng popover và context menu khi click ra ngoài
+        document.addEventListener("click", (e) => {
+            if (tablePickerPopover && !tablePickerPopover.contains(e.target) && e.target !== btnInsertTable) {
+                tablePickerPopover.classList.add("hidden");
+            }
+            if (tableContextMenu && !tableContextMenu.contains(e.target)) {
+                tableContextMenu.classList.add("hidden");
+                contextMenuTargetCell = null;
+            }
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                if (tablePickerPopover) tablePickerPopover.classList.add("hidden");
+                if (tableContextMenu) tableContextMenu.classList.add("hidden");
+                contextMenuTargetCell = null;
+            }
+        });
+    }
+
+    // Khởi tạo các bộ điều khiển
+    initTableControls();
 
     // Khởi tạo ban đầu
     sendIPC("request_init", {});

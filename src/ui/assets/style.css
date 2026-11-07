@@ -233,9 +233,9 @@ body {
 /* Checkbox & Todo Items */
 .todo-item {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
-    margin: 3px 0;
+    margin: 4px 0;
 }
 
 .todo-check {
@@ -286,7 +286,45 @@ body {
     color: var(--text-subtle);
 }
 
+.todo-reminder-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-subtle);
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.25;
+    transition: all 0.15s ease;
+    margin-left: 4px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.todo-item:hover .todo-reminder-btn,
+.todo-reminder-btn:focus,
+.todo-reminder-btn:hover {
+    opacity: 0.9;
+}
+
+.todo-reminder-btn:hover {
+    opacity: 1;
+    color: var(--accent);
+    background: rgba(56, 189, 248, 0.14);
+}
+
+.todo-item.checked .todo-reminder-btn {
+    display: none;
+}
+
 /* Minimalist Image Display */
+p.image-wrapper {
+    margin: 8px 0;
+    line-height: normal;
+}
+
 img.note-image {
     max-width: 100%;
     height: auto;
@@ -690,4 +728,398 @@ kbd {
     opacity: 0;
     transform: translate(-50%, 10px);
     pointer-events: none;
+}
+
+
+/* ==========================================================================
+   Reminder Badges & Reminder Modal
+   ========================================================================== */
+
+.reminder-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(56, 189, 248, 0.14);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    margin-left: 8px;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: middle;
+    transition: all 0.15s ease;
+}
+
+.reminder-badge:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+}
+
+.reminder-badge.overdue {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+    animation: pulse-overdue 2s infinite ease-in-out;
+}
+
+.reminder-badge.completed {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border-color: transparent;
+    opacity: 0.65;
+    text-decoration: none !important;
+}
+
+@keyframes pulse-overdue {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
+
+.reminder-card {
+    width: 310px;
+    background: #1a1a1e;
+    border: 1px solid var(--border-hover);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+.reminder-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0 16px;
+}
+
+.reminder-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.reminder-row label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.reminder-row input[type="date"],
+.reminder-row input[type="time"] {
+    background: #242429;
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    color: var(--text-main);
+    padding: 5px 8px;
+    font-size: 12px;
+    outline: none;
+}
+
+.reminder-row input:focus {
+    border-color: var(--accent);
+}
+
+.preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.preset-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.preset-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    border-color: var(--border-hover);
+}
+
+.danger-text {
+    color: var(--danger) !important;
+}
+
+.danger-text:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.action-btn.loading {
+    pointer-events: none;
+    opacity: 0.6;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Table Components & Office-Style Controls
+   ========================================================================== */
+
+/* Trạng thái ẩn cho các popup và menu */
+.hidden {
+    display: none !important;
+}
+
+.table-popover.hidden,
+.table-context-menu.hidden {
+    display: none !important;
+}
+
+/* Popover chọn kích cỡ bảng */
+.table-popover {
+    position: fixed;
+    top: 40px;
+    right: 80px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-hover);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    user-select: none;
+}
+
+.table-popover-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-grid-picker {
+    display: grid;
+    grid-template-columns: repeat(6, 20px);
+    grid-template-rows: repeat(6, 20px);
+    gap: 3px;
+    padding: 2px;
+}
+
+.grid-cell {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.08s ease, border-color 0.08s ease;
+}
+
+.grid-cell.active {
+    background: rgba(56, 189, 248, 0.35);
+    border-color: var(--accent);
+}
+
+.table-grid-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    font-weight: 500;
+}
+
+.table-preset-row {
+    display: flex;
+    gap: 4px;
+}
+
+.tbl-preset-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-muted);
+    padding: 3px 0;
+    font-size: 10.5px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.tbl-preset-btn:hover {
+    background: var(--accent);
+    color: #111113;
+    font-weight: 600;
+    border-color: var(--accent);
+}
+
+/* Khung bọc Bảng trong Editor */
+.table-wrapper {
+    position: relative;
+    margin: 14px 0 28px 0;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-right: 28px;
+    padding-bottom: 24px;
+    user-select: text;
+}
+
+table.note-table {
+    border-collapse: collapse;
+    width: auto;
+    font-size: 13px;
+    table-layout: fixed;
+    background: #18181c;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    user-select: text;
+}
+
+table.note-table th {
+    background: #222227;
+    font-weight: 600;
+    color: #d4d4d8;
+    padding: 7px 10px;
+    border: 1px solid var(--border-subtle);
+    position: relative;
+    text-align: left;
+    min-width: 50px;
+    outline: none;
+    user-select: text;
+}
+
+table.note-table td {
+    padding: 6px 10px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    min-width: 50px;
+    min-height: 28px;
+    outline: none;
+    user-select: text;
+    word-break: break-word;
+}
+
+table.note-table th:focus,
+table.note-table td:focus {
+    background: rgba(56, 189, 248, 0.08);
+}
+
+/* Thanh kéo giãn độ rộng cột (Column Resizer) */
+.col-resizer {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    bottom: 0;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 10;
+}
+
+.col-resizer:hover,
+.col-resizer.resizing {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+}
+
+/* Nút nhanh thêm cột / hàng phong cách Office */
+.tbl-btn-add-col {
+    position: absolute;
+    right: 4px;
+    top: 0;
+    width: 20px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    user-select: none;
+}
+
+.tbl-btn-add-col:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.tbl-btn-add-row {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    height: 20px;
+    min-width: 80px;
+    max-width: 140px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    user-select: none;
+}
+
+.tbl-btn-add-row:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Context Menu khi chuột phải trong bảng */
+.table-context-menu {
+    position: fixed;
+    background: #1e1e23;
+    border: 1px solid var(--border-hover);
+    border-radius: 7px;
+    padding: 4px;
+    min-width: 175px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    font-size: 12px;
+    user-select: none;
+}
+
+.table-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: background 0.1s ease;
+}
+
+.table-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.table-menu-item.danger {
+    color: #f87171;
+}
+
+.table-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.18);
+}
+
+.table-menu-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 0;
 }

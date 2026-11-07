@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Local - Web Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="../../resources/logo/logo.svg">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #111113;
+            --bg-card: #18181b;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #38bdf8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+        header {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        button.btn-share {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        button.btn-share:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent);
+        }
+        main {
+            width: 100%;
+            max-width: 760px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px 28px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+        h1, h2, h3 { margin-bottom: 16px; color: #fff; }
+        p { margin-bottom: 14px; line-height: 1.65; color: #e4e4e7; font-size: 15px; }
+        ul, ol { margin-left: 20px; margin-bottom: 14px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: block;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            cursor: zoom-in;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .todo-item input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--accent);
+            cursor: default;
+        }
+        .todo-item.checked {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+        .reminder-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 11px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            margin-left: 8px;
+        }
+        footer {
+            margin-top: 32px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        /* Lightbox */
+        #lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: zoom-out;
+        }
+        #lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <span>Note Local</span>
+            <small style="color: var(--text-muted); font-weight: normal;">• Web Viewer</small>
+        </div>
+        <div class="header-actions">
+            <button class="btn-share" id="btn-copy">Sao chép link</button>
+        </div>
+    </header>
+
+    <main id="content">
+        <p style="color: var(--text-muted);">Đang tải nội dung ghi chú...</p>
+    </main>
+
+    <footer>
+        Xuất bản từ ứng dụng Note Local cho Windows 11.
+    </footer>
+
+    <div id="lightbox" onclick="this.style.display='none'">
+        <img id="lightbox-img" src="" alt="Enlarged preview">
+    </div>
+
+    <script>
+        if (window.location.hash && window.location.hash.length > 5) {
+            window.location.replace("../" + window.location.hash);
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareId = urlParams.get("share");
+
+        document.getElementById("btn-copy").addEventListener("click", () => {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Đã sao chép link ghi chú vào clipboard!");
+        });
+
+        async function loadNote() {
+            const contentEl = document.getElementById("content");
+            if (!shareId) {
+                contentEl.innerHTML = "<h2>Không tìm thấy mã chia sẻ</h2><p>Vui lòng kiểm tra lại đường dẫn hợp lệ dạng <code>?share=id</code>.</p>";
+                return;
+            }
+
+            try {
+                // Thử tải file snapshot từ thư mục shares/
+                const res = await fetch(`shares/${shareId}.json`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderNote(data);
+                } else {
+                    contentEl.innerHTML = `<h2>Ghi chú không tồn tại</h2><p>Mã chia sẻ <code>${shareId}</code> không tìm thấy trên hệ thống.</p>`;
+                }
+            } catch (err) {
+                contentEl.innerHTML = `<h2>Không thể tải nội dung</h2><p>${err.message}</p>`;
+            }
+        }
+
+        function renderNote(data) {
+            document.title = (data.title || "Ghi chú") + " - Note Local";
+            let md = data.markdown || "";
+
+            // Thay thế đường dẫn ảnh cục bộ sang Base64 Data URL nếu có trong snapshot
+            if (data.images && Array.isArray(data.images)) {
+                data.images.forEach(img => {
+                    if (img.path && img.dataUrl) {
+                        md = md.replaceAll(`(${img.path})`, `(${img.dataUrl})`);
+                    }
+                });
+            }
+
+            // Render Markdown ra HTML
+            let html = marked.parse(md);
+
+            // Xử lý task checkboxes
+            html = html.replace(/<li>\s*\[ \]\s*/gi, '<li class="todo-item"><input type="checkbox" disabled> ');
+            html = html.replace(/<li>\s*\[x\]\s*/gi, '<li class="todo-item checked"><input type="checkbox" checked disabled> ');
+
+            document.getElementById("content").innerHTML = html;
+
+            // Bắt sự kiện phóng to ảnh lightbox
+            document.querySelectorAll("#content img").forEach(img => {
+                img.addEventListener("click", () => {
+                    const lb = document.getElementById("lightbox");
+                    document.getElementById("lightbox-img").src = img.src;
+                    lb.style.display = "flex";
+                });
+            });
+        }
+
+        loadNote();
+    </script>
+</body>
+</html>
+
