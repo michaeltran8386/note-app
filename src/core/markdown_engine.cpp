@@ -203,13 +203,19 @@ bool MarkdownEngine::ParseReminderSchedule(const std::string& input_text,
 std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const std::string& body_html) {
     std::ostringstream md;
 
-    // Phân tích các khối dòng theo thứ tự: h1-h3, blockquote, hr, img, p, div, table
-    std::regex block_regex("<(p|div|h1|h2|h3|blockquote|table)([^>]*)>(.*?)</\\1>|<(img|hr)([^>]*)>", std::regex::icase);
-    std::sregex_iterator begin(body_html.begin(), body_html.end(), block_regex);
+    // Tiền xử lý: loại bỏ các container wrapper div và nút helper runtime để thẻ table và các block đứng độc lập
+    std::string clean_html = body_html;
+    clean_html = std::regex_replace(clean_html, std::regex("<div[^>]*class=[\"'][^\"']*table-wrapper[^\"']*[\"'][^>]*>", std::regex::icase), "");
+    clean_html = std::regex_replace(clean_html, std::regex("<div[^>]*class=[\"'][^\"']*col-resizer[^\"']*[\"'][^>]*></div>", std::regex::icase), "");
+    clean_html = std::regex_replace(clean_html, std::regex("<button[^>]*class=[\"'][^\"']*tbl-btn-add-[^\"']*[\"'][^>]*>.*?</button>", std::regex::icase), "");
+
+    // Phân tích các khối dòng theo thứ tự: table, h1-h3, blockquote, hr, img, p, div
+    std::regex block_regex("<(table|p|div|h1|h2|h3|blockquote)([^>]*)>([\\s\\S]*?)</\\1>|<(img|hr)([^>]*)>", std::regex::icase);
+    std::sregex_iterator begin(clean_html.begin(), clean_html.end(), block_regex);
     std::sregex_iterator end;
 
     if (begin == end) {
-        std::string raw = UnescapeHtml(StripHtmlTags(body_html));
+        std::string raw = UnescapeHtml(StripHtmlTags(clean_html));
         return Trim(raw);
     }
 
@@ -223,23 +229,11 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
         std::transform(tag_lower.begin(), tag_lower.end(), tag_lower.begin(), ::tolower);
 
         // 0. Bảng biểu (Table)
-        if (tag_lower == "table" || inner.find("<table") != std::string::npos) {
-            std::regex table_extract("<table[^>]*>.*?</table>", std::regex::icase);
-            std::smatch tbl_match;
-            std::string full_table_str = "";
-            if (tag_lower == "table") {
-                full_table_str = "<table" + tag_attrs + ">" + inner + "</table>";
-            } else if (std::regex_search(inner, tbl_match, table_extract)) {
-                full_table_str = tbl_match[0].str();
-            }
-
-            if (!full_table_str.empty()) {
-                full_table_str = std::regex_replace(full_table_str, std::regex("<div[^>]*class=[\"'][^\"']*col-resizer[^\"']*[\"'][^>]*></div>", std::regex::icase), "");
-                full_table_str = std::regex_replace(full_table_str, std::regex("<button[^>]*class=[\"'][^\"']*tbl-btn-add-[^\"']*[\"'][^>]*>.*?</button>", std::regex::icase), "");
-                full_table_str = std::regex_replace(full_table_str, std::regex("contenteditable=[\"'][^\"']*[\"']", std::regex::icase), "");
-                md << Trim(full_table_str) << "\n";
-                continue;
-            }
+        if (tag_lower == "table") {
+            std::string tbl = "<table" + tag_attrs + ">" + inner + "</table>";
+            tbl = std::regex_replace(tbl, std::regex("contenteditable=[\"'][^\"']*[\"']", std::regex::icase), "");
+            md << Trim(tbl) << "\n";
+            continue;
         }
 
         // 1. Headings
@@ -404,7 +398,7 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
-        // Table HTML block (single or multi-line)
+        // 0.1. HTML Table Block (<table...)
         if (trimmed.rfind("<table", 0) == 0 || trimmed.rfind("<div class=\"table-wrapper\"", 0) == 0) {
             std::string table_block = trimmed;
             while (table_block.find("</table>") == std::string::npos && std::getline(stream, line)) {
@@ -412,12 +406,90 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
                 table_block += " " + Trim(line);
             }
 
-            if (table_block.find("class=\"table-wrapper\"") == std::string::npos) {
-                html << "<div class=\"table-wrapper\" contenteditable=\"false\">" << table_block << "</div>";
-            } else {
-                html << table_block;
+            // Trích xuất thẻ table chính
+            std::regex extract_tbl("<table[^>]*>[\\s\\S]*?</table>", std::regex::icase);
+            std::smatch tbl_m;
+            std::string table_tag = table_block;
+            if (std::regex_search(table_block, tbl_m, extract_tbl)) {
+                table_tag = tbl_m[0].str();
             }
+
+            // Đảm bảo th và td có contenteditable="true"
+            table_tag = std::regex_replace(table_tag, std::regex("<th(?![^>]*contenteditable)", std::regex::icase), "<th contenteditable=\"true\"");
+            table_tag = std::regex_replace(table_tag, std::regex("<td(?![^>]*contenteditable)", std::regex::icase), "<td contenteditable=\"true\"");
+
+            // Đảm bảo th có thanh kéo col-resizer
+            if (table_tag.find("col-resizer") == std::string::npos) {
+                table_tag = std::regex_replace(table_tag, std::regex("</th>", std::regex::icase), "<div class=\"col-resizer\" contenteditable=\"false\"></div></th>");
+            }
+
+            html << "<div class=\"table-wrapper\" contenteditable=\"false\">" << table_tag;
+            html << "<button type=\"button\" class=\"tbl-btn-add-col\" title=\"Thêm cột mới\">+</button>";
+            html << "<button type=\"button\" class=\"tbl-btn-add-row\" title=\"Thêm hàng mới\">+</button>";
+            html << "</div>";
             continue;
+        }
+
+        // 0.2. GFM Markdown Pipe Table: | Cột 1 | Cột 2 | ...
+        if (trimmed.length() >= 3 && trimmed.front() == '|' && trimmed.back() == '|') {
+            std::vector<std::string> tbl_lines;
+            tbl_lines.push_back(trimmed);
+            while (stream.peek() != EOF) {
+                std::streampos pos = stream.tellg();
+                std::string nline;
+                if (!std::getline(stream, nline)) break;
+                if (!nline.empty() && nline.back() == '\r') nline.pop_back();
+                std::string ntrimmed = Trim(nline);
+                if (ntrimmed.length() >= 3 && ntrimmed.front() == '|' && ntrimmed.back() == '|') {
+                    tbl_lines.push_back(ntrimmed);
+                } else {
+                    stream.seekg(pos);
+                    break;
+                }
+            }
+
+            if (tbl_lines.size() >= 2 && tbl_lines[1].find("---") != std::string::npos) {
+                auto split_pipe = [](const std::string& row) -> std::vector<std::string> {
+                    std::vector<std::string> cells;
+                    std::string cur = "";
+                    for (size_t idx = 1; idx < row.length(); ++idx) {
+                        if (row[idx] == '|') {
+                            cells.push_back(Trim(cur));
+                            cur = "";
+                        } else {
+                            cur += row[idx];
+                        }
+                    }
+                    return cells;
+                };
+
+                auto headers = split_pipe(tbl_lines[0]);
+                html << "<div class=\"table-wrapper\" contenteditable=\"false\"><table class=\"note-table\">";
+                html << "<colgroup>";
+                for (size_t c = 0; c < headers.size(); ++c) {
+                    html << "<col style=\"width: 120px;\">";
+                }
+                html << "</colgroup>";
+                html << "<thead><tr>";
+                for (const auto& h : headers) {
+                    html << "<th contenteditable=\"true\">" << h << "<div class=\"col-resizer\" contenteditable=\"false\"></div></th>";
+                }
+                html << "</tr></thead><tbody>";
+                for (size_t r = 2; r < tbl_lines.size(); ++r) {
+                    auto cells = split_pipe(tbl_lines[r]);
+                    html << "<tr>";
+                    for (size_t c = 0; c < headers.size(); ++c) {
+                        std::string val = (c < cells.size()) ? cells[c] : "";
+                        html << "<td contenteditable=\"true\">" << val << "</td>";
+                    }
+                    html << "</tr>";
+                }
+                html << "</tbody></table>";
+                html << "<button type=\"button\" class=\"tbl-btn-add-col\" title=\"Thêm cột mới\">+</button>";
+                html << "<button type=\"button\" class=\"tbl-btn-add-row\" title=\"Thêm hàng mới\">+</button>";
+                html << "</div>";
+                continue;
+            }
         }
 
         // Headings: #, ##, ###

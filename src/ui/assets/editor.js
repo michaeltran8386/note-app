@@ -160,8 +160,15 @@
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const tag = node.tagName.toUpperCase();
 
+                // 0. Bảng biểu (Table hoặc .table-wrapper) - Phải kiểm tra TRƯỚC các thẻ DIV / P
+                if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
+                    const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
+                    if (tbl) {
+                        lines.push(serializeTableToCleanHtml(tbl));
+                    }
+                }
                 // 1. To-Do Item
-                if (node.classList && node.classList.contains("todo-item")) {
+                else if (node.classList && node.classList.contains("todo-item")) {
                     const cb = node.querySelector(".todo-check");
                     const span = node.querySelector(".todo-text");
                     const mark = (cb && cb.checked) ? "x" : " ";
@@ -230,13 +237,6 @@
                         }
                     }
                 }
-                // 7. Bảng biểu (Table hoặc .table-wrapper)
-                else if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || node.querySelector("table.note-table")) {
-                    const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
-                    if (tbl) {
-                        lines.push(serializeTableToCleanHtml(tbl));
-                    }
-                }
             }
         }
         return lines.join("\n");
@@ -295,7 +295,18 @@
     function switchTab(newTabId) {
         if (currentTabId === newTabId) return;
         hideImageResizer();
-        sendIPC("save_note", { tab_id: currentTabId, html: editor.innerHTML });
+
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+        }
+
+        const md = serializeEditorToMarkdown();
+        sendIPC("save_note", {
+            tab_id: currentTabId,
+            html: editor.innerHTML,
+            markdown: md
+        });
 
         currentTabId = newTabId;
         renderTabs();
@@ -304,6 +315,10 @@
 
     function closeTab(tabId) {
         hideImageResizer();
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+        }
         sendIPC("delete_tab", { tab_id: tabId });
         tabs = tabs.filter(t => t.id !== tabId);
         if (tabs.length === 0) {
@@ -1366,7 +1381,13 @@
                 const txt = node.textContent.trim();
                 if (txt) lines.push(txt);
             } else if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.classList.contains("todo-item")) {
+                // 0. Bảng biểu (Table hoặc .table-wrapper) - Phải kiểm tra TRƯỚC các thẻ DIV / P
+                if (node.tagName === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
+                    const tbl = (node.tagName === "TABLE") ? node : node.querySelector("table.note-table");
+                    if (tbl) {
+                        lines.push(serializeTableToCleanHtml(tbl));
+                    }
+                } else if (node.classList.contains("todo-item")) {
                     const cb = node.querySelector(".todo-check");
                     const span = node.querySelector(".todo-text");
                     const mark = (cb && cb.checked) ? "x" : " ";
@@ -1419,11 +1440,6 @@
                         if (clean) lines.push(clean);
                     } else if (subtext.trim()) {
                         lines.push(subtext.trim());
-                    }
-                } else if (node.tagName === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || node.querySelector("table.note-table")) {
-                    const tbl = (node.tagName === "TABLE") ? node : node.querySelector("table.note-table");
-                    if (tbl) {
-                        lines.push(serializeTableToCleanHtml(tbl));
                     }
                 }
             }

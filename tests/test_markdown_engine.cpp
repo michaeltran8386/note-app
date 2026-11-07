@@ -52,25 +52,53 @@ void test_extract_todos() {
 }
 
 void test_table_serialization_and_parsing() {
-    // 1. Kiểm tra serialize table có colgroup và col width
-    std::string html = "<div class=\"table-wrapper\"><table class=\"note-table\">"
+    // 1. Kiểm tra serialize table có colgroup, col width, resizer và nút helper
+    std::string html = "<p>Đoạn trước bảng</p>"
+                       "<div class=\"table-wrapper\" contenteditable=\"false\">"
+                       "<table class=\"note-table\">"
                        "<colgroup><col style=\"width: 140px;\"><col style=\"width: 200px;\"></colgroup>"
-                       "<thead><tr><th>Cột A</th><th>Cột B</th></tr></thead>"
-                       "<tbody><tr><td>Dữ liệu 1</td><td>Dữ liệu 2</td></tr></tbody>"
-                       "</table></div>";
+                       "<thead><tr><th contenteditable=\"true\">Cột A<div class=\"col-resizer\" contenteditable=\"false\"></div></th>"
+                       "<th contenteditable=\"true\">Cột B<div class=\"col-resizer\" contenteditable=\"false\"></div></th></tr></thead>"
+                       "<tbody><tr><td contenteditable=\"true\">Dữ liệu 1</td><td contenteditable=\"true\">Dữ liệu 2</td></tr></tbody>"
+                       "</table>"
+                       "<button type=\"button\" class=\"tbl-btn-add-col\">+</button>"
+                       "<button type=\"button\" class=\"tbl-btn-add-row\">+</button>"
+                       "</div>"
+                       "<p>Đoạn sau bảng</p>";
     std::string md = MarkdownEngine::SerializeToMarkdown("Tab có bảng", html);
 
     ASSERT_TRUE(md.find("<table class=\"note-table\">") != std::string::npos);
     ASSERT_TRUE(md.find("width: 140px;") != std::string::npos);
     ASSERT_TRUE(md.find("width: 200px;") != std::string::npos);
     ASSERT_TRUE(md.find("Cột A") != std::string::npos);
+    ASSERT_TRUE(md.find("Cột B") != std::string::npos);
     ASSERT_TRUE(md.find("Dữ liệu 1") != std::string::npos);
+    ASSERT_TRUE(md.find("Dữ liệu 2") != std::string::npos);
+    ASSERT_TRUE(md.find("Đoạn trước bảng") != std::string::npos);
+    ASSERT_TRUE(md.find("Đoạn sau bảng") != std::string::npos);
 
     // 2. Parse ngược lại thành HTML
     std::string html_back = MarkdownEngine::ParseToHtml(md);
     ASSERT_TRUE(html_back.find("class=\"table-wrapper\"") != std::string::npos);
     ASSERT_TRUE(html_back.find("<table class=\"note-table\">") != std::string::npos);
     ASSERT_TRUE(html_back.find("width: 140px;") != std::string::npos);
+    ASSERT_TRUE(html_back.find("contenteditable=\"true\"") != std::string::npos);
+    ASSERT_TRUE(html_back.find("col-resizer") != std::string::npos);
+}
+
+void test_gfm_pipe_table_parsing() {
+    std::string md = "| Tiêu đề 1 | Tiêu đề 2 |\n"
+                     "| --- | --- |\n"
+                     "| Giá trị A | Giá trị B |";
+    std::string html = MarkdownEngine::ParseToHtml(md);
+
+    ASSERT_TRUE(html.find("class=\"table-wrapper\"") != std::string::npos);
+    ASSERT_TRUE(html.find("<table class=\"note-table\">") != std::string::npos);
+    ASSERT_TRUE(html.find("Tiêu đề 1") != std::string::npos);
+    ASSERT_TRUE(html.find("Tiêu đề 2") != std::string::npos);
+    ASSERT_TRUE(html.find("Giá trị A") != std::string::npos);
+    ASSERT_TRUE(html.find("Giá trị B") != std::string::npos);
+    ASSERT_TRUE(html.find("col-resizer") != std::string::npos);
 }
 
 int main() {
@@ -80,5 +108,6 @@ int main() {
     test_parse_to_html();
     test_extract_todos();
     test_table_serialization_and_parsing();
+    test_gfm_pipe_table_parsing();
     return test_framework_report();
 }

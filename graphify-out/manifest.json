@@ -12,9 +12,9 @@
     "semantic_hash": ""
   },
   "src/core/markdown_engine.cpp": {
-    "mtime": 1794066094.898021,
-    "seen": 1794066313.436574,
-    "ast_hash": "c0f07ca1bf9693e3f34c00d0128ddb42",
+    "mtime": 1794070467.8873155,
+    "seen": 1794070535.37754,
+    "ast_hash": "ce9ea8d0c4036e77c569e70db09ad097",
     "semantic_hash": ""
   },
   "src/core/markdown_engine.h": {
@@ -42,8 +42,8 @@
     "semantic_hash": ""
   },
   "src/main.cpp": {
-    "mtime": 1794068395.3898127,
-    "seen": 1794068445.7657542,
+    "mtime": 1794068701.7006848,
+    "seen": 1794070535.3787484,
     "ast_hash": "099bb4b902091bc42eac6a275fe2d143",
     "semantic_hash": ""
   },
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "src/ui/assets/editor.js": {
-    "mtime": 1794066275.5852368,
-    "seen": 1794066313.4383793,
-    "ast_hash": "dab3f6e5d821afa5e3117cf7d2c8fa48",
+    "mtime": 1794070415.142992,
+    "seen": 1794070535.3806798,
+    "ast_hash": "2610553e5e5a2547928a4963fd7f9ffa",
     "semantic_hash": ""
   },
   "tests/test_framework.h": {
@@ -102,9 +102,9 @@
     "semantic_hash": ""
   },
   "tests/test_markdown_engine.cpp": {
-    "mtime": 1794065091.995907,
-    "seen": 1794065173.3096871,
-    "ast_hash": "893a7a7f6c4fd87a0905980c866b1c1c",
+    "mtime": 1794070485.6628737,
+    "seen": 1794070535.381174,
+    "ast_hash": "5a3ff12fe63b7e9fe3595692bc90c3ef",
     "semantic_hash": ""
   },
   "tests/test_sanity.cpp": {
