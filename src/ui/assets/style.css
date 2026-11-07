@@ -1,0 +1,314 @@
+:root {
+    --bg-primary: #18181b;
+    --bg-secondary: #27272a;
+    --bg-tertiary: #3f3f46;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --accent: #38bdf8;
+    --accent-hover: #0ea5e9;
+    --accent-pinned: #f59e0b;
+    --border-color: #3f3f46;
+    --danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Header & Tab Bar */
+#app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 6px 8px 0 8px;
+    height: 42px;
+}
+
+#tabs-container {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    flex: 1;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+
+#tabs-container::-webkit-scrollbar {
+    display: none; /* Hide scrollbar Chrome/Edge */
+}
+
+#tabs-list {
+    display: flex;
+    gap: 4px;
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: transparent;
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 6px 6px 0 0;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.15s ease;
+}
+
+.tab-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.tab-item.active {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    font-weight: 600;
+}
+
+.tab-title {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-close {
+    font-size: 14px;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 0 4px;
+    cursor: pointer;
+}
+
+.tab-close:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+}
+
+#btn-add-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+#btn-add-tab:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+#header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-bottom: 6px;
+}
+
+.action-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.action-btn.pinned {
+    background-color: rgba(245, 158, 11, 0.2);
+    border-color: var(--accent-pinned);
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
+/* Editor Container */
+#editor-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    user-select: text;
+}
+
+#editor {
+    outline: none;
+    min-height: 100%;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+#editor:empty:before {
+    content: attr(data-placeholder);
+    color: #71717a;
+    pointer-events: none;
+    display: block;
+}
+
+#editor p {
+    margin-bottom: 6px;
+}
+
+/* Checkbox & Todo Items */
+.todo-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.todo-check {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 17px;
+    height: 17px;
+    border: 1.5px solid #71717a;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    vertical-align: middle;
+    position: relative;
+    top: 2px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.todo-check:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.todo-check:checked:after {
+    content: "✓";
+    position: absolute;
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 900;
+    top: -2px;
+    left: 2px;
+}
+
+.todo-text {
+    flex: 1;
+    outline: none;
+    min-width: 50px;
+}
+
+.todo-item.checked .todo-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
+
+/* Images Responsive */
+img.note-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 10px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+
+/* Modal Rename */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 18px;
+    width: 280px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.modal-card h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.modal-card input {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 14px;
+}
+
+.modal-card input:focus {
+    border-color: var(--accent);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.modal-actions button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 600;
+}

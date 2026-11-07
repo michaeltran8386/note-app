@@ -5,6 +5,7 @@ bin/
 *.obj
 *.o
 *.pdb
-data/
-notes/
-assets/
+/data/
+/notes/
+/assets/
+third_party/webview2/
