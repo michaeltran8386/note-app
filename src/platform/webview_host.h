@@ -3,7 +3,6 @@
 #include <windows.h>
 #include <string>
 #include <functional>
-#include <wrl.h>
 #include "WebView2.h"
 
 class WebViewHost {
@@ -18,7 +17,7 @@ public:
 
 private:
     HWND m_hwnd{nullptr};
-    Microsoft::WRL::ComPtr<ICoreWebView2Controller> m_controller;
-    Microsoft::WRL::ComPtr<ICoreWebView2> m_webview;
+    ICoreWebView2Controller* m_controller{nullptr};
+    ICoreWebView2* m_webview{nullptr};
     std::function<void(const std::string&)> m_on_message;
 };
