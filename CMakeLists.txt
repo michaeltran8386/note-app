@@ -17,3 +17,9 @@ add_executable(test_markdown_engine
     tests/test_markdown_engine.cpp
     src/core/markdown_engine.cpp
 )
+
+# Test Runner: Storage Manager
+add_executable(test_storage_manager
+    tests/test_storage_manager.cpp
+    src/core/storage_manager.cpp
+)
