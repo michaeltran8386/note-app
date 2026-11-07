@@ -12,7 +12,8 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 
-# Test Runner Executable
-add_executable(test_runner
-    tests/test_sanity.cpp
+# Test Runner: Markdown Engine
+add_executable(test_markdown_engine
+    tests/test_markdown_engine.cpp
+    src/core/markdown_engine.cpp
 )
