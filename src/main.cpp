@@ -13,8 +13,82 @@
 #include "platform/webview_host.h"
 #include "platform/ipc_message.h"
 #include "platform/notification_service.h"
+#include <winhttp.h>
+#include <sstream>
+#include <iomanip>
 
 namespace fs = std::filesystem;
+
+static std::string ShortenUrlWithTinyUrl(const std::string& long_url) {
+    if (long_url.length() > 2000) {
+        return long_url;
+    }
+
+    HINTERNET hSession = WinHttpOpen(L"NoteLocal/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!hSession) return long_url;
+
+    HINTERNET hConnect = WinHttpConnect(hSession, L"tinyurl.com", INTERNET_DEFAULT_HTTPS_PORT, 0);
+    if (!hConnect) {
+        WinHttpCloseHandle(hSession);
+        return long_url;
+    }
+
+    std::ostringstream escaped;
+    for (char c : long_url) {
+        if (isalnum((unsigned char)c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            escaped << c;
+        } else {
+            escaped << '%' << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)c;
+        }
+    }
+
+    std::wstring path = L"/api-create.php?url=";
+    std::string esc_str = escaped.str();
+    int len = MultiByteToWideChar(CP_UTF8, 0, esc_str.c_str(), -1, nullptr, 0);
+    if (len > 0) {
+        std::wstring wesc(len - 1, 0);
+        MultiByteToWideChar(CP_UTF8, 0, esc_str.c_str(), -1, &wesc[0], len);
+        path += wesc;
+    }
+
+    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", path.c_str(), NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+    if (!hRequest) {
+        WinHttpCloseHandle(hConnect);
+        WinHttpCloseHandle(hSession);
+        return long_url;
+    }
+
+    WinHttpSetTimeouts(hRequest, 3000, 3000, 4000, 4000);
+
+    std::string response;
+    if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+        WinHttpReceiveResponse(hRequest, NULL)) {
+        DWORD dwSize = 0;
+        DWORD dwDownloaded = 0;
+        do {
+            dwSize = 0;
+            if (WinHttpQueryDataAvailable(hRequest, &dwSize) && dwSize > 0) {
+                std::vector<char> buffer(dwSize + 1, 0);
+                if (WinHttpReadData(hRequest, buffer.data(), dwSize, &dwDownloaded)) {
+                    response.append(buffer.data(), dwDownloaded);
+                }
+            }
+        } while (dwSize > 0);
+    }
+
+    WinHttpCloseHandle(hRequest);
+    WinHttpCloseHandle(hConnect);
+    WinHttpCloseHandle(hSession);
+
+    while (!response.empty() && (response.back() == '\r' || response.back() == '\n' || response.back() == ' ')) {
+        response.pop_back();
+    }
+
+    if (response.rfind("http", 0) == 0) {
+        return response;
+    }
+    return long_url;
+}
 
 #define TIMER_REMINDER_ID 1001
 #define WM_TRAY_NOTIFICATION (WM_APP + 101)
@@ -108,6 +182,37 @@ void HandleWebMessage(const std::string& raw_json) {
             StorageManager::EnsureValidTabs(g_config);
             StorageManager::SaveConfig(g_base_dir + "/config.json", g_config);
         }
+    } else if (msg.action == "import_shared_note") {
+        std::string mode = msg.payload.value("mode", "current");
+        std::string md = msg.payload.value("markdown", "");
+        std::string title = msg.payload.value("title", "Ghi chú chia sẻ");
+        if (title.empty()) title = "Ghi chú chia sẻ";
+
+        if (mode == "new_tab") {
+            std::string new_id = "tab_" + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+            g_config.tabs.push_back({new_id, title});
+            g_config.active_tab_id = new_id;
+            StorageManager::SaveNoteMarkdown(g_base_dir + "/notes", new_id, md);
+            StorageManager::SaveConfig(g_base_dir + "/config.json", g_config);
+            SendInitState();
+        } else {
+            StorageManager::SaveNoteMarkdown(g_base_dir + "/notes", g_config.active_tab_id, md);
+            for (auto& tab : g_config.tabs) {
+                if (tab.first == g_config.active_tab_id && (tab.second == "Ghi chú mới" || tab.second.empty())) {
+                    tab.second = title;
+                    StorageManager::SaveConfig(g_base_dir + "/config.json", g_config);
+                    break;
+                }
+            }
+            SendInitState();
+        }
+    } else if (msg.action == "shorten_url") {
+        std::string long_url = msg.payload.value("url", "");
+        std::string short_url = ShortenUrlWithTinyUrl(long_url);
+        nlohmann::json reply;
+        reply["short_url"] = short_url;
+        reply["long_url"] = long_url;
+        g_webview.PostWebMessage(IPCBridge::Serialize("shorten_url_result", reply));
     } else if (msg.action == Actions::SAVE_IMAGE || msg.action == "save_image") {
         std::string b64 = msg.payload.value("data", "");
         std::string ext = msg.payload.value("ext", "png");

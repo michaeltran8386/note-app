@@ -102,6 +102,7 @@
             editor.innerHTML = payload.content_html || "<p><br></p>";
             setupCheckboxListeners();
             setupAllTables();
+            setupAllLinks();
             hideImageResizer();
         } else if (action === "image_saved") {
             const imgId = payload.img_id;
@@ -131,6 +132,18 @@
                 showToast("Đã tạo link Web và sao chép vào Clipboard!", 3500);
             } else {
                 showToast("Lỗi chia sẻ: " + (payload.error_message || "Thất bại"), 3000);
+            }
+        } else if (action === "shorten_url_result") {
+            if (payload.short_url && payload.short_url !== payload.long_url) {
+                latestShortShareUrl = payload.short_url;
+                if (shareShortUrlInput) {
+                    shareShortUrlInput.value = payload.short_url;
+                }
+                if (navigator.clipboard) {
+                    try { navigator.clipboard.writeText(payload.short_url); } catch (e) {}
+                }
+                sendIPC("copy_to_clipboard", { text: payload.short_url });
+                showToast("Đã rút gọn & sao chép link vào Clipboard!", 3500);
             }
         } else if (action === "reminder_triggered") {
             showToast("🔔 Nhắc việc: " + (payload.text || ""), 5000);
@@ -165,6 +178,15 @@
                     const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
                     if (tbl) {
                         lines.push(serializeTableToCleanHtml(tbl));
+                    }
+                }
+                // 0.5. Link Bookmark (.note-link-wrap hoặc .link-card)
+                else if (node.classList && (node.classList.contains("note-link-wrap") || node.querySelector(".note-link-wrap") || node.classList.contains("link-card") || node.querySelector(".link-card"))) {
+                    const wrap = node.classList.contains("note-link-wrap") ? node : (node.querySelector(".note-link-wrap") || node.querySelector(".link-card") || node);
+                    const title = wrap.dataset.title || wrap.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
+                    const url = wrap.dataset.url || "";
+                    if (url) {
+                        lines.push(`> [${title || url}]<${url}>`);
                     }
                 }
                 // 1. To-Do Item
@@ -207,10 +229,17 @@
                 }
                 // 6. Paragraph hoặc Div
                 else if (tag === "P" || tag === "DIV") {
+                    const noteLink = node.querySelector(".note-link-wrap, .link-card");
                     const img = node.querySelector("img");
                     const todo = node.querySelector(".todo-item");
 
-                    if (img) {
+                    if (noteLink) {
+                        const title = noteLink.dataset.title || noteLink.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
+                        const url = noteLink.dataset.url || "";
+                        if (url) {
+                            lines.push(`> [${title || url}]<${url}>`);
+                        }
+                    } else if (img) {
                         const assetSrc = img.dataset.assetSrc || (img.src.includes("assets/") ? img.src.substring(img.src.indexOf("assets/")) : img.src);
                         let label = "image";
                         if (img.style.width && img.style.width !== "100%") {
@@ -757,7 +786,7 @@
         return { div, cb, span, remBtn };
     }
 
-    // Tự động nhận diện [] thành ô Checkbox
+    // Tự động nhận diện cú pháp Markdown trực tiếp khi gõ (Headings, Links, Checkbox, HR, Quote)
     editor.addEventListener("input", function(e) {
         hideImageResizer();
         const sel = window.getSelection();
@@ -769,8 +798,15 @@
             const text = node.textContent;
             const offset = range.startOffset;
 
-            if (offset >= 2 && text.substring(offset - 2, offset) === "[]") {
-                const before = text.substring(0, offset - 2);
+            // 1. Tự động nhận diện [] hoặc [ ] hoặc - [ ] thành Checkbox
+            if ((offset >= 2 && text.substring(offset - 2, offset) === "[]") ||
+                (offset >= 3 && text.substring(offset - 3, offset) === "[ ]") ||
+                (offset >= 5 && text.substring(offset - 5, offset) === "- [ ]")) {
+                let cutLen = 2;
+                if (offset >= 5 && text.substring(offset - 5, offset) === "- [ ]") cutLen = 5;
+                else if (offset >= 3 && text.substring(offset - 3, offset) === "[ ]") cutLen = 3;
+
+                const before = text.substring(0, offset - cutLen);
                 const after = text.substring(offset);
 
                 const { div, span } = createTodoElement(after);
@@ -806,6 +842,140 @@
                 return;
             }
 
+            // 2. Tự động nhận diện đường dẫn link khi gõ '>' rồi tới link
+            // Cú pháp A: > [tiêu đề]<url>
+            const syntaxMatch = text.match(/>\s*\[([^\]]*)\]<([^>]+)>/);
+            // Cú pháp B: >https://... hoặc > http://... (khi gõ thêm khoảng trắng phía sau)
+            const urlMatch = text.match(/>\s*(https?:\/\/[^\s<>]+)\s+/);
+
+            if (syntaxMatch || urlMatch) {
+                let title = "";
+                let url = "";
+                if (syntaxMatch) {
+                    title = syntaxMatch[1].trim() || syntaxMatch[2].trim();
+                    url = syntaxMatch[2].trim();
+                } else {
+                    url = urlMatch[1].trim();
+                    title = url;
+                }
+
+                const linkEl = createLinkElement(title, url);
+                const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+                if (tableCell) {
+                    tableCell.innerHTML = "";
+                    tableCell.appendChild(linkEl);
+                    tableCell.appendChild(document.createTextNode(" "));
+
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(tableCell);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    setupAllLinks();
+                    triggerSave();
+                    return;
+                }
+
+                const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
+
+                const p = document.createElement("p");
+                p.appendChild(linkEl);
+                p.appendChild(document.createTextNode(" "));
+
+                if (parentBlock) {
+                    parentBlock.replaceWith(p);
+                } else {
+                    node.replaceWith(p);
+                }
+
+                const newRange = document.createRange();
+                newRange.selectNodeContents(p);
+                newRange.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+
+                setupAllLinks();
+                triggerSave();
+                return;
+            }
+
+            // 3. Tự động nhận diện Markdown Headings: # , ## , ###
+            const inTableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+            const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
+            if (!inTableCell && parentBlock && (parentBlock.tagName === "P" || parentBlock.tagName === "DIV")) {
+                let hLevel = 0;
+                let hContent = "";
+
+                if (text.startsWith("### ")) {
+                    hLevel = 3;
+                    hContent = text.slice(4);
+                } else if (text.startsWith("## ")) {
+                    hLevel = 2;
+                    hContent = text.slice(3);
+                } else if (text.startsWith("# ")) {
+                    hLevel = 1;
+                    hContent = text.slice(2);
+                }
+
+                if (hLevel > 0) {
+                    const h = document.createElement(`h${hLevel}`);
+                    h.textContent = hContent;
+                    if (!hContent.trim()) {
+                        h.innerHTML = "<br>";
+                    }
+                    parentBlock.replaceWith(h);
+
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(h);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    triggerSave();
+                    return;
+                }
+
+                // 4. Đường kẻ ngang: --- hoặc ***
+                if (text === "---" || text === "***") {
+                    const hr = document.createElement("hr");
+                    const nextP = document.createElement("p");
+                    nextP.innerHTML = "<br>";
+
+                    parentBlock.replaceWith(hr);
+                    hr.parentNode.insertBefore(nextP, hr.nextSibling);
+
+                    const newRange = document.createRange();
+                    newRange.setStart(nextP, 0);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    triggerSave();
+                    return;
+                }
+
+                // 5. Blockquote: > (theo sau bởi khoảng trắng và không phải link)
+                if (text.startsWith("> ") && !text.startsWith("> http") && !text.startsWith("> [") && !text.startsWith("> <")) {
+                    const bq = document.createElement("blockquote");
+                    const bqContent = text.slice(2);
+                    bq.textContent = bqContent;
+                    if (!bqContent.trim()) {
+                        bq.innerHTML = "<br>";
+                    }
+                    parentBlock.replaceWith(bq);
+
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(bq);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    triggerSave();
+                    return;
+                }
+            }
+
             // Tự động nhận diện @... khi gõ trong .todo-text kết thúc bằng khoảng trắng
             const parentTodo = node.parentElement?.closest(".todo-item");
             if (parentTodo && (text.endsWith(" ") || text.endsWith("\u00A0"))) {
@@ -819,12 +989,123 @@
         triggerSave();
     });
 
-    // Xử lý phím Backspace xóa Checkbox & phím Enter tạo Todo mới
+    // Xử lý phím Backspace & Enter trong Headings, Blockquotes, Checkboxes và Link
     editor.addEventListener("keydown", function(e) {
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
 
+        // 1. Phím Enter trong Headings (H1, H2, H3): tạo đoạn văn bản <p> mới bên dưới
+        const heading = range.startContainer.parentElement?.closest("h1, h2, h3") ||
+                        (range.startContainer.tagName && /^H[1-3]$/.test(range.startContainer.tagName) ? range.startContainer : null);
+
+        if (heading && e.key === "Enter") {
+            e.preventDefault();
+            const p = document.createElement("p");
+            p.innerHTML = "<br>";
+            if (heading.nextSibling) {
+                heading.parentNode.insertBefore(p, heading.nextSibling);
+            } else {
+                heading.parentNode.appendChild(p);
+            }
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            triggerSave();
+            return;
+        }
+
+        // Phím Backspace khi heading rỗng: chuyển về <p> thường
+        if (heading && e.key === "Backspace" && (heading.textContent.trim() === "" || heading.innerHTML === "<br>")) {
+            e.preventDefault();
+            const p = document.createElement("p");
+            p.innerHTML = "<br>";
+            heading.replaceWith(p);
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            triggerSave();
+            return;
+        }
+
+        // 2. Phím Enter trong Blockquote: nếu rỗng thì thoát blockquote
+        const bq = range.startContainer.parentElement?.closest("blockquote") ||
+                   (range.startContainer.tagName === "BLOCKQUOTE" ? range.startContainer : null);
+
+        if (bq && e.key === "Enter" && (bq.textContent.trim() === "" || bq.innerHTML === "<br>")) {
+            e.preventDefault();
+            const p = document.createElement("p");
+            p.innerHTML = "<br>";
+            bq.replaceWith(p);
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            triggerSave();
+            return;
+        }
+
+        // 3. Phím Enter khi vừa gõ xong >https://... trên dòng mà chưa gõ dấu cách
+        if (e.key === "Enter") {
+            const node = range.startContainer;
+            if (node && node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent.trim();
+                const urlMatch = text.match(/^>\s*(https?:\/\/[^\s<>]+)$/);
+                if (urlMatch) {
+                    e.preventDefault();
+                    const url = urlMatch[1];
+                    const linkEl = createLinkElement(url, url);
+                    const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+                    if (tableCell) {
+                        tableCell.innerHTML = "";
+                        tableCell.appendChild(linkEl);
+                        tableCell.appendChild(document.createTextNode(" "));
+
+                        const newRange = document.createRange();
+                        newRange.selectNodeContents(tableCell);
+                        newRange.collapse(false);
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+
+                        setupAllLinks();
+                        triggerSave();
+                        return;
+                    }
+
+                    const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
+
+                    const p = document.createElement("p");
+                    p.appendChild(linkEl);
+
+                    const nextP = document.createElement("p");
+                    nextP.innerHTML = "<br>";
+
+                    if (parentBlock) {
+                        parentBlock.replaceWith(p);
+                    } else {
+                        node.replaceWith(p);
+                    }
+                    p.parentNode.insertBefore(nextP, p.nextSibling);
+
+                    const newRange = document.createRange();
+                    newRange.setStart(nextP, 0);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    setupAllLinks();
+                    triggerSave();
+                    return;
+                }
+            }
+        }
+
+        // 4. Todo item: Backspace xóa và Enter tạo todo tiếp theo
         const todoText = range.startContainer.parentElement?.closest(".todo-text") ||
                          (range.startContainer.classList?.contains("todo-text") ? range.startContainer : null);
 
@@ -1052,6 +1333,7 @@
         const img = document.createElement("img");
         img.src = src;
         img.className = "note-image";
+        img.style.width = "30%";
         img.alt = "";
         if (imgId) {
             img.dataset.imgId = imgId;
@@ -1150,6 +1432,107 @@
                     ext: "jpg"
                 });
             });
+            return;
+        }
+
+        // Xử lý dán URL liên kết khi vừa gõ '>' hoặc dán cú pháp > [hiển thị]<link url>
+        const pastedText = clipboardData.getData("text");
+        if (pastedText) {
+            const trimmedPaste = pastedText.trim();
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0);
+                const node = range.startContainer;
+
+                // TH 1: Dán trực tiếp cú pháp bookmark > [title]<url> hoặc > url
+                const matchBookmark = trimmedPaste.match(/^>\s*(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/\S+))/i);
+
+                // TH 2: Con trỏ đứng ngay sau '>' hoặc '> ' trên dòng, và chuỗi dán vào là URL
+                let hasPrefixArrow = false;
+                let textBeforeCursor = "";
+                let containerBlock = null;
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    textBeforeCursor = node.textContent.substring(0, range.startOffset).trim();
+                    containerBlock = (node.parentElement && node.parentElement !== editor) ? (node.parentElement.closest("p, div, blockquote") || node.parentElement) : null;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    containerBlock = (node !== editor) ? (node.closest("p, div, blockquote") || node) : null;
+                    textBeforeCursor = containerBlock ? containerBlock.textContent.trim() : "";
+                }
+
+                if (textBeforeCursor === ">" || textBeforeCursor.endsWith(">") || (containerBlock && containerBlock.tagName === "BLOCKQUOTE")) {
+                    hasPrefixArrow = true;
+                }
+
+                const isUrl = /^https?:\/\/\S+$/i.test(trimmedPaste);
+
+                if (matchBookmark || (hasPrefixArrow && isUrl)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    let title = "";
+                    let url = "";
+
+                    if (matchBookmark) {
+                        title = matchBookmark[1] || matchBookmark[3] || matchBookmark[4] || "";
+                        url = matchBookmark[2] || matchBookmark[3] || matchBookmark[4] || "";
+                    } else {
+                        url = trimmedPaste;
+                        title = url;
+                    }
+
+                    title = title.trim();
+                    url = url.trim();
+                    if (!title) title = url;
+
+                    const linkEl = createLinkElement(title, url);
+                    const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+                    if (tableCell) {
+                        if (containerBlock && (containerBlock.textContent.trim() === ">" || containerBlock.textContent.trim() === "> ")) {
+                            tableCell.innerHTML = "";
+                            tableCell.appendChild(linkEl);
+                            tableCell.appendChild(document.createTextNode(" "));
+                        } else {
+                            range.deleteContents();
+                            range.insertNode(linkEl);
+                        }
+                        const newRange = document.createRange();
+                        newRange.selectNodeContents(tableCell);
+                        newRange.collapse(false);
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+
+                        setupAllLinks();
+                        triggerSave();
+                        return;
+                    }
+
+                    const p = document.createElement("p");
+                    p.appendChild(linkEl);
+                    p.appendChild(document.createTextNode(" "));
+
+                    if (containerBlock && containerBlock !== editor && (containerBlock.textContent.trim() === ">" || containerBlock.textContent.trim() === "> " || containerBlock.tagName === "BLOCKQUOTE")) {
+                        containerBlock.replaceWith(p);
+                    } else if (node.nodeType === Node.TEXT_NODE && (textBeforeCursor === ">" || textBeforeCursor === "> ")) {
+                        node.textContent = node.textContent.substring(range.startOffset);
+                        if (containerBlock && containerBlock !== editor) {
+                            containerBlock.parentNode.insertBefore(p, containerBlock);
+                            if (!containerBlock.textContent.trim()) {
+                                containerBlock.remove();
+                            }
+                        } else {
+                            editor.insertBefore(p, node);
+                        }
+                    } else {
+                        range.deleteContents();
+                        range.insertNode(linkEl);
+                    }
+
+                    setupAllLinks();
+                    triggerSave();
+                    return;
+                }
+            }
         }
     });
 
@@ -1316,7 +1699,9 @@
 
         // Escape: Đóng các modal đang mở
         if (e.key === "Escape") {
-            if (!imageLightboxModal.classList.contains("hidden")) {
+            if (sharePopover && !sharePopover.classList.contains("hidden")) {
+                closeSharePopover();
+            } else if (!imageLightboxModal.classList.contains("hidden")) {
                 closeLightbox();
             } else if (!tabSearchModal.classList.contains("hidden")) {
                 closeTabSearchModal();
@@ -1387,6 +1772,13 @@
                     if (tbl) {
                         lines.push(serializeTableToCleanHtml(tbl));
                     }
+                } else if (node.classList && (node.classList.contains("note-link-wrap") || node.querySelector(".note-link-wrap") || node.classList.contains("link-card") || node.querySelector(".link-card"))) {
+                    const wrap = node.classList.contains("note-link-wrap") ? node : (node.querySelector(".note-link-wrap") || node.querySelector(".link-card") || node);
+                    const title = wrap.dataset.title || wrap.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
+                    const url = wrap.dataset.url || "";
+                    if (url) {
+                        lines.push(`> [${title || url}]<${url}>`);
+                    }
                 } else if (node.classList.contains("todo-item")) {
                     const cb = node.querySelector(".todo-check");
                     const span = node.querySelector(".todo-text");
@@ -1409,7 +1801,14 @@
                     let hasSub = false;
                     for (const child of Array.from(node.childNodes)) {
                         if (child.nodeType === Node.ELEMENT_NODE) {
-                            if (child.classList && child.classList.contains("todo-item")) {
+                            if (child.classList && (child.classList.contains("note-link-wrap") || child.classList.contains("link-card"))) {
+                                hasSub = true;
+                                const title = child.dataset.title || child.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
+                                const url = child.dataset.url || "";
+                                if (url) {
+                                    lines.push(`> [${title || url}]<${url}>`);
+                                }
+                            } else if (child.classList && child.classList.contains("todo-item")) {
                                 hasSub = true;
                                 const cb = child.querySelector(".todo-check");
                                 const span = child.querySelector(".todo-text");
@@ -1448,7 +1847,7 @@
     }
 
     // ==========================================
-    // MÃ HÓA CLEAN TEXT URL (THAM KHẢO TXTURL)
+    // MÃ HÓA CLEAN TEXT URL & RÚT GỌN LINK
     // ==========================================
     async function compressToTxtUrl(text) {
         if (!text) text = "";
@@ -1473,56 +1872,272 @@
         }
     }
 
-    btnExportUrl.addEventListener("click", async function() {
-        btnExportUrl.classList.add("loading");
-        showToast("Đang tạo link chia sẻ Web 100% nội dung & ảnh...", 2000);
-
+    async function decompressFromTxtUrl(b64url) {
+        if (!b64url) return "";
         try {
-            const activeTab = tabs.find(t => t.id === currentTabId);
-            const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
-            const mdContent = await getNoteMarkdown();
+            const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+            const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+            const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
 
-            // 1. Nén toàn bộ nội dung (bao gồm cả ảnh data URL nếu có) thành hash deflate-raw base64url
-            const hash = await compressToTxtUrl(mdContent);
-            const serviceBase = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
-            const cleanBase = serviceBase.endsWith("/") ? serviceBase : (serviceBase + "/");
-            const publicUrl = `${cleanBase}#${hash}`;
+            if (window.DecompressionStream) {
+                const stream = new DecompressionStream("deflate-raw");
+                const writer = stream.writable.getWriter();
+                writer.write(bytes);
+                writer.close();
+                return new TextDecoder().decode(
+                    await new Response(stream.readable).arrayBuffer()
+                );
+            } else {
+                return decodeURIComponent(escape(atob(padded)));
+            }
+        } catch (e) {
+            try {
+                const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+                const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+                return decodeURIComponent(escape(atob(padded)));
+            } catch (err) {
+                console.error("Decompress failed:", err);
+                return "";
+            }
+        }
+    }
 
-            // 2. Sao chép vào Clipboard của trình duyệt
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                try {
-                    await navigator.clipboard.writeText(publicUrl);
-                } catch (e) {}
+    async function shortenUrl(longUrl) {
+        // 1. Thử TinyURL API
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const short = (await res.text()).trim();
+                if (short.startsWith("http")) return short;
+            }
+        } catch (e) {
+            console.warn("TinyURL shortener failed, trying is.gd:", e);
+        }
+
+        // 2. Thử is.gd API làm dự phòng
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const short = (await res.text()).trim();
+                if (short.startsWith("http")) return short;
+            }
+        } catch (e) {
+            console.warn("is.gd shortener failed:", e);
+        }
+
+        // 3. Fallback trả về link gốc nếu ngoại tuyến
+        return longUrl;
+    }
+
+    // ==========================================
+    // POPOVER CHIA SẺ & HỢP NHẤT (SHARE & MERGE)
+    // ==========================================
+    const sharePopover = document.getElementById("share-popover");
+    const shareShortUrlInput = document.getElementById("share-short-url-input");
+    const btnCopyShortUrl = document.getElementById("btn-copy-short-url");
+    const linkCopyFullUrl = document.getElementById("link-copy-full-url");
+    const importUpdateUrlInput = document.getElementById("import-update-url-input");
+    const btnApplyUpdateCurrent = document.getElementById("btn-apply-update-current");
+    const btnApplyUpdateNew = document.getElementById("btn-apply-update-new");
+
+    let latestFullShareUrl = "";
+    let latestShortShareUrl = "";
+
+    function closeSharePopover() {
+        if (sharePopover) sharePopover.classList.add("hidden");
+    }
+
+    btnExportUrl.addEventListener("click", async function(e) {
+        e.stopPropagation();
+        if (sharePopover && sharePopover.classList.contains("hidden")) {
+            closeTablePicker();
+            closeLinkEditPopover();
+            sharePopover.classList.remove("hidden");
+            shareShortUrlInput.value = "Đang tạo link rút gọn...";
+
+            try {
+                const activeTab = tabs.find(t => t.id === currentTabId);
+                const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
+                const mdContent = await getNoteMarkdown();
+
+                // Nén bằng deflate-raw base64url
+                const hash = await compressToTxtUrl(mdContent);
+                const serviceBase = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
+                const cleanBase = serviceBase.endsWith("/") ? serviceBase : (serviceBase + "/");
+                latestFullShareUrl = `${cleanBase}#${hash}`;
+                latestShortShareUrl = latestFullShareUrl;
+                shareShortUrlInput.value = latestFullShareUrl;
+
+                // Tự động sao chép link vào Clipboard ngay lập tức
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    try {
+                        await navigator.clipboard.writeText(latestFullShareUrl);
+                    } catch (e) {}
+                }
+                sendIPC("copy_to_clipboard", { text: latestFullShareUrl });
+
+                // Nếu ghi chú vừa phải (<= 2000 ký tự), gọi C++ rút gọn qua TinyURL
+                if (latestFullShareUrl.length <= 2000) {
+                    shareShortUrlInput.value = "Đang rút gọn link...";
+                    sendIPC("shorten_url", { url: latestFullShareUrl });
+                } else {
+                    showToast("Ghi chú chứa ảnh lớn — đã sao chép link đầy đủ (Offline Hash) vào Clipboard!", 3500);
+                }
+
+                // Thu thập ảnh và gửi snapshot local
+                const imgNodes = editor.querySelectorAll("img");
+                const imagePaths = [];
+                imgNodes.forEach(function(img) {
+                    const assetSrc = img.dataset.assetSrc || img.getAttribute("src");
+                    if (assetSrc && assetSrc.includes("assets/")) {
+                        const rel = assetSrc.substring(assetSrc.indexOf("assets/"));
+                        imagePaths.push(rel);
+                    }
+                });
+
+                sendIPC("publish_web_share", {
+                    note_id: currentTabId,
+                    title: title,
+                    markdown_content: mdContent,
+                    referenced_images: imagePaths,
+                    public_url: latestFullShareUrl
+                });
+            } catch (err) {
+                console.error("Lỗi chia sẻ:", err);
+                shareShortUrlInput.value = "Lỗi tạo link";
+                showToast("Lỗi khi tạo link: " + err.message, 3000);
+            }
+        } else {
+            closeSharePopover();
+        }
+    });
+
+    if (btnCopyShortUrl) {
+        btnCopyShortUrl.addEventListener("click", async function() {
+            const val = shareShortUrlInput.value;
+            if (val && !val.startsWith("Đang") && !val.startsWith("Lỗi")) {
+                if (navigator.clipboard) await navigator.clipboard.writeText(val);
+                sendIPC("copy_to_clipboard", { text: val });
+                showToast("Đã sao chép link rút gọn!", 2500);
+            }
+        });
+    }
+
+    if (linkCopyFullUrl) {
+        linkCopyFullUrl.addEventListener("click", async function(e) {
+            e.preventDefault();
+            if (latestFullShareUrl) {
+                if (navigator.clipboard) await navigator.clipboard.writeText(latestFullShareUrl);
+                sendIPC("copy_to_clipboard", { text: latestFullShareUrl });
+                showToast("Đã sao chép link đầy đủ (Offline Hash)!", 2500);
+            }
+        });
+    }
+
+    // Helper: Trích xuất Markdown từ link chia sẻ hoặc link rút gọn
+    async function extractMarkdownFromUrl(inputUrl) {
+        let raw = (inputUrl || "").trim();
+        if (!raw) return null;
+
+        // Nếu là link rút gọn TinyURL / is.gd -> theo dấu chuyển hướng
+        if (raw.includes("tinyurl.com") || raw.includes("is.gd")) {
+            try {
+                showToast("Đang kết nối link rút gọn...", 2000);
+                const res = await fetch(raw);
+                if (res.url && res.url !== raw) {
+                    raw = res.url;
+                }
+            } catch (e) {
+                console.warn("Follow redirect failed:", e);
+            }
+        }
+
+        let encodedData = "";
+        // 1. Kiểm tra query param ?p= hoặc ?data=
+        if (raw.includes("?")) {
+            try {
+                const parsedUrl = new URL(raw);
+                encodedData = parsedUrl.searchParams.get("p") || parsedUrl.searchParams.get("data") || "";
+            } catch (e) {}
+        }
+        // 2. Nếu chưa có, lấy phần sau dấu #
+        if (!encodedData && raw.includes("#")) {
+            encodedData = raw.split("#")[1];
+        }
+        // 3. Nếu người dùng dán chuỗi hash thô
+        if (!encodedData && !raw.startsWith("http")) {
+            encodedData = raw;
+        }
+
+        if (!encodedData) return null;
+
+        const md = await decompressFromTxtUrl(encodedData);
+        return md;
+    }
+
+    async function handleApplyUpdate(mode) {
+        const inputVal = importUpdateUrlInput.value.trim();
+        if (!inputVal) {
+            showToast("Vui lòng dán link bản sửa vào ô nhập!", 2500);
+            return;
+        }
+
+        showToast("Đang giải mã và hợp nhất bản chỉnh sửa...", 2000);
+        try {
+            const md = await extractMarkdownFromUrl(inputVal);
+            if (!md) {
+                showToast("Không thể giải mã dữ liệu từ link này!", 3000);
+                return;
             }
 
-            // 3. Sao chép vào Win32 System Clipboard qua C++ IPC để chắc chắn 100%
-            sendIPC("copy_to_clipboard", { text: publicUrl });
-
-            // 4. Thu thập danh sách ảnh cục bộ và gửi lưu snapshot local
-            const imgNodes = editor.querySelectorAll("img");
-            const imagePaths = [];
-            imgNodes.forEach(function(img) {
-                const assetSrc = img.dataset.assetSrc || img.getAttribute("src");
-                if (assetSrc && assetSrc.includes("assets/")) {
-                    const rel = assetSrc.substring(assetSrc.indexOf("assets/"));
-                    imagePaths.push(rel);
+            // Trích xuất tiêu đề từ dòng đầu tiên có #
+            let title = "";
+            for (const line of md.split("\n")) {
+                const m = line.match(/^#+\s+(.*\S)/);
+                if (m) {
+                    title = m[1].trim();
+                    break;
                 }
+            }
+
+            sendIPC("import_shared_note", {
+                mode: mode,
+                markdown: md,
+                title: title
             });
 
-            sendIPC("publish_web_share", {
-                note_id: currentTabId,
-                title: title,
-                markdown_content: mdContent,
-                referenced_images: imagePaths,
-                public_url: publicUrl
-            });
-
-            btnExportUrl.classList.remove("loading");
-            showToast("Đã sao chép link Web 100% vào Clipboard!", 3500);
+            closeSharePopover();
+            importUpdateUrlInput.value = "";
+            showToast(mode === "new_tab" ? "Đã tạo Tab mới từ bản chia sẻ!" : "Đã cập nhật thành công vào Tab hiện tại!", 3500);
         } catch (err) {
-            console.error("Lỗi chia sẻ:", err);
-            btnExportUrl.classList.remove("loading");
-            showToast("Lỗi khi tạo link chia sẻ: " + err.message, 3000);
+            console.error("Import update failed:", err);
+            showToast("Lỗi nhập dữ liệu: " + err.message, 3000);
+        }
+    }
+
+    if (btnApplyUpdateCurrent) {
+        btnApplyUpdateCurrent.addEventListener("click", () => handleApplyUpdate("current"));
+    }
+    if (btnApplyUpdateNew) {
+        btnApplyUpdateNew.addEventListener("click", () => handleApplyUpdate("new_tab"));
+    }
+
+    // Đóng popover khi click ra ngoài
+    document.addEventListener("click", function(e) {
+        if (sharePopover && !sharePopover.classList.contains("hidden")) {
+            if (!sharePopover.contains(e.target) && !e.target.closest("#btn-export-url")) {
+                closeSharePopover();
+            }
         }
     });
 
@@ -1538,6 +2153,24 @@
         clone.querySelectorAll("*").forEach(el => {
             el.removeAttribute("contenteditable");
             el.classList.remove("resizing");
+        });
+        // Tự động chuẩn hóa và bảo vệ cấu trúc hàng: nếu tr có phần tử con không phải td hoặc th
+        clone.querySelectorAll("tr").forEach(tr => {
+            const children = Array.from(tr.childNodes);
+            children.forEach(child => {
+                if (child.nodeType === Node.ELEMENT_NODE && child.tagName !== "TD" && child.tagName !== "TH") {
+                    const td = document.createElement("td");
+                    tr.insertBefore(td, child);
+                    if (child.tagName === "P" || child.tagName === "DIV") {
+                        while (child.firstChild) {
+                            td.appendChild(child.firstChild);
+                        }
+                        child.remove();
+                    } else {
+                        td.appendChild(child);
+                    }
+                }
+            });
         });
         if (!clone.classList.contains("note-table")) {
             clone.classList.add("note-table");
@@ -2069,8 +2702,211 @@
         });
     }
 
+    // ==========================================
+    // MINIMAL LINK (> [hiển thị]<link url> hoặc >https://...)
+    // ==========================================
+    let currentEditingCard = null;
+    const linkEditPopover = document.getElementById("link-edit-popover");
+    const linkInputTitle = document.getElementById("link-input-title");
+    const linkInputUrl = document.getElementById("link-input-url");
+    const btnSaveLink = document.getElementById("btn-save-link");
+    const btnCancelLink = document.getElementById("btn-cancel-link");
+    const btnDeleteLink = document.getElementById("btn-delete-link");
+
+    function createLinkElement(title, url) {
+        title = (title || "").trim();
+        url = (url || "").trim();
+        if (!title) title = url;
+
+        const wrap = document.createElement("span");
+        wrap.className = "note-link-wrap";
+        wrap.setAttribute("contenteditable", "false");
+        wrap.dataset.title = title;
+        wrap.dataset.url = url;
+
+        const a = document.createElement("a");
+        a.className = "note-link";
+        a.textContent = title;
+        a.title = "Nhấp để mở: " + url;
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "note-link-edit-btn";
+        editBtn.title = "Chỉnh sửa liên kết";
+
+        const editSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        editSvg.setAttribute("class", "lucide-pencil");
+        editSvg.setAttribute("width", "12");
+        editSvg.setAttribute("height", "12");
+        editSvg.setAttribute("viewBox", "0 0 24 24");
+        editSvg.setAttribute("fill", "none");
+        editSvg.setAttribute("stroke", "currentColor");
+        editSvg.setAttribute("stroke-width", "2");
+        editSvg.setAttribute("stroke-linecap", "round");
+        editSvg.setAttribute("stroke-linejoin", "round");
+        editSvg.innerHTML = '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path>';
+        editBtn.appendChild(editSvg);
+
+        wrap.appendChild(a);
+        wrap.appendChild(editBtn);
+
+        bindLinkEvents(wrap);
+        return wrap;
+    }
+
+    function bindLinkEvents(wrap) {
+        if (!wrap) return;
+
+        let editBtn = wrap.querySelector(".note-link-edit-btn");
+        if (!editBtn) {
+            editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "note-link-edit-btn";
+            editBtn.title = "Chỉnh sửa liên kết";
+            const editSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            editSvg.setAttribute("class", "lucide-pencil");
+            editSvg.setAttribute("width", "12");
+            editSvg.setAttribute("height", "12");
+            editSvg.setAttribute("viewBox", "0 0 24 24");
+            editSvg.setAttribute("fill", "none");
+            editSvg.setAttribute("stroke", "currentColor");
+            editSvg.setAttribute("stroke-width", "2");
+            editSvg.setAttribute("stroke-linecap", "round");
+            editSvg.setAttribute("stroke-linejoin", "round");
+            editSvg.innerHTML = '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path>';
+            editBtn.appendChild(editSvg);
+            wrap.appendChild(editBtn);
+        }
+
+        if (wrap._boundEvents) return;
+        wrap._boundEvents = true;
+
+        const a = wrap.querySelector(".note-link");
+        if (a) {
+            a.addEventListener("click", function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const url = wrap.dataset.url;
+                if (url) {
+                    sendIPC("open_url", { url });
+                }
+            });
+        }
+
+        editBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            openLinkEditPopover(wrap);
+        });
+    }
+
+    function setupAllLinks() {
+        const wraps = editor.querySelectorAll(".note-link-wrap, .link-card");
+        wraps.forEach(bindLinkEvents);
+    }
+
+    function openLinkEditPopover(wrap) {
+        currentEditingCard = wrap;
+        linkInputTitle.value = wrap.dataset.title || "";
+        linkInputUrl.value = wrap.dataset.url || "";
+        linkEditPopover.classList.remove("hidden");
+
+        const rect = wrap.getBoundingClientRect();
+        const top = Math.min(rect.bottom + 6, window.innerHeight - 170);
+        const left = Math.min(Math.max(rect.left, 10), Math.max(10, window.innerWidth - 310));
+        linkEditPopover.style.top = `${top}px`;
+        linkEditPopover.style.left = `${left}px`;
+
+        linkInputTitle.focus();
+        linkInputTitle.select();
+    }
+
+    function closeLinkEditPopover() {
+        if (linkEditPopover) linkEditPopover.classList.add("hidden");
+        currentEditingCard = null;
+    }
+
+    function saveCurrentLink() {
+        if (!currentEditingCard) return;
+        const newTitle = linkInputTitle.value.trim();
+        let newUrl = linkInputUrl.value.trim();
+        if (!newUrl) {
+            showToast("Vui lòng nhập đường dẫn URL!", 2000);
+            return;
+        }
+        if (!/^https?:\/\//i.test(newUrl) && !/^mailto:/i.test(newUrl) && !/^tel:/i.test(newUrl)) {
+            newUrl = "https://" + newUrl;
+        }
+        const displayTitle = newTitle || newUrl;
+
+        currentEditingCard.dataset.title = displayTitle;
+        currentEditingCard.dataset.url = newUrl;
+
+        const a = currentEditingCard.querySelector(".note-link");
+        if (a) {
+            a.textContent = displayTitle;
+            a.title = "Nhấp để mở: " + newUrl;
+        }
+
+        closeLinkEditPopover();
+        triggerSave();
+    }
+
+    function initLinkControls() {
+        if (btnSaveLink) {
+            btnSaveLink.addEventListener("click", (e) => {
+                e.stopPropagation();
+                saveCurrentLink();
+            });
+        }
+        if (btnCancelLink) {
+            btnCancelLink.addEventListener("click", (e) => {
+                e.stopPropagation();
+                closeLinkEditPopover();
+            });
+        }
+        if (btnDeleteLink) {
+            btnDeleteLink.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (currentEditingCard) {
+                    currentEditingCard.remove();
+                    closeLinkEditPopover();
+                    triggerSave();
+                }
+            });
+        }
+        [linkInputTitle, linkInputUrl].forEach(input => {
+            input?.addEventListener("keydown", function(e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    saveCurrentLink();
+                } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeLinkEditPopover();
+                }
+            });
+        });
+
+        document.addEventListener("click", function(e) {
+            if (linkEditPopover && !linkEditPopover.classList.contains("hidden")) {
+                if (!linkEditPopover.contains(e.target) && !e.target.closest(".note-link-edit-btn")) {
+                    closeLinkEditPopover();
+                }
+            }
+        });
+
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") {
+                if (linkEditPopover && !linkEditPopover.classList.contains("hidden")) {
+                    closeLinkEditPopover();
+                }
+            }
+        });
+    }
+
     // Khởi tạo các bộ điều khiển
     initTableControls();
+    initLinkControls();
 
     // Khởi tạo ban đầu
     sendIPC("request_init", {});

@@ -150,9 +150,18 @@
                 continue;
             }
 
-            // Quotes
-            if (line.startsWith("> ")) {
-                html += `<blockquote>${parseInline(line.slice(2))}</blockquote>`;
+            // Quotes & Link Bookmarks (> [hiển thị]<link url> hoặc > [title](url) hoặc > url)
+            if (line.trim().startsWith(">")) {
+                const bqContent = line.trim().slice(1).trim();
+                const bookmarkMatch = bqContent.match(/^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/\S+))/i);
+                if (bookmarkMatch) {
+                    const title = (bookmarkMatch[1] || bookmarkMatch[3] || bookmarkMatch[4] || "").trim();
+                    const url = (bookmarkMatch[2] || bookmarkMatch[3] || bookmarkMatch[4] || "").trim();
+                    const displayTitle = title || url;
+                    html += `<p><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="note-link">${escapeHtml(displayTitle)}</a></p>`;
+                    continue;
+                }
+                html += `<blockquote>${parseInline(bqContent)}</blockquote>`;
                 continue;
             }
 
@@ -163,6 +172,10 @@
                     i++;
                     tableHtml += " " + lines[i];
                 }
+                tableHtml = tableHtml.replace(/<p><br\s*\/?><\/p>/gi, "")
+                                     .replace(/<tr>\s*<p>/gi, "<tr><td>")
+                                     .replace(/<\/p>\s*<td>/gi, "</td><td>")
+                                     .replace(/<\/p>\s*<\/tr>/gi, "</td></tr>");
                 if (!tableHtml.includes("class=\"table-wrapper\"")) {
                     html += `<div class="table-wrapper">${tableHtml}</div>`;
                 } else {
@@ -183,11 +196,12 @@
             if (imgMatch) {
                 const label = imgMatch[1];
                 const src = imgMatch[2];
-                let style = "";
+                let width = "30%";
                 if (label.includes("|")) {
                     const w = label.split("|")[1].trim();
-                    if (w) style = ` style="width: ${w}; max-width: 100%;"`;
+                    if (w) width = w;
                 }
+                const style = ` style="width: ${width}; max-width: 100%;"`;
                 html += `<p><img src="${src}" alt="" class="note-image"${style}></p>`;
                 continue;
             }
@@ -237,12 +251,54 @@
     }
 
     // ==========================================
+    // RÚT GỌN LINK TINYURL & IS.GD
+    // ==========================================
+    async function shortenUrl(longUrl) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const short = (await res.text()).trim();
+                if (short.startsWith("http")) return short;
+            }
+        } catch (e) {
+            console.warn("TinyURL failed, trying is.gd:", e);
+        }
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const short = (await res.text()).trim();
+                if (short.startsWith("http")) return short;
+            }
+        } catch (e) {
+            console.warn("is.gd failed:", e);
+        }
+
+        return longUrl;
+    }
+
+    // ==========================================
     // INITIALIZATION & EVENT HANDLERS
     // ==========================================
     async function loadFromHash() {
-        const hash = window.location.hash.slice(1);
-        if (hash) {
-            currentRawText = await decompress(hash);
+        let rawData = window.location.hash.slice(1);
+        if (!rawData) {
+            const urlParams = new URLSearchParams(window.location.search);
+            rawData = urlParams.get("p") || urlParams.get("data") || "";
+        }
+
+        if (rawData) {
+            currentRawText = await decompress(rawData);
         } else {
             const urlParams = new URLSearchParams(window.location.search);
             const shareId = urlParams.get("share");
@@ -280,13 +336,16 @@
         isEditorMode = !isEditorMode;
         btnToggleMode.classList.toggle("active", isEditorMode);
 
+        const shareLabel = btnShare.querySelector(".btn-label");
         if (isEditorMode) {
             btnToggleMode.querySelector(".btn-label").textContent = "Xem";
+            if (shareLabel) shareLabel.textContent = "Gửi bản sửa";
             display.classList.add("hidden");
             editor.classList.remove("hidden");
             editor.focus();
         } else {
             btnToggleMode.querySelector(".btn-label").textContent = "Soạn thảo";
+            if (shareLabel) shareLabel.textContent = "Chia sẻ";
             editor.classList.add("hidden");
             display.classList.remove("hidden");
             updateDisplay();
@@ -322,13 +381,36 @@
         }
     });
 
-    // Sao chép URL
+    // Sao chép & Rút gọn URL chia sẻ / Gửi bản sửa
     btnShare.addEventListener("click", async function() {
-        const url = window.location.href;
-        if (navigator.clipboard) {
-            await navigator.clipboard.writeText(url);
+        btnShare.classList.add("loading");
+        showToast(isEditorMode ? "Đang tạo link bản sửa rút gọn..." : "Đang rút gọn link...", 2000);
+
+        try {
+            const targetText = isEditorMode ? editor.value : currentRawText;
+            const hash = await compress(targetText);
+            const fullUrl = `${window.location.origin}${window.location.pathname}#${hash}`;
+
+            let finalUrl = fullUrl;
+            if (fullUrl.length <= 2000) {
+                finalUrl = await shortenUrl(fullUrl);
+            }
+
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(finalUrl);
+            }
+
+            btnShare.classList.remove("loading");
+            if (isEditorMode) {
+                showToast("Đã sao chép link bản sửa! Hãy gửi link này cho người tạo để họ áp dụng.", 4500);
+            } else {
+                showToast("Đã sao chép link chia sẻ vào Clipboard!", 3500);
+            }
+        } catch (err) {
+            console.error("Lỗi chia sẻ:", err);
+            btnShare.classList.remove("loading");
+            showToast("Lỗi khi tạo link chia sẻ: " + err.message, 3000);
         }
-        showToast("Đã sao chép URL vào Clipboard của bạn");
     });
 
     // Lắng nghe thay đổi hash

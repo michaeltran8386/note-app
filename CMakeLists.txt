@@ -4,7 +4,7 @@ project(NoteLocal CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+set(CMAKE_EXE_LINKER_FLAGS "-static -Wl,--strip-all")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(
@@ -82,6 +82,7 @@ target_link_libraries(NoteLocal PRIVATE
     dwmapi
     ole32
     shell32
+    winhttp
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll.lib
 )
 

@@ -292,6 +292,7 @@ body {
 
 .markdown-body img {
     max-width: 100%;
+    width: 30%;
     height: auto;
     border-radius: 8px;
     border: 1px solid var(--border-subtle);
@@ -356,6 +357,25 @@ table.note-table td {
     color: var(--text-main);
     min-width: 60px;
     word-break: break-word;
+}
+
+/* Minimal Link */
+.note-link {
+    color: #38bdf8;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
+    cursor: pointer;
+    word-break: break-all;
+    transition: color 0.15s ease;
+}
+
+.note-link:hover {
+    color: #7dd3fc;
+}
+
+.note-link-edit-btn {
+    display: none !important;
 }
 
 /* Toast */

@@ -23,6 +23,22 @@ static std::string UnescapeHtml(const std::string& input) {
     return s;
 }
 
+static std::string EscapeHtml(const std::string& input) {
+    std::string s;
+    s.reserve(input.size());
+    for (char c : input) {
+        switch (c) {
+            case '&':  s.append("&amp;"); break;
+            case '<':  s.append("&lt;"); break;
+            case '>':  s.append("&gt;"); break;
+            case '"':  s.append("&quot;"); break;
+            case '\'': s.append("&#39;"); break;
+            default:   s.push_back(c); break;
+        }
+    }
+    return s;
+}
+
 static std::string StripHtmlTags(const std::string& html) {
     std::regex tag_regex("<[^>]*>");
     return std::regex_replace(html, tag_regex, "");
@@ -236,6 +252,25 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
             continue;
         }
 
+        // 0.5. Link Bookmark (> [hiển thị]<link url>)
+        if (tag_attrs.find("note-link-wrap") != std::string::npos || inner.find("note-link-wrap") != std::string::npos ||
+            tag_attrs.find("link-card") != std::string::npos || inner.find("link-card") != std::string::npos) {
+            std::regex title_regex(R"(data-title=[\"']([^\"']*)[\"'])", std::regex::icase);
+            std::regex url_regex(R"(data-url=[\"']([^\"']*)[\"'])", std::regex::icase);
+            std::smatch tm, um;
+            std::string card_search = tag_attrs + " " + inner;
+            std::string card_title = "";
+            std::string card_url = "";
+            if (std::regex_search(card_search, tm, title_regex)) card_title = tm[1].str();
+            if (std::regex_search(card_search, um, url_regex)) card_url = um[1].str();
+
+            if (!card_url.empty()) {
+                if (card_title.empty()) card_title = card_url;
+                md << "> [" << UnescapeHtml(card_title) << "]<" << UnescapeHtml(card_url) << ">\n";
+                continue;
+            }
+        }
+
         // 1. Headings
         if (tag_lower == "h1") {
             md << "# " << Trim(UnescapeHtml(StripHtmlTags(inner))) << "\n";
@@ -414,6 +449,12 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
                 table_tag = tbl_m[0].str();
             }
 
+            // Sửa lỗi nếu có thẻ p nằm trực tiếp trong tr để đảm bảo cấu trúc table luôn hợp lệ
+            table_tag = std::regex_replace(table_tag, std::regex("<p><br\\s*/?></p>", std::regex::icase), "");
+            table_tag = std::regex_replace(table_tag, std::regex("<tr>\\s*<p>", std::regex::icase), "<tr><td>");
+            table_tag = std::regex_replace(table_tag, std::regex("</p>\\s*<td>", std::regex::icase), "</td><td>");
+            table_tag = std::regex_replace(table_tag, std::regex("</p>\\s*</tr>", std::regex::icase), "</td></tr>");
+
             // Đảm bảo th và td có contenteditable="true"
             table_tag = std::regex_replace(table_tag, std::regex("<th(?![^>]*contenteditable)", std::regex::icase), "<th contenteditable=\"true\"");
             table_tag = std::regex_replace(table_tag, std::regex("<td(?![^>]*contenteditable)", std::regex::icase), "<td contenteditable=\"true\"");
@@ -492,6 +533,12 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             }
         }
 
+        // 0.3. Link HTML directly (<span class="note-link-wrap"...)
+        if (trimmed.rfind("<p><span class=\"note-link-wrap\"", 0) == 0 || trimmed.rfind("<span class=\"note-link-wrap\"", 0) == 0 || trimmed.rfind("<div class=\"link-card\"", 0) == 0) {
+            html << trimmed;
+            continue;
+        }
+
         // Headings: #, ##, ###
         if (trimmed.rfind("### ", 0) == 0) {
             html << "<h3>" << trimmed.substr(4) << "</h3>";
@@ -506,9 +553,48 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
-        // Blockquotes: >
-        if (trimmed.rfind("> ", 0) == 0) {
-            html << "<blockquote>" << trimmed.substr(2) << "</blockquote>";
+        // Blockquotes & Link Bookmarks: >
+        if (trimmed.rfind(">", 0) == 0) {
+            std::string bq_content = Trim(trimmed.substr(1));
+            // Check link card patterns:
+            // 1. [title]<url>
+            // 2. [title](url)
+            // 3. <url>
+            // 4. http(s)://...
+            std::regex link_card_r(R"(^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/[^\s]+)))", std::regex::icase);
+            std::smatch lm;
+            if (std::regex_search(bq_content, lm, link_card_r)) {
+                std::string title = "";
+                std::string url = "";
+                if (lm[1].matched && lm[2].matched) {
+                    title = lm[1].str();
+                    url = lm[2].str();
+                } else if (lm[3].matched) {
+                    url = lm[3].str();
+                    title = url;
+                } else if (lm[4].matched) {
+                    url = lm[4].str();
+                    title = url;
+                }
+                title = Trim(title);
+                url = Trim(url);
+                if (title.empty()) title = url;
+                if (!url.empty()) {
+                    std::string safe_title = EscapeHtml(title);
+                    std::string safe_url = EscapeHtml(url);
+                    html << "<p><span class=\"note-link-wrap\" contenteditable=\"false\" data-title=\"" << safe_title 
+                         << "\" data-url=\"" << safe_url << "\">"
+                         << "<a class=\"note-link\" title=\"Nhấp để mở: " << safe_url << "\">"
+                         << safe_title << "</a>"
+                         << "<button type=\"button\" class=\"note-link-edit-btn\" title=\"Chỉnh sửa liên kết\">"
+                         << "<svg class=\"lucide-pencil\" xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"></path><path d=\"m15 5 4 4\"></path></svg>"
+                         << "</button></span></p>";
+                    continue;
+                }
+            }
+
+            // Normal Blockquote
+            html << "<blockquote>" << bq_content << "</blockquote>";
             continue;
         }
 
@@ -566,18 +652,19 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
                 render_src = "https://notelocal.app/" + src;
             }
 
-            std::string style_attr = "";
+            std::string width_spec = "30%";
             size_t pipe_pos = label.find('|');
             if (pipe_pos != std::string::npos) {
-                std::string width_spec = label.substr(pipe_pos + 1);
-                if (!width_spec.empty()) {
-                    if (width_spec.find('%') == std::string::npos && width_spec.find("px") == std::string::npos) {
-                        width_spec += "px";
+                std::string spec = label.substr(pipe_pos + 1);
+                if (!spec.empty()) {
+                    if (spec.find('%') == std::string::npos && spec.find("px") == std::string::npos) {
+                        spec += "px";
                     }
-                    style_attr = " style=\"width: " + width_spec + ";\"";
+                    width_spec = spec;
                 }
             }
 
+            std::string style_attr = " style=\"width: " + width_spec + ";\"";
             html << "<p class=\"image-wrapper\"><img src=\"" << render_src << "\" data-asset-src=\"" << src << "\"" << style_attr << " class=\"note-image\"></p>";
             continue;
         }

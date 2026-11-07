@@ -5,9 +5,9 @@
 <h1 align="center">Note Local</h1>
 
 <p align="center">
-  <b>Ứng dụng ghi chú siêu tối giản (Ultra-Minimalist) cho Windows 11</b><br>
+  <b>Ứng dụng ghi chú siêu tối giản (Ultra-Minimalist) cho Windows 11 & 10</b><br>
   Được xây dựng bằng C++17 Native và Microsoft WebView2 Runtime.<br>
-  Tốc độ khởi động tức thì, RAM &lt; 60MB, lưu trữ Markdown 100% cục bộ, không server phụ thuộc.
+  Tốc độ khởi động tức thì, RAM &lt; 60MB, lưu trữ Markdown 100% cục bộ, bảo mật tuyệt đối không phụ thuộc server.
 </p>
 
 <p align="center">
@@ -16,27 +16,32 @@
   <img src="https://img.shields.io/badge/Tech-C%2B%2B17%20%7C%20Win32%20%7C%20WebView2-blue" alt="C++ WebView2">
   <img src="https://img.shields.io/badge/Memory-%3C%2060MB%20RAM-success" alt="Memory">
   <img src="https://img.shields.io/badge/Storage-100%25%20Local%20Markdown-orange" alt="Local Markdown">
+  <img src="https://img.shields.io/badge/Tests-8%2F8%20Suites%20Passed-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
 </p>
 
 ---
 
-## ✨ Điểm nổi bật
+## ✨ Điểm nổi bật & Tính năng cốt lõi
 
-- ⚡ **Siêu nhẹ & Hiệu năng đỉnh cao**: Viết bằng C++17 và Win32 API native kết hợp Microsoft Edge WebView2 Evergreen, thời gian khởi động < 0.2s, bộ nhớ RAM tiêu thụ luôn dưới **60MB** (không giật lag, không ngốn tài nguyên như Electron).
-- 🎨 **Chuẩn giao diện Windows 11 & Ultra-Minimal**: Hỗ trợ bo góc DWM, dark mode native tinh tế, thanh tab tối giản tuyệt đối, tập trung 100% không gian vào việc ghi chép.
+- ⚡ **Siêu nhẹ & Hiệu năng đỉnh cao**: Viết bằng C++17 và Win32 API native kết hợp Microsoft Edge WebView2 Evergreen, thời gian khởi động < 0.2s, bộ nhớ RAM tiêu thụ luôn dưới **60MB** (không giật lag, không ngốn tài nguyên như Electron hay Chromium cồng kềnh).
+- 🎨 **Chuẩn giao diện Windows 11 & Biểu tượng Native**: Hỗ trợ bo góc DWM, dark mode native tinh tế, thanh tab tối giản tuyệt đối, tích hợp bộ biểu tượng ứng dụng Windows Native Icon (`app.ico`) chuẩn mọi độ phân giải (16x16 đến 256x256).
 - 📊 **Bảng biểu phong cách Office (Tables - Word / Excel / Notion)**:
   - **Tạo bảng trực quan**: Nhấp biểu tượng Table để chọn kích thước qua lưới 6x6 hoặc chọn nhanh preset (`2x2`, `3x3`, `4x3`, `5x4`).
   - **Kéo chỉnh kích thước cột thời gian thực**: Từng cột tích hợp thanh kéo `.col-resizer`, điều chỉnh độ rộng cột mượt mà bằng chuột.
   - **Thao tác nhanh chuẩn Office**: Nút `+` ở mép phải để thêm cột, nút `+` ở đáy bảng để thêm hàng.
   - **Phím tắt `Tab` thông minh**: Nhấn `Tab` để di chuyển nhanh giữa các ô; nhấn `Tab` ở ô cuối cùng sẽ **tự động thêm hàng mới** (chuẩn hành vi Word & Notion). Nhấn `Shift + Tab` để lùi lại ô trước.
   - **Menu ngữ cảnh chuột phải**: Nhấp chuột phải vào bất kỳ ô nào để thêm hàng/cột, xóa hàng/cột hoặc xóa toàn bộ bảng.
-  - **Lưu trữ chuẩn Markdown**: Bảng được lưu chuẩn CommonMark HTML với thẻ `<colgroup><col style="width: ...px">`, bảo toàn nguyên vẹn độ rộng từng cột và dữ liệu.
+  - **Cơ chế tự sửa (Self-healing HTML)**: Giữ toàn vẹn cấu trúc bảng kể cả khi chèn liên kết hay nội dung đa dòng, không bao giờ bị lỗi vỡ khung.
+- 🔗 **Liên kết Bookmark Tối giản (Minimal Link Bookmarks)**:
+  - **Tự động nhận diện**: Gõ `> https://url` hoặc `> [tên]<url>` để biến ngay thành liên kết thông minh màu xanh thanh lịch với gạch chân tinh tế.
+  - **Chỉnh sửa linh hoạt**: Rê chuột lên liên kết xuất hiện nút bút chì (✏️); nhấp vào sẽ mở popover với 2 ô nhập: *Tên hiển thị* và *Đường link URL*, kèm nút Xóa liên kết.
+  - **Hỗ trợ toàn diện trong Bảng**: Hoạt động mượt mà cả trong đoạn văn thường lẫn bên trong từng ô Table (`<td>`).
 - 🖼️ **Dán ảnh siêu tốc & Chống giật lag (Zero-lag Canvas Compression)**:
   - Tự động nén ảnh từ Clipboard bằng Canvas downscaling (tối đa 1440px, JPEG 0.85) giảm **95% dung lượng** (từ 20-30MB bitmap thô xuống ~150KB), triệt tiêu hoàn toàn tình trạng khựng giật DWM của Windows.
-  - Định danh ảnh theo ID chính xác (`img_id`), loại bỏ hoàn toàn race condition hay mất ảnh khi lưu.
-  - Hộp công cụ chỉnh kích thước ảnh trực tiếp: chọn nhanh `30%`, `60%`, `100%` hoặc kéo tự do ở góc ảnh.
-  - Phóng to ảnh sắc nét (Lightbox): **Nhấp đúp chuột (Double-click)** vào ảnh bất kỳ để xem toàn màn hình.
+  - **Kích thước mặc định 30%**: Ảnh dán vào mặc định ở mức 30% gọn gàng, đồng bộ giữa App Editor và Web Viewer.
+  - **Hộp công cụ co giãn ảnh**: Chọn nhanh `30%`, `60%`, `100%` hoặc kéo tự do ở góc ảnh để phóng to/thu nhỏ.
+  - **Phóng to sắc nét (Lightbox)**: **Nhấp đúp chuột (Double-click)** vào ảnh bất kỳ để xem toàn màn hình.
 - ⏰ **To-Do List & Hẹn giờ nhắc việc thông minh (Reminders & Toast Notifications)**:
   - Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do).
   - Nhận diện cú pháp hẹn giờ tự nhiên: gõ `@14:30 15/11`, `@09:00`, `@mai 08:30`... Hệ thống tự tạo badge đồng hồ hẹn giờ.
@@ -78,7 +83,22 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 3. Bảng biểu phong cách Office (Tables)
+### 3. Liên kết Bookmark Tối giản (Minimal Links)
+- **Tạo liên kết nhanh**:
+  - Gõ `> https://youtube.com` rồi nhấn dấu cách hoặc phím <kbd>Enter</kbd>.
+  - Hoặc gõ `> [Tên hiển thị]<https://url>`.
+  - Liên kết lập tức hiển thị dưới dạng văn bản màu xanh có gạch chân trang nhã, nhấp vào để mở ngay trong trình duyệt mặc định.
+- **Chỉnh sửa liên kết**:
+  - Rê chuột qua liên kết, nút bút chì (✏️) sẽ xuất hiện bên cạnh.
+  - Bấm vào nút bút chì để mở popover:
+    - **Ô 1 (Tên hiển thị)**: Đổi tên hiển thị ngắn gọn (ví dụ: "Kênh YouTube").
+    - **Ô 2 (Đường dẫn URL)**: Chỉnh sửa lại địa chỉ link.
+    - **Nút Xóa (Thùng rác)**: Xóa liên kết và khôi phục văn bản thường.
+- **Sử dụng trong Table**: Bạn có thể gõ hoặc dán liên kết vào bất kỳ ô nào của bảng biểu, liên kết sẽ nằm gọn gàng bên trong ô đó.
+
+---
+
+### 4. Bảng biểu phong cách Office (Tables)
 - **Chèn bảng mới**:
   - Nhấp vào biểu tượng **Table** trên thanh Header.
   - Rê chuột trên lưới 6x6 để chọn số hàng và số cột mong muốn, hoặc nhấp vào các nút preset nhanh (`2x2`, `3x3`, `4x3`, `5x4`).
@@ -101,10 +121,10 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 4. Chèn & Quản lý hình ảnh
+### 5. Chèn & Quản lý hình ảnh
 - **Dán ảnh (Ctrl + V)**:
   - Chụp ảnh màn hình qua <kbd>Win</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> hoặc copy ảnh từ trình duyệt.
-  - Nhấn <kbd>Ctrl</kbd> + <kbd>V</kbd> vào trình soạn thảo: Ảnh tự động được nén tối ưu (giảm 95% dung lượng) và lưu vào thư mục `assets/`.
+  - Nhấn <kbd>Ctrl</kbd> + <kbd>V</kbd> vào trình soạn thảo: Ảnh tự động được nén tối ưu (giảm 95% dung lượng) và lưu vào thư mục `assets/` với độ rộng mặc định 30%.
 - **Chỉnh kích thước ảnh**:
   - Nhấp 1 lần vào ảnh để hiển thị khung chọn kích thước: `30%`, `60%`, hoặc `Vừa khung (100%)`.
   - Kéo chấm tròn ở góc dưới bên phải ảnh để co giãn tự do.
@@ -114,7 +134,7 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 5. Quản lý Thẻ ghi chú (Tabs)
+### 6. Quản lý Thẻ ghi chú (Tabs)
 - **Tạo Tab mới**: Nhấn phím tắt <kbd>Ctrl</kbd> + <kbd>N</kbd> hoặc click nút `+` trên thanh tiêu đề.
 - **Chuyển Tab tuần hoàn**:
   - <kbd>Ctrl</kbd> + <kbd>Tab</kbd>: Chuyển sang tab kế tiếp.
@@ -127,17 +147,17 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 6. Ghim cửa sổ (Always on Top)
+### 7. Ghim cửa sổ (Always on Top)
 - Nhấp vào biểu tượng **Chiếc ghim** (Pin icon) ở góc phải thanh tiêu đề.
 - Khi được ghim, biểu tượng chuyển sang màu vàng hổ phách (`#f59e0b`). Cửa sổ sẽ luôn nổi trên các ứng dụng khác.
 
 ---
 
-### 7. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages)
+### 8. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages)
 - Ở tab ghi chú cần chia sẻ, nhấp vào nút **Chia sẻ** (icon `share-2`).
 - Toàn bộ nội dung văn bản, danh sách việc, hình ảnh và bảng biểu được nén bằng thuật toán `deflate-raw` và mã hóa thành URL Hash (`#`).
 - Đường link có dạng: `https://michaeltran8386.github.io/note-app/#<hash>`. Khi mở trên trình duyệt:
-  - Hiển thị 100% nội dung Markdown, Checkbox tương tác được, xem ảnh sắc nét và bảng biểu chuẩn xác.
+  - Hiển thị 100% nội dung Markdown, Checkbox tương tác được, xem ảnh sắc nét với độ rộng mặc định 30% và bảng biểu chuẩn xác.
   - Tích hợp chế độ **Soạn thảo trực tiếp trên Web** để chỉnh sửa nhanh và tự động cập nhật URL Hash.
   - Hoạt động hoàn toàn Client-side, không lưu trữ trên máy chủ nào, hoàn toàn riêng tư và miễn phí.
 
@@ -157,6 +177,7 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển tiếp sang tab tiếp theo (Cycle forward) |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển lùi về tab trước (Cycle backward) |
 | <kbd>Ctrl</kbd> + <kbd>N</kbd> | Toàn ứng dụng | Tạo tab ghi chú mới |
+| `> https://...` | Trình soạn thảo / Bảng | Tạo link bookmark tối giản có nút chỉnh sửa (✏️) |
 | `[]` | Trình soạn thảo | Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do) |
 | `@HH:mm dd/MM` | Dòng To-Do | Đặt lịch hẹn giờ nhắc việc tự động (Reminder) |
 | <kbd>Backspace</kbd> | Dòng To-Do trống | Xóa ô To-Do và đưa về dạng dòng văn bản thường |
@@ -164,10 +185,10 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Tab</kbd> | Trong ô Bảng | Di chuyển sang ô tiếp theo (tự thêm hàng mới ở ô cuối cùng) |
 | <kbd>Shift</kbd> + <kbd>Tab</kbd> | Trong ô Bảng | Lùi về ô trước đó |
 | <kbd>Chuột phải</kbd> | Trong ô Bảng | Mở menu ngữ cảnh thêm/xóa hàng, cột, bảng |
-| <kbd>Ctrl</kbd> + <kbd>V</kbd> | Trình soạn thảo | Dán ảnh từ clipboard (tự động nén tối ưu, không lag) |
+| <kbd>Ctrl</kbd> + <kbd>V</kbd> | Trình soạn thảo | Dán ảnh từ clipboard (nén tối ưu 95%, mặc định 30% width) |
 | <kbd>Double-click</kbd> vào ảnh | Trên ảnh | Mở Lightbox phóng to xem ảnh gốc toàn màn hình |
 | <kbd>Double-click</kbd> vào Tab | Thanh Header | Mở hộp thoại đổi tên tab |
-| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Lightbox ảnh, popover bảng, menu chuột phải hoặc modal |
+| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Lightbox ảnh, popover bảng, popover sửa link hoặc menu |
 
 ---
 
@@ -177,7 +198,10 @@ Sau khi tải hoặc biên dịch:
 NOTE_LOCAL/
 ├── assets/                     # Nơi lưu trữ các hình ảnh dán từ clipboard (.png, .jpg)
 ├── notes/                      # Nơi lưu trữ nội dung ghi chú (.md) theo từng tab
-├── resources/                  # Tài nguyên nhận diện thương hiệu (Logo SVG chuẩn 100/100)
+├── resources/                  # Tài nguyên nhận diện thương hiệu (Logo SVG chuẩn, app.ico Native)
+│   ├── app.ico                 # Biểu tượng Windows Icon đa kích thước (16x16 -> 256x256)
+│   ├── app.rc                  # Windows Resource Script gán IDI_APP_ICON
+│   └── logo/logo.svg           # Logo SVG gốc chuẩn tỷ lệ 100/100
 ├── specs/                      # Đặc tả kỹ thuật chi tiết (spec, plan, data model, tasks)
 │   └── 001-unified-notes-reminders/
 ├── docs/                       # Web Viewer lưu trữ trên GitHub Pages
@@ -187,22 +211,22 @@ NOTE_LOCAL/
 ├── src/
 │   ├── core/                   # Logic nghiệp vụ độc lập C++
 │   │   ├── note_model.h        # Cấu trúc dữ liệu Note, Tab, Reminder, TodoItem
-│   │   ├── markdown_engine.h/cpp # Bộ tuần tự hóa Markdown, Table, Image, To-Do, Reminders
+│   │   ├── markdown_engine.h/cpp # Bộ tuần tự hóa Markdown, Table, Image, Links, Reminders
 │   │   ├── reminder_manager.h/cpp # Quản lý và lập lịch nhắc hẹn theo thời gian thực
 │   │   └── share_service.h/cpp   # Dịch vụ chia sẻ ghi chú và tạo URL hash
 │   ├── platform/               # Tầng tương tác hệ điều hành Windows
-│   │   ├── window_controller.h/cpp # Xử lý cửa sổ Win32, DWM dark mode, Always on Top
+│   │   ├── window_controller.h/cpp # Xử lý cửa sổ Win32, DWM dark mode, Always on Top, Taskbar Icon
 │   │   ├── webview_host.h/cpp      # Điều khiển WebView2 Runtime
 │   │   ├── notification_service.h/cpp # Windows Toast Notification & System Tray Icon
 │   │   └── ipc_message.h/bridge.h  # Cầu nối truyền thông điệp JSON giữa C++ và WebView2
 │   ├── ui/assets/              # Giao diện người dùng HTML5, CSS3, Vanilla JS
-│   │   ├── index.html          # Cấu trúc DOM siêu tối giản (Editor, Popover bảng, Context menu)
+│   │   ├── index.html          # Cấu trúc DOM siêu tối giản (Editor, Popover bảng, Link Popover)
 │   │   ├── style.css           # Bảng phong cách dark-mode Windows 11
-│   │   └── editor.js           # Xử lý tương tác bảng, dán ảnh nén Canvas, to-do, tabs
+│   │   └── editor.js           # Xử lý tương tác bảng, dán ảnh nén Canvas, links, to-do, tabs
 │   └── main.cpp                # Điểm khởi chạy WinMain, vòng lặp thông điệp Windows
-├── tests/                      # Bộ kiểm thử đơn vị tự động (7/7 test suites pass 100%)
+├── tests/                      # Bộ kiểm thử đơn vị tự động (8/8 test suites pass 100%)
 │   ├── unit/                   # Kiểm thử reminder parser, reminder manager, share contract
-│   ├── test_markdown_engine.cpp # Kiểm thử tuần tự hóa Markdown, Table và Image
+│   ├── test_markdown_engine.cpp # Kiểm thử tuần tự hóa Markdown, Table, Links và Image
 │   ├── test_storage_manager.cpp # Kiểm thử đọc ghi tệp tin và cấu hình
 │   ├── test_window_controller.cpp
 │   └── test_ipc_message.cpp
@@ -233,7 +257,7 @@ cmake -B build -G "Ninja"  # Hoặc -G "MinGW Makefiles" / MSVC
 # 3. Biên dịch ứng dụng chính
 cmake --build build --target NoteLocal
 
-# 4. Chạy toàn bộ các bộ kiểm thử đơn vị tự động (Unit Tests)
+# 4. Chạy toàn bộ 8 bộ kiểm thử đơn vị tự động (Unit Tests)
 .\build\bin\test_markdown_engine.exe
 .\build\bin\test_reminder_parser.exe
 .\build\bin\test_reminder_manager.exe
@@ -241,6 +265,7 @@ cmake --build build --target NoteLocal
 .\build\bin\test_share_contract.exe
 .\build\bin\test_window_controller.exe
 .\build\bin\test_ipc_message.exe
+.\build\bin\test_runner.exe
 
 # 5. Khởi chạy ứng dụng
 .\build\bin\NoteLocal.exe

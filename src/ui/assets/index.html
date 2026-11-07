@@ -92,6 +92,37 @@
         </div>
     </div>
 
+    <!-- Share & Merge Popover (Mục B: Rút gọn TinyURL & Mục C: Hợp nhất chỉnh sửa) -->
+    <div id="share-popover" class="share-popover hidden">
+        <div class="share-popover-title">Chia sẻ & Hợp nhất Ghi chú</div>
+        
+        <div class="share-section">
+            <div class="share-section-label">1. Link chia sẻ cho người khác xem & sửa:</div>
+            <div class="share-url-row">
+                <input type="text" id="share-short-url-input" readonly placeholder="Đang tạo link rút gọn...">
+                <button type="button" id="btn-copy-short-url" class="btn-accent">Sao chép</button>
+            </div>
+            <div class="share-sub-actions">
+                <a href="#" id="link-copy-full-url" class="share-text-link">Sao chép link đầy đủ (Offline Hash)</a>
+            </div>
+            <div class="share-hint">Người nhận mở link trên web có thể xem và bấm <b>"Soạn thảo"</b> để chỉnh sửa rồi gửi lại link cho bạn.</div>
+        </div>
+
+        <div class="share-divider"></div>
+
+        <div class="share-section">
+            <div class="share-section-label">2. Nhập bản chỉnh sửa từ người khác (Merge):</div>
+            <div class="share-url-row">
+                <input type="text" id="import-update-url-input" placeholder="Dán link người khác gửi lại vào đây...">
+            </div>
+            <div class="share-merge-actions">
+                <button type="button" id="btn-apply-update-current" class="btn-accent">Áp dụng vào Tab này</button>
+                <button type="button" id="btn-apply-update-new" class="btn-text">Tạo Tab mới</button>
+            </div>
+            <div class="share-hint">Tự động giải mã link (kể cả TinyURL) và đồng bộ nội dung vào máy bạn.</div>
+        </div>
+    </div>
+
     <!-- Table Context Menu (Chuột phải vào ô) -->
     <div id="table-context-menu" class="table-context-menu hidden">
         <div class="table-menu-item" data-action="insert-row-above">
@@ -124,6 +155,24 @@
         <div class="table-menu-item danger" data-action="delete-table">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             <span>Xóa toàn bộ bảng</span>
+        </div>
+    </div>
+
+    <!-- Link Edit Popover (Chỉnh sửa Tên hiển thị & URL) -->
+    <div id="link-edit-popover" class="link-popover hidden">
+        <div class="link-popover-title">Chỉnh sửa liên kết</div>
+        <div class="link-input-group">
+            <label for="link-input-title">Tên hiển thị:</label>
+            <input type="text" id="link-input-title" placeholder="Nhập tên hiển thị...">
+        </div>
+        <div class="link-input-group">
+            <label for="link-input-url">Đường dẫn URL:</label>
+            <input type="text" id="link-input-url" placeholder="https://...">
+        </div>
+        <div class="link-popover-actions">
+            <button type="button" id="btn-delete-link" class="btn-text danger-text">Xóa</button>
+            <button type="button" id="btn-cancel-link" class="btn-text">Hủy</button>
+            <button type="button" id="btn-save-link" class="btn-accent">Lưu</button>
         </div>
     </div>
 
