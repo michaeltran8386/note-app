@@ -23,3 +23,10 @@ add_executable(test_storage_manager
     tests/test_storage_manager.cpp
     src/core/storage_manager.cpp
 )
+
+# Test Runner: Window Controller
+add_executable(test_window_controller
+    tests/test_window_controller.cpp
+    src/platform/window_controller.cpp
+)
+target_link_libraries(test_window_controller PRIVATE user32 dwmapi)
