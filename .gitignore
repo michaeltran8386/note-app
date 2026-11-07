@@ -5,6 +5,7 @@ bin/
 *.obj
 *.o
 *.pdb
+config.json
 /data/
 /notes/
 /assets/

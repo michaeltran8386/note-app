@@ -12,3 +12,4 @@
   6. File sinh ra ở ổ đĩa là file `.md` sạch đẹp kèm thư mục ảnh cục bộ.
 - **Constraint:** C/C++ trên Windows 11, hoạt động hoàn toàn offline, tự động co ảnh giữ nguyên tỷ lệ khung hình.
 - **Out of scope:** Bắt người dùng phải nhìn hoặc sửa cú pháp mã Markdown thô, đồng bộ đám mây, tài khoản đăng nhập.
+
