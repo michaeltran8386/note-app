@@ -52,3 +52,4 @@ inline int test_framework_report() {
         return 1;
     }
 }
+

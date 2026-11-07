@@ -10,7 +10,7 @@ public:
     WebViewHost();
     ~WebViewHost();
 
-    bool Initialize(HWND hwnd, const std::wstring& initial_url, std::function<void(const std::string&)> on_message);
+    bool Initialize(HWND hwnd, const std::wstring& base_dir, const std::wstring& initial_url, std::function<void(const std::string&)> on_message);
     void PostWebMessage(const std::string& json_message);
     void Resize(int width, int height);
     void SetFocus();

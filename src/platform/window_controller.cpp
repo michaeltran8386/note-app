@@ -31,3 +31,4 @@ void WindowController::ApplyWindows11Styling(HWND hwnd) {
     DWORD preference = DWMWCP_ROUND;
     DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &preference, sizeof(preference));
 }
+

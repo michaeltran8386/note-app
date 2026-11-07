@@ -7,8 +7,6 @@ void test_serialize_todos_and_text() {
                        "<p><input type=\"checkbox\" checked> Hoàn thành task 1</p>"
                        "<p><input type=\"checkbox\"> Task chưa làm</p>";
     std::string md = MarkdownEngine::SerializeToMarkdown("Ghi chú mới", html);
-    
-    std::cout << "Serialized Markdown:\n" << md << std::endl;
 
     ASSERT_TRUE(md.find("- [x] Hoàn thành task 1") != std::string::npos);
     ASSERT_TRUE(md.find("- [ ] Task chưa làm") != std::string::npos);
@@ -16,10 +14,13 @@ void test_serialize_todos_and_text() {
 }
 
 void test_serialize_images() {
-    std::string html = "<p><img src=\"assets/screenshot_123.png\" class=\"note-image\"></p>";
+    std::string html = "<p><img src=\"https://notelocal.app/assets/screenshot_123.png\" class=\"note-image\"></p>";
     std::string md = MarkdownEngine::SerializeToMarkdown("Tab ảnh", html);
-    
     ASSERT_TRUE(md.find("![image](assets/screenshot_123.png)") != std::string::npos);
+
+    std::string html_data_attr = "<p><img src=\"data:image/png;base64,123\" data-asset-src=\"assets/saved_456.png\" class=\"note-image\"></p>";
+    std::string md2 = MarkdownEngine::SerializeToMarkdown("Tab ảnh 2", html_data_attr);
+    ASSERT_TRUE(md2.find("![image](assets/saved_456.png)") != std::string::npos);
 }
 
 void test_parse_to_html() {
@@ -29,11 +30,9 @@ void test_parse_to_html() {
                      "Đoạn văn bản thường";
     std::string html = MarkdownEngine::ParseToHtml(md);
 
-    std::cout << "Parsed HTML:\n" << html << std::endl;
-
     ASSERT_TRUE(html.find("<input type=\"checkbox\" class=\"todo-check\">") != std::string::npos);
     ASSERT_TRUE(html.find("<input type=\"checkbox\" class=\"todo-check\" checked>") != std::string::npos);
-    ASSERT_TRUE(html.find("<img src=\"assets/photo.png\" class=\"note-image\">") != std::string::npos);
+    ASSERT_TRUE(html.find("https://notelocal.app/assets/photo.png") != std::string::npos);
     ASSERT_TRUE(html.find("Đoạn văn bản thường") != std::string::npos);
 }
 

@@ -28,3 +28,4 @@ public:
     // Đảm bảo cấu hình luôn có ít nhất 1 tab hợp lệ
     static void EnsureValidTabs(AppConfig& config);
 };
+

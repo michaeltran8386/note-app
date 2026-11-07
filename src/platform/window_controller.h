@@ -8,3 +8,4 @@ public:
     static bool IsAlwaysOnTop(HWND hwnd);
     static void ApplyWindows11Styling(HWND hwnd);
 };
+

@@ -7,3 +7,4 @@ int main() {
     ASSERT_TRUE(win_ver > 10);
     return test_framework_report();
 }
+

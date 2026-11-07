@@ -94,7 +94,7 @@ void HandleWebMessage(const std::string& raw_json) {
             auto bytes = IPCBridge::DecodeBase64(b64);
             std::string saved_path = StorageManager::SaveAssetImage(g_base_dir + "/assets", bytes, ext);
             
-            // Chuyển đường dẫn sang relative URL cho web view
+            // Đường dẫn tương đối dạng assets/img_xxx.png
             fs::path rel = fs::relative(saved_path, g_base_dir);
             std::string rel_str = rel.generic_string();
 
@@ -193,12 +193,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(g_hwnd, nCmdShow);
     UpdateWindow(g_hwnd);
 
-    // Chuẩn bị URL trỏ tới index.html
-    fs::path html_path = fs::absolute(app_dir / "src" / "ui" / "assets" / "index.html");
-    std::wstring initial_url = html_path.wstring();
+    // Sử dụng virtual host https://notelocal.app/ ánh xạ trực tiếp tới g_base_dir
+    fs::path base_path = fs::absolute(app_dir);
+    std::wstring base_dir_w = base_path.wstring();
+    std::wstring initial_url = L"https://notelocal.app/src/ui/assets/index.html";
 
     // Khởi tạo WebView2
-    if (!g_webview.Initialize(g_hwnd, initial_url, HandleWebMessage)) {
+    if (!g_webview.Initialize(g_hwnd, base_dir_w, initial_url, HandleWebMessage)) {
         MessageBoxW(g_hwnd, L"Không thể khởi tạo WebView2 Runtime!", L"Lỗi", MB_OK | MB_ICONERROR);
         return 1;
     }

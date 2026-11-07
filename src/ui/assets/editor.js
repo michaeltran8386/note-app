@@ -3,6 +3,7 @@
     let tabs = [{ id: "tab_default", title: "Ghi chú mới" }];
     let isPinned = false;
     let saveTimeout = null;
+    let pendingImages = [];
 
     const editor = document.getElementById("editor");
     const tabsList = document.getElementById("tabs-list");
@@ -46,7 +47,15 @@
             editor.innerHTML = payload.content_html || "<p><br></p>";
             setupCheckboxListeners();
         } else if (action === "image_saved") {
-            insertImage(payload.path);
+            const fullUrl = "https://notelocal.app/" + payload.path;
+            if (pendingImages.length > 0) {
+                const img = pendingImages.shift();
+                img.dataset.assetSrc = payload.path;
+                img.src = fullUrl;
+            } else {
+                insertImage(fullUrl);
+            }
+            triggerSave();
         } else if (action === "update_pin") {
             isPinned = payload.always_on_top;
             btnPin.classList.toggle("pinned", isPinned);
@@ -245,7 +254,7 @@
                     node.parentNode.appendChild(div);
                 }
 
-                // Nếu node cha trước đó rỗng, có thể xóa
+                // Nếu node cha trước đó rỗng, xóa thẻ P thừa
                 if (before.trim() === "" && node.parentNode && node.parentNode !== editor && node.parentNode.tagName === "P") {
                     node.parentNode.replaceWith(div);
                 }
@@ -331,22 +340,32 @@
         }
     });
 
-    // Xử lý dán ảnh Ctrl+V
+    // Xử lý dán ảnh Ctrl+V từ clipboard
     editor.addEventListener("paste", function(e) {
-        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+        const clipboardData = e.clipboardData || window.clipboardData;
+        if (!clipboardData) return;
+        const items = clipboardData.items;
         if (!items) return;
 
         for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf("image") !== -1) {
+            if (items[i].type && items[i].type.indexOf("image") !== -1) {
                 e.preventDefault();
                 const blob = items[i].getAsFile();
+                if (!blob) continue;
+
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const dataUrl = event.target.result;
+                    // Chèn ảnh vào editor ngay lập tức với Data URL để người dùng nhìn thấy tức thì
+                    const img = insertImage(dataUrl);
+
+                    // Gửi Base64 sang C++ để lưu vào assets/img_xxx.png
                     sendIPC("save_image", {
                         data: dataUrl,
                         ext: "png"
                     });
+
+                    pendingImages.push(img);
                 };
                 reader.readAsDataURL(blob);
                 return;
@@ -379,7 +398,17 @@
             img.parentNode.appendChild(p);
         }
 
+        // Chuyển con trỏ xuống dòng mới
+        try {
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+        } catch (err) {}
+
         triggerSave();
+        return img;
     }
 
     // Khởi tạo ban đầu

@@ -43,3 +43,4 @@ int main() {
     test_ipc_malformed_json();
     return test_framework_report();
 }
+

@@ -146,3 +146,4 @@ bool StorageManager::DeleteNote(const std::string& notes_dir, const std::string&
         return false;
     }
 }
+

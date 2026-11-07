@@ -111,19 +111,19 @@ WebViewHost::~WebViewHost() {
     }
 }
 
-bool WebViewHost::Initialize(HWND hwnd, const std::wstring& initial_url, std::function<void(const std::string&)> on_message) {
+bool WebViewHost::Initialize(HWND hwnd, const std::wstring& base_dir, const std::wstring& initial_url, std::function<void(const std::string&)> on_message) {
     m_hwnd = hwnd;
     m_on_message = on_message;
 
     auto envHandler = new EnvironmentCompletedHandler(
-        [this, initial_url](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+        [this, base_dir, initial_url](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
             if (FAILED(result) || !env) {
                 std::cerr << "Failed to create CoreWebView2Environment: " << result << std::endl;
                 return result;
             }
 
             auto ctrlHandler = new ControllerCompletedHandler(
-                [this, initial_url](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
+                [this, base_dir, initial_url](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
                     if (FAILED(result) || !controller) {
                         std::cerr << "Failed to create CoreWebView2Controller: " << result << std::endl;
                         return result;
@@ -134,6 +134,19 @@ bool WebViewHost::Initialize(HWND hwnd, const std::wstring& initial_url, std::fu
                     m_controller->get_CoreWebView2(&m_webview);
 
                     if (m_webview) {
+                        // Ánh xạ virtual host notelocal.app tới thư mục gốc dự án
+                        // Giúp load ảnh assets/ và UI an toàn, không bị chặn CORS hay file:// policy
+                        ICoreWebView2_3* webview3 = nullptr;
+                        HRESULT hr3 = m_webview->QueryInterface(IID_ICoreWebView2_3, (void**)&webview3);
+                        if (SUCCEEDED(hr3) && webview3) {
+                            webview3->SetVirtualHostNameToFolderMapping(
+                                L"notelocal.app",
+                                base_dir.c_str(),
+                                COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW
+                            );
+                            webview3->Release();
+                        }
+
                         EventRegistrationToken token;
                         auto msgHandler = new WebMessageReceivedHandler(
                             [this](ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {

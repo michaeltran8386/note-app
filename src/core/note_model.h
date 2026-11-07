@@ -13,3 +13,4 @@ struct NoteDoc {
     std::string title;
     std::string raw_markdown;
 };
+

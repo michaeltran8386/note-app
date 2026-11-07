@@ -45,3 +45,4 @@ int main() {
     test_window_topmost_toggle();
     return test_framework_report();
 }
+

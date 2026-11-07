@@ -70,3 +70,4 @@ int main() {
     test_save_asset_image();
     return test_framework_report();
 }
+

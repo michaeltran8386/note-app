@@ -4,7 +4,6 @@
 
 static std::string UnescapeHtml(const std::string& input) {
     std::string s = input;
-    size_t pos = 0;
     auto replace_all = [&](const std::string& from, const std::string& to) {
         size_t start_pos = 0;
         while ((start_pos = s.find(from, start_pos)) != std::string::npos) {
@@ -41,7 +40,7 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
     std::sregex_iterator end;
 
     if (begin == end) {
-        // Fallback: nếu không có thẻ bao ngoài, xử lý đơn giản
+        // Fallback: nếu không có thẻ bao ngoài
         std::string raw = UnescapeHtml(StripHtmlTags(body_html));
         return Trim(raw);
     }
@@ -56,6 +55,22 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
         std::smatch img_match;
         if (std::regex_search(inner, img_match, img_regex)) {
             std::string src = img_match[1].str();
+            
+            // Kiểm tra thuộc tính data-asset-src nếu có
+            std::regex asset_attr_regex("data-asset-src=[\"']([^\"']+)[\"']", std::regex::icase);
+            std::smatch asset_match;
+            if (std::regex_search(inner, asset_match, asset_attr_regex)) {
+                src = asset_match[1].str();
+            }
+
+            // Chuẩn hóa đường dẫn về dạng assets/xxx.png
+            std::string prefix = "https://notelocal.app/";
+            if (src.rfind(prefix, 0) == 0) {
+                src = src.substr(prefix.length());
+            } else if (src.rfind("/assets/", 0) == 0) {
+                src = src.substr(1);
+            }
+
             md << "![image](" << src << ")\n";
             continue;
         }
@@ -123,7 +138,11 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
         std::smatch img_match;
         if (std::regex_match(trimmed, img_match, md_img_regex)) {
             std::string src = img_match[2].str();
-            html << "<p><img src=\"" << src << "\" class=\"note-image\"></p>";
+            std::string render_src = src;
+            if (src.rfind("assets/", 0) == 0) {
+                render_src = "https://notelocal.app/" + src;
+            }
+            html << "<p><img src=\"" << render_src << "\" data-asset-src=\"" << src << "\" class=\"note-image\"></p>";
             continue;
         }
 

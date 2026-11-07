@@ -44,11 +44,11 @@ body {
     align-items: center;
     overflow-x: auto;
     flex: 1;
-    scrollbar-width: none; /* Hide scrollbar Firefox */
+    scrollbar-width: none;
 }
 
 #tabs-container::-webkit-scrollbar {
-    display: none; /* Hide scrollbar Chrome/Edge */
+    display: none;
 }
 
 #tabs-list {
@@ -131,10 +131,12 @@ body {
     background: transparent;
     border: 1px solid transparent;
     color: var(--text-secondary);
-    font-size: 15px;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 5px;
     border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
 }
 
@@ -143,10 +145,28 @@ body {
     color: var(--text-primary);
 }
 
+.pin-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+    stroke: var(--text-secondary);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease, fill 0.2s ease;
+}
+
+.action-btn:hover .pin-icon {
+    stroke: var(--text-primary);
+}
+
+/* Khi Pin được kích hoạt */
 .action-btn.pinned {
-    background-color: rgba(245, 158, 11, 0.2);
+    background-color: rgba(245, 158, 11, 0.18);
     border-color: var(--accent-pinned);
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
+.action-btn.pinned .pin-icon {
+    stroke: var(--accent-pinned);
+    fill: rgba(245, 158, 11, 0.4);
+    transform: rotate(45deg);
 }
 
 /* Editor Container */
