@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "src/main.cpp": {
-    "mtime": 1794063766.8762248,
-    "seen": 1794065173.3086116,
-    "ast_hash": "ecf4cd3deb7c696e92c60c9edb9b839d",
+    "mtime": 1794068395.3898127,
+    "seen": 1794068445.7657542,
+    "ast_hash": "099bb4b902091bc42eac6a275fe2d143",
     "semantic_hash": ""
   },
   "src/platform/ipc_message.cpp": {
@@ -132,15 +132,15 @@
     "semantic_hash": ""
   },
   "CMakeLists.txt": {
-    "mtime": 1794057641.1590416,
-    "seen": 1794057643.3306427,
-    "ast_hash": "1e960259b3ecf075537959361597a40c",
+    "mtime": 1794068359.5629313,
+    "seen": 1794068445.7694032,
+    "ast_hash": "833bf6cd28ff0eec6016595b8d91825d",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794058167.6549132,
-    "seen": 1794058227.5103693,
-    "ast_hash": "0b1c38bd3850b46fac4543e311a98837",
+    "mtime": 1794067776.4220755,
+    "seen": 1794068445.7694056,
+    "ast_hash": "70945252f31b87a9d2f50dfab61c2d8f",
     "semantic_hash": ""
   },
   "docs/index.html": {
@@ -573,6 +573,12 @@
     "mtime": 1794064621.0964663,
     "seen": 1794065173.3077712,
     "ast_hash": "474872396169e452ee5e84211dc5bf0b",
+    "semantic_hash": ""
+  },
+  "resources/app.png": {
+    "mtime": 1794068287.5509992,
+    "seen": 1794068445.7710989,
+    "ast_hash": "da38f812a182628a6a5ddcb7b15afe28",
     "semantic_hash": ""
   }
 }

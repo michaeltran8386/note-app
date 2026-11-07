@@ -70,6 +70,11 @@ add_executable(NoteLocal WIN32
     src/platform/webview_host.cpp
     src/platform/ipc_message.cpp
     src/platform/notification_service.cpp
+    resources/app.rc
+)
+
+set_source_files_properties(resources/app.rc PROPERTIES
+    COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/resources"
 )
 
 target_link_libraries(NoteLocal PRIVATE

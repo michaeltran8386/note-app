@@ -334,12 +334,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     StorageManager::LoadConfig(g_base_dir + "/config.json", g_config);
 
     const wchar_t CLASS_NAME[] = L"NoteLocalWindowClass";
+    HICON hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(101));
+    HICON hIconSm = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(101), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+
     WNDCLASSW wc = {};
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.hIcon = hIcon;
     RegisterClassW(&wc);
 
     g_hwnd = CreateWindowExW(
@@ -352,13 +356,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     if (!g_hwnd) return 1;
 
+    if (hIcon) SendMessageW(g_hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    if (hIconSm) SendMessageW(g_hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSm);
+
     WindowController::ApplyWindows11Styling(g_hwnd);
     if (g_config.always_on_top) {
         WindowController::SetAlwaysOnTop(g_hwnd, true);
     }
 
     // Khởi tạo NotificationService và Timer định thời 3s (kiểm tra nhắc hẹn chính xác)
-    NotificationService::Instance().Init(g_hwnd, WM_TRAY_NOTIFICATION);
+    NotificationService::Instance().Init(g_hwnd, WM_TRAY_NOTIFICATION, hIconSm);
     SetTimer(g_hwnd, TIMER_REMINDER_ID, 3000, nullptr);
 
     ShowWindow(g_hwnd, nCmdShow);
