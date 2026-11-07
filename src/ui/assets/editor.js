@@ -705,7 +705,7 @@
     // CÀI ĐẶT (SETTINGS MODAL)
     // ==========================================
     function openSettingsModal() {
-        txturlServiceInput.value = localStorage.getItem("note_local_txturl_service") || "https://antoniopelusi.github.io/txturl/";
+        txturlServiceInput.value = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
         settingsModal.classList.remove("hidden");
         txturlServiceInput.focus();
     }
@@ -717,7 +717,7 @@
     btnSettings.addEventListener("click", openSettingsModal);
     btnCloseSettings.addEventListener("click", closeSettingsModal);
     btnSaveSettings.addEventListener("click", () => {
-        const service = txturlServiceInput.value.trim() || "https://antoniopelusi.github.io/txturl/";
+        const service = txturlServiceInput.value.trim() || "https://michaeltran8386.github.io/note-app/";
         localStorage.setItem("note_local_txturl_service", service);
         closeSettingsModal();
         showToast("Đã lưu cài đặt thành công!");
@@ -862,7 +862,7 @@
 
         try {
             const hash = await compressToTxtUrl(fullText);
-            let serviceUrl = localStorage.getItem("note_local_txturl_service") || "https://antoniopelusi.github.io/txturl/";
+            let serviceUrl = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
             if (!serviceUrl.endsWith("/")) serviceUrl += "/";
             const cleanTxtUrl = `${serviceUrl}#${hash}`;
 

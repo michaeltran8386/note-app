@@ -84,11 +84,21 @@ Sau khi build hoặc tải bản phát hành:
 
 ---
 
-### 6. Chia sẻ ghi chú qua URL Clean Text (TxtUrl)
+### 6. Chia sẻ ghi chú qua Trình duyệt Web Clean Text (GitHub Pages)
 - Ở tab ghi chú cần chia sẻ, nhấp vào nút **Chia sẻ URL** (icon `share-2`).
 - Toàn bộ nội dung văn bản sẽ được tự động nén bằng thuật toán `deflate-raw` và mã hóa trực tiếp vào URL Hash (`#`).
 - Ứng dụng hiện thông báo **"Đã sao chép URL vào Clipboard của bạn"** mà không làm gián đoạn hay tự động bật trình duyệt ngoài ý muốn.
-- Bạn chỉ cần dán (<kbd>Ctrl</kbd> + <kbd>V</kbd>) đường link vào bất kỳ trình duyệt nào để mở ra giao diện **Clean Text** tinh gọn tức thì (không cần đăng nhập, không cần máy chủ, hoàn toàn bảo mật và riêng tư). Tương thích dịch vụ mã nguồn mở [TxtUrl](https://antoniopelusi.github.io/txturl/).
+- Đường link có dạng: `https://michaeltran8386.github.io/note-app/#<hash>`. Khi dán vào trình duyệt, nó sẽ mở ra **trình duyệt Clean Text tĩnh được lưu trữ trực tiếp ngay trong repo GitHub** của bạn (`docs/`):
+  - Hỗ trợ xem Markdown sắc nét, hiển thị danh sách việc cần làm (Checkbox), xem ảnh.
+  - Hỗ trợ chuyển sang chế độ **Soạn thảo** ngay trên web để chỉnh sửa và tự động cập nhật URL Hash.
+  - Hỗ trợ nút **Sao chép** nội dung thô và nút **Chia sẻ**.
+  - Hoạt động 100% Client-side (Zero-backend), không cần database, hoàn toàn bảo mật và miễn phí vĩnh viễn trên GitHub Pages.
+
+> **💡 Cách bật GitHub Pages cho Repository (chỉ làm 1 lần):**
+> 1. Truy cập repo của bạn: `https://github.com/michaeltran8386/note-app/settings/pages`
+> 2. Tại mục **Build and deployment** -> **Source**: Chọn **Deploy from a branch** (hoặc chọn **GitHub Actions** vì dự án đã có sẵn workflow tự động deploy).
+> 3. Nếu chọn *Deploy from a branch*: Chọn Branch `main` và thư mục `/docs` -> Bấm **Save**.
+> 4. Sau vài giây, trang web của bạn sẽ chính thức hoạt động tại: `https://michaeltran8386.github.io/note-app/`!
 
 ---
 
