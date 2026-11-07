@@ -111,6 +111,22 @@ void HandleWebMessage(const std::string& raw_json) {
         nlohmann::json reply;
         reply["always_on_top"] = pin;
         g_webview.PostWebMessage(IPCBridge::Serialize("update_pin", reply));
+    } else if (msg.action == "copy_to_clipboard") {
+        std::string text = msg.payload.value("text", "");
+        if (!text.empty() && OpenClipboard(g_hwnd)) {
+            EmptyClipboard();
+            int len = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
+            HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(wchar_t));
+            if (hMem) {
+                wchar_t* pMem = (wchar_t*)GlobalLock(hMem);
+                if (pMem) {
+                    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, pMem, len);
+                    GlobalUnlock(hMem);
+                    SetClipboardData(CF_UNICODETEXT, hMem);
+                }
+            }
+            CloseClipboard();
+        }
     } else if (msg.action == "open_url") {
         std::string url = msg.payload.value("url", "");
         if (!url.empty()) {

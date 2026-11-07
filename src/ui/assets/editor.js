@@ -32,7 +32,7 @@
     const settingsModal = document.getElementById("settings-modal");
     const btnCloseSettings = document.getElementById("btn-close-settings");
     const btnSaveSettings = document.getElementById("btn-save-settings");
-    const githubTokenInput = document.getElementById("github-token-input");
+    const txturlServiceInput = document.getElementById("txturl-service-input");
 
     const imageLightboxModal = document.getElementById("image-lightbox-modal");
     const lightboxImg = document.getElementById("lightbox-img");
@@ -705,9 +705,9 @@
     // CÀI ĐẶT (SETTINGS MODAL)
     // ==========================================
     function openSettingsModal() {
-        githubTokenInput.value = localStorage.getItem("note_local_github_token") || "";
+        txturlServiceInput.value = localStorage.getItem("note_local_txturl_service") || "https://antoniopelusi.github.io/txturl/";
         settingsModal.classList.remove("hidden");
-        githubTokenInput.focus();
+        txturlServiceInput.focus();
     }
 
     function closeSettingsModal() {
@@ -717,8 +717,8 @@
     btnSettings.addEventListener("click", openSettingsModal);
     btnCloseSettings.addEventListener("click", closeSettingsModal);
     btnSaveSettings.addEventListener("click", () => {
-        const token = githubTokenInput.value.trim();
-        localStorage.setItem("note_local_github_token", token);
+        const service = txturlServiceInput.value.trim() || "https://antoniopelusi.github.io/txturl/";
+        localStorage.setItem("note_local_txturl_service", service);
         closeSettingsModal();
         showToast("Đã lưu cài đặt thành công!");
     });
@@ -821,63 +821,64 @@
         return lines.join("\n\n");
     }
 
+    // ==========================================
+    // MÃ HÓA CLEAN TEXT URL (THAM KHẢO TXTURL)
+    // ==========================================
+    async function compressToTxtUrl(text) {
+        if (!text) text = "";
+        if (window.CompressionStream) {
+            const stream = new CompressionStream("deflate-raw");
+            const writer = stream.writable.getWriter();
+            writer.write(new TextEncoder().encode(text));
+            writer.close();
+            const buf = await new Response(stream.readable).arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            let binary = "";
+            for (const b of bytes) binary += String.fromCharCode(b);
+            return btoa(binary)
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_")
+                .replace(/=/g, "");
+        } else {
+            return btoa(unescape(encodeURIComponent(text)))
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_")
+                .replace(/=/g, "");
+        }
+    }
+
     btnExportUrl.addEventListener("click", async function() {
         const activeTab = tabs.find(t => t.id === currentTabId);
-        const title = (activeTab && activeTab.title) ? activeTab.title : "Ghi chú";
+        const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
         const mdContent = getNoteMarkdown();
-        const token = localStorage.getItem("note_local_github_token") || "";
 
-        if (!token) {
-            showToast("Vui lòng cấu hình GitHub Token trong Cài đặt để tạo URL chia sẻ!", 4000);
-            openSettingsModal();
-            return;
+        let fullText = mdContent;
+        if (title) {
+            fullText = `# ${title}\n\n${mdContent}`;
+        }
+        if (!fullText.trim()) {
+            fullText = title ? `# ${title}` : "";
         }
 
-        showToast("Đang tạo URL công khai trên GitHub Gist...");
-
         try {
-            const cleanName = title.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1EA0-\u1EF9 ]/g, "_") || "Note";
-            const filename = cleanName + ".md";
-            const payload = {
-                description: "Note Local: " + title,
-                public: true,
-                files: {
-                    [filename]: {
-                        content: `# ${title}\n\n${mdContent || "*(Nội dung trống)*"}`
-                    }
-                }
-            };
+            const hash = await compressToTxtUrl(fullText);
+            let serviceUrl = localStorage.getItem("note_local_txturl_service") || "https://antoniopelusi.github.io/txturl/";
+            if (!serviceUrl.endsWith("/")) serviceUrl += "/";
+            const cleanTxtUrl = `${serviceUrl}#${hash}`;
 
-            const response = await fetch("https://api.github.com/gists", {
-                method: "POST",
-                headers: {
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": `Bearer ${token}`,
-                    "X-GitHub-Api-Version": "2022-11-28",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.message || `HTTP ${response.status}`);
-            }
-
-            const gist = await response.json();
-            const gistUrl = gist.html_url;
-
+            // 1. Sao chép vào Clipboard qua Web API
             if (navigator.clipboard) {
-                await navigator.clipboard.writeText(gistUrl);
+                await navigator.clipboard.writeText(cleanTxtUrl).catch(() => {});
             }
 
-            // Mở link trên trình duyệt mặc định của hệ thống Windows
-            sendIPC("open_url", { url: gistUrl });
+            // 2. Đảm bảo sao chép vào Clipboard qua Windows Win32 Native API
+            sendIPC("copy_to_clipboard", { text: cleanTxtUrl });
 
-            showToast("Đã xuất URL và mở trên trình duyệt! Link đã sao chép vào Clipboard.", 4500);
+            // 3. Hiển thị thông báo đúng chuẩn chức năng: "Đã sao chép URL vào Clipboard của bạn"
+            showToast("Đã sao chép URL vào Clipboard của bạn", 3000);
         } catch (err) {
-            console.error("Export URL Error:", err);
-            showToast("Lỗi xuất URL: " + err.message, 5000);
+            console.error("TxtUrl Compress Error:", err);
+            showToast("Không thể tạo URL: " + err.message, 3000);
         }
     });
 

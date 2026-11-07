@@ -27,8 +27,8 @@
                     <path d="m21 21-4.3-4.3"/>
                 </svg>
             </button>
-            <!-- Xuất URL qua GitHub -->
-            <button id="btn-export-url" class="action-btn" title="Xuất URL lên trình duyệt (chia sẻ qua GitHub)">
+            <!-- Chia sẻ URL Clean Text (TxtUrl) -->
+            <button id="btn-export-url" class="action-btn" title="Sao chép URL Clean Text">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2">
                     <circle cx="18" cy="5" r="3"/>
                     <circle cx="6" cy="12" r="3"/>
@@ -121,9 +121,9 @@
                     </ul>
                 </div>
                 <div class="setting-group">
-                    <label for="github-token-input">GitHub Token (Tùy chọn xuất URL Gist):</label>
-                    <input type="password" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx (để tạo Gist riêng tư)">
-                    <small class="helper-text">Nếu để trống, ứng dụng sẽ tạo Gist ẩn danh công khai.</small>
+                    <label for="txturl-service-input">Dịch vụ Clean Text URL:</label>
+                    <input type="text" id="txturl-service-input" placeholder="https://antoniopelusi.github.io/txturl/">
+                    <small class="helper-text">Mã hóa ghi chú trực tiếp vào URL Hash (#), dán vào trình duyệt sẽ mở Clean Text ngay lập tức mà không cần tài khoản hay máy chủ.</small>
                 </div>
             </div>
             <div class="modal-actions">

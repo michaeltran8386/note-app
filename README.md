@@ -84,15 +84,11 @@ Sau khi build hoặc tải bản phát hành:
 
 ---
 
-### 6. Xuất URL chia sẻ ghi chú (qua GitHub Gist)
-1. **Thiết lập GitHub Token (1 lần duy nhất)**:
-   - Click vào nút **Cài đặt** (icon bánh răng ở góc trên).
-   - Dán mã **GitHub Personal Access Token** (yêu cầu quyền `gist` — tạo miễn phí tại [github.com/settings/tokens](https://github.com/settings/tokens)).
-   - Bấm **Xong** để lưu cấu hình.
-2. **Xuất và gửi link**:
-   - Ở tab ghi chú cần chia sẻ, click nút **Xuất URL** (icon `share-2`).
-   - Ứng dụng tự động định dạng note thành Markdown, tạo một Gist công khai trên GitHub.
-   - Đường link URL công khai được tự động copy vào **Clipboard**, đồng thời hệ thống tự động mở trình duyệt mặc định hiển thị nội dung note.
+### 6. Chia sẻ ghi chú qua URL Clean Text (TxtUrl)
+- Ở tab ghi chú cần chia sẻ, nhấp vào nút **Chia sẻ URL** (icon `share-2`).
+- Toàn bộ nội dung văn bản sẽ được tự động nén bằng thuật toán `deflate-raw` và mã hóa trực tiếp vào URL Hash (`#`).
+- Ứng dụng hiện thông báo **"Đã sao chép URL vào Clipboard của bạn"** mà không làm gián đoạn hay tự động bật trình duyệt ngoài ý muốn.
+- Bạn chỉ cần dán (<kbd>Ctrl</kbd> + <kbd>V</kbd>) đường link vào bất kỳ trình duyệt nào để mở ra giao diện **Clean Text** tinh gọn tức thì (không cần đăng nhập, không cần máy chủ, hoàn toàn bảo mật và riêng tư). Tương thích dịch vụ mã nguồn mở [TxtUrl](https://antoniopelusi.github.io/txturl/).
 
 ---
 
@@ -168,3 +164,4 @@ NOTE_LOCAL/
 ## 📄 Bản quyền
 
 Dự án được phát hành theo giấy phép **MIT License**. Tự do sử dụng, chỉnh sửa và phân phối.
+

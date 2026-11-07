@@ -47,12 +47,24 @@ void test_ipc_open_url_message() {
     ASSERT_STR_EQ(msg.payload["url"].get<std::string>().c_str(), "https://gist.github.com/michaeltran8386/test-note");
 }
 
+void test_ipc_copy_to_clipboard_message() {
+    nlohmann::json payload;
+    payload["text"] = "https://antoniopelusi.github.io/txturl/#test";
+    std::string json_str = IPCBridge::Serialize("copy_to_clipboard", payload);
+
+    IPCMessage msg;
+    ASSERT_TRUE(IPCBridge::Parse(json_str, msg));
+    ASSERT_STR_EQ(msg.action.c_str(), "copy_to_clipboard");
+    ASSERT_STR_EQ(msg.payload["text"].get<std::string>().c_str(), "https://antoniopelusi.github.io/txturl/#test");
+}
+
 int main() {
     std::cout << "Running IPC Message Tests..." << std::endl;
     test_ipc_serialize_parse();
     test_ipc_base64_roundtrip();
     test_ipc_malformed_json();
     test_ipc_open_url_message();
+    test_ipc_copy_to_clipboard_message();
     return test_framework_report();
 }
 
