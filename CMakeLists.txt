@@ -4,12 +4,14 @@ project(NoteLocal CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/include
 )
 
 # Test Runner: Markdown Engine
@@ -35,4 +37,29 @@ target_link_libraries(test_window_controller PRIVATE user32 dwmapi)
 add_executable(test_ipc_message
     tests/test_ipc_message.cpp
     src/platform/ipc_message.cpp
+)
+
+# Main Executable: NoteLocal
+add_executable(NoteLocal WIN32
+    src/main.cpp
+    src/core/markdown_engine.cpp
+    src/core/storage_manager.cpp
+    src/platform/window_controller.cpp
+    src/platform/webview_host.cpp
+    src/platform/ipc_message.cpp
+)
+
+target_link_libraries(NoteLocal PRIVATE
+    user32
+    dwmapi
+    ole32
+    shell32
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll.lib
+)
+
+# Copy WebView2Loader.dll next to NoteLocal.exe
+add_custom_command(TARGET NoteLocal POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/WebView2Loader.dll"
 )
