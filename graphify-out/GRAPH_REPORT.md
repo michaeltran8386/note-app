@@ -1,17 +1,17 @@
-# Graph Report - NOTE_LOCAL  (2026-11-07)
+# Graph Report - NOTE_LOCAL  (2026-11-08)
 
 ## Corpus Check
-- 81 files · ~138,001 words
+- 86 files · ~144,999 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 2, .css 2, .ico 1)
 
 ## Summary
-- 1000 nodes · 1895 edges · 65 communities (52 shown, 13 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 62 edges (avg confidence: 0.9)
+- 1013 nodes · 1962 edges · 56 communities (53 shown, 3 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 68 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9c40cc2f`
+- Built from commit: `546c49d0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,20 +24,22 @@
 - ReminderManager
 - editor.js
 - pages.yml
-- HandleWebMessage
+- storage_manager.cpp
+- test_framework.h
 - markdown_engine.cpp
+- Review Focus
 - common.ps1
 - 🚀 Hướng dẫn sử dụng chi tiết
 - Tasks: Unified Notes, To-Do with Reminders & 100% Web Share
-- ReminderSchedule
+- ReminderEntry
 - app.js
 - get_impl_ptr
-- .SetAlwaysOnTop
+- Technical Unknowns & Decisions
 - Tasks: [FEATURE NAME]
-- test_markdown_engine.cpp
+- WndProc
 - rbegin
-- size_type
 - uint8_t
+- AppConfig
 - speckit-analyze/SKILL.md
 - Execution Steps
 - basic_json
@@ -45,7 +47,7 @@
 - operator<
 - note-local.md
 - NotificationService
-- AppConfig
+- .SetAlwaysOnTop
 - Feature Specification: [FEATURE NAME]
 - Feature Specification: Unified Notes, To-Do with Reminders & 100% Web Share
 - speckit-plan/SKILL.md
@@ -58,24 +60,21 @@
 - speckit-checklist/SKILL.md
 - speckit-clarify/SKILL.md
 - speckit-implement/SKILL.md
+- ShareResult
 - speckit-constitution/SKILL.md
 - [CHECKLIST TYPE] Checklist: [FEATURE NAME]
-- value_t
+- ShareImageAttachment
 - .Serialize
 - 1. Reminder Subsystem Contracts
 - Entities & Schemas
 - Quickstart: Validation & Verification Guide
-- Review Focus
 - Contract: Web Share Payload & Universal Viewer Schema
-- std::string to_string
-- test_framework.h
+- main.cpp
 - namespace
-- iostream
 - handle_value
-- Technical Unknowns & Decisions
 
 ## God Nodes (most connected - your core abstractions)
-1. `string` - 55 edges
+1. `string` - 59 edges
 2. `basic_json()` - 37 edges
 3. `operator<()` - 34 edges
 4. `handle_value()` - 28 edges
@@ -101,15 +100,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (65 total, 13 thin omitted)
+## Communities (56 total, 3 thin omitted)
 
 ### Community 0 - "ControllerCompletedHandler"
 Cohesion: 0.05
 Nodes (18): ControllerCompletedHandler, m_cb, m_ref, STDMETHODCALLTYPE, EnvironmentCompletedHandler, m_cb, m_ref, STDMETHODCALLTYPE (+10 more)
 
 ### Community 1 - "share_service.h"
-Cohesion: 0.12
-Nodes (14): GenerateShareId(), ReadBinaryFile(), ShareImageAttachment, local_path, mime_type, width, ShareResult, error_message (+6 more)
+Cohesion: 0.15
+Nodes (6): EscapeHtml(), UnescapeHtml(), GenerateShareId(), ReadBinaryFile(), ShareService, main()
 
 ### Community 2 - "steps"
 Cohesion: 0.06
@@ -117,31 +116,35 @@ Nodes (30): args, inputs, integration, spec, default, prompt, type, any (+22 mor
 
 ### Community 3 - "json.hpp"
 Cohesion: 0.04
-Nodes (20): adl_serializer, clear(), dump_integer(), from_json(), get_number_unsigned(), get_position(), get_token_string(), hex_bytes() (+12 more)
+Nodes (17): adl_serializer, clear(), dump_integer(), from_json(), get_error_message(), get_number_unsigned(), get_position(), is_negative_number() (+9 more)
 
 ### Community 4 - "end"
-Cohesion: 0.18
-Nodes (22): begin(), cbegin(), cend(), contains(), count(), diff(), emplace(), end() (+14 more)
+Cohesion: 0.14
+Nodes (30): at(), begin(), cbegin(), cend(), contains(), count(), diff(), emplace() (+22 more)
 
 ### Community 5 - "ReminderManager"
-Cohesion: 0.12
-Nodes (11): ReminderEntry, display_time, item_id, note_id, notified_at, status, target_timestamp, text (+3 more)
+Cohesion: 0.18
+Nodes (7): StripHtmlTags(), MakeKey(), ReminderManager, m_mutex, m_reminders, main(), string
 
 ### Community 6 - "editor.js"
-Cohesion: 0.09
-Nodes (42): appendColumn(), appendRow(), checkAndApplyReminder(), closeTab(), closeTabSearchModal(), compressImageViaCanvas(), createTableElement(), createTodoElement() (+34 more)
+Cohesion: 0.07
+Nodes (56): appendColumn(), appendRow(), bindLinkEvents(), checkAndApplyReminder(), closeLinkEditPopover(), closeSharePopover(), closeTab(), closeTabSearchModal() (+48 more)
 
 ### Community 7 - "pages.yml"
 Cohesion: 0.08
 Nodes (25): concurrency, cancel-in-progress, group, environment, runs-on, steps, name, url (+17 more)
 
-### Community 8 - "HandleWebMessage"
+### Community 8 - "storage_manager.cpp"
 Cohesion: 0.18
-Nodes (9): Task 3: Local Storage Manager & Tab Lifecycle, StorageManager, HandleWebMessage(), SendInitState(), main(), test_save_and_load_markdown(), test_save_asset_image(), test_storage_config_and_utf8() (+1 more)
+Nodes (8): Task 3: Local Storage Manager & Tab Lifecycle, StorageManager, SendInitState(), main(), test_save_and_load_markdown(), test_save_asset_image(), test_storage_config_and_utf8(), test_storage_fallback_on_empty_tabs()
 
 ### Community 10 - "markdown_engine.cpp"
-Cohesion: 0.32
-Nodes (10): MarkdownEngine, MarkdownEngine::ExtractTodos(), MarkdownEngine::ParseReminderSchedule(), MarkdownEngine::SerializeToMarkdown(), StripHtmlTags(), Trim(), UnescapeHtml(), MakeKey() (+2 more)
+Cohesion: 0.29
+Nodes (11): MarkdownEngine, Trim(), main(), test_extract_todos(), test_gfm_pipe_table_parsing(), test_link_card_serialization_and_parsing(), test_parse_to_html(), test_serialize_images_with_dimensions() (+3 more)
+
+### Community 11 - "Review Focus"
+Cohesion: 0.14
+Nodes (12): Global Constraints, Note Local Windows 11 Implementation Plan, Review Focus, Self-Review Checklist, Task 1: Environment Scaffolding, CMake & Git Setup, Task 2: Core Data Types & Markdown Engine in C++, Task 5: Win32 WebView2 Host & C++ IPC Bridge, Task 6: Smart Inline Note Editor Frontend (`[]` -> Checkbox & Backspace) (+4 more)
 
 ### Community 12 - "common.ps1"
 Cohesion: 0.16
@@ -149,43 +152,43 @@ Nodes (19): Find-SpecifyRoot(), Format-SpecKitCommand(), Get-CurrentBranch(), Ge
 
 ### Community 13 - "🚀 Hướng dẫn sử dụng chi tiết"
 Cohesion: 0.12
-Nodes (15): 1. Khởi chạy ứng dụng, 2. Soạn thảo văn bản, To-Do List & Hẹn giờ nhắc việc (Reminders), 3. Bảng biểu phong cách Office (Tables), 4. Chèn & Quản lý hình ảnh, 5. Quản lý Thẻ ghi chú (Tabs), 6. Ghim cửa sổ (Always on Top), 7. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages), 📄 Bản quyền (License) (+7 more)
+Nodes (16): 1. Khởi chạy ứng dụng, 2. Soạn thảo văn bản, To-Do List & Hẹn giờ nhắc việc (Reminders), 3. Liên kết Bookmark Tối giản (Minimal Links), 4. Bảng biểu phong cách Office (Tables), 5. Chèn & Quản lý hình ảnh, 6. Quản lý Thẻ ghi chú (Tabs), 7. Ghim cửa sổ (Always on Top), 8. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages) (+8 more)
 
 ### Community 14 - "Tasks: Unified Notes, To-Do with Reminders & 100% Web Share"
 Cohesion: 0.10
 Nodes (19): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description with exact file paths`, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation Strategy, Incremental Delivery, MVP First (User Story 1 Only) (+11 more)
 
-### Community 15 - "ReminderSchedule"
-Cohesion: 0.17
-Nodes (12): ReminderSchedule, display_datetime, notified_at, status, target_timestamp, ReminderStatus, DISMISSED, OVERDUE (+4 more)
+### Community 15 - "ReminderEntry"
+Cohesion: 0.22
+Nodes (8): ReminderEntry, display_time, item_id, note_id, notified_at, status, target_timestamp, text
 
 ### Community 16 - "app.js"
-Cohesion: 0.36
+Cohesion: 0.31
 Nodes (7): decompress(), escapeHtml(), extractTitle(), loadFromHash(), parseInline(), renderMarkdown(), updateDisplay()
 
 ### Community 17 - "get_impl_ptr"
-Cohesion: 0.13
-Nodes (24): binary_t, empty(), end_array(), end_object(), erase(), get_impl_ptr(), get_ptr(), is_array() (+16 more)
+Cohesion: 0.19
+Nodes (12): binary_t, get_impl_ptr(), get_ptr(), is_binary(), is_boolean(), is_number(), is_number_float(), is_number_integer() (+4 more)
 
-### Community 18 - ".SetAlwaysOnTop"
-Cohesion: 0.25
-Nodes (7): Task 4: Win32 Window Controller & Always-on-Top Pin, Task 8: Full End-to-End Integration, Config Persistence & Polish, WinMain(), WindowController, main(), test_window_null_safety(), test_window_topmost_toggle()
+### Community 18 - "Technical Unknowns & Decisions"
+Cohesion: 0.29
+Nodes (6): 1. Windows Notification Architecture: Native Win32 vs C++/WinRT, 2. Background Reminder Scheduler Engine, 3. Inline Reminder Syntax & Storage Representation, 4. 100% Web Share Architecture & Image Hosting, Research: Unified Notes, To-Do with Reminders & 100% Web Share, Technical Unknowns & Decisions
 
 ### Community 19 - "Tasks: [FEATURE NAME]"
 Cohesion: 0.07
 Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description`, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation Strategy, Incremental Delivery, MVP First (User Story 1 Only) (+18 more)
 
-### Community 20 - "test_markdown_engine.cpp"
-Cohesion: 0.47
-Nodes (8): MarkdownEngine::ParseToHtml(), main(), test_extract_todos(), test_gfm_pipe_table_parsing(), test_parse_to_html(), test_serialize_images_with_dimensions(), test_serialize_todos_and_text(), test_table_serialization_and_parsing()
-
 ### Community 21 - "rbegin"
 Cohesion: 0.53
 Nodes (4): crbegin(), crend(), rbegin(), rend()
 
-### Community 23 - "uint8_t"
+### Community 22 - "uint8_t"
 Cohesion: 0.36
 Nodes (6): decode(), to_bjdata(), to_bson(), to_cbor(), to_msgpack(), to_ubjson()
+
+### Community 23 - "AppConfig"
+Cohesion: 0.20
+Nodes (8): AppConfig, active_tab_id, always_on_top, tabs, window_h, window_w, window_x, window_y
 
 ### Community 24 - "speckit-analyze/SKILL.md"
 Cohesion: 0.08
@@ -197,23 +200,23 @@ Nodes (15): 1. Initialize Convergence Context, 2. Load Artifacts (Progressive Di
 
 ### Community 26 - "basic_json"
 Cohesion: 0.16
-Nodes (17): accept(), array(), basic_json(), binary(), flatten(), from_bjdata(), from_bson(), from_cbor() (+9 more)
+Nodes (18): accept(), array(), basic_json(), binary(), flatten(), from_bjdata(), from_bson(), from_cbor() (+10 more)
 
 ### Community 27 - "TodoItem"
-Cohesion: 0.15
-Nodes (12): NoteDoc, id, raw_markdown, title, todos, TodoItem, id, is_checked (+4 more)
+Cohesion: 0.09
+Nodes (24): NoteDoc, id, raw_markdown, title, todos, ReminderSchedule, display_datetime, notified_at (+16 more)
 
 ### Community 28 - "operator<"
-Cohesion: 0.09
-Nodes (13): at(), compares_unordered(), convert(), emplace_back(), get_error_message(), if(), json_pointer, json_pointer operator/() (+5 more)
+Cohesion: 0.10
+Nodes (8): compares_unordered(), convert(), if(), json_pointer, json_pointer operator/(), json_sax_dom_parser(), operator<(), operator "" _json_pointer()
 
 ### Community 30 - "NotificationService"
 Cohesion: 0.10
-Nodes (10): NotificationService, NotificationService::Init(), m_callback_msg, m_hwnd, m_icon, m_icon_added, m_last_item_id, m_last_note_id (+2 more)
+Nodes (8): NotificationService, m_callback_msg, m_hwnd, m_icon, m_icon_added, m_last_item_id, m_last_note_id, NotificationService::NotificationService()
 
-### Community 31 - "AppConfig"
-Cohesion: 0.12
-Nodes (9): AppConfig, active_tab_id, always_on_top, tabs, window_h, window_w, window_x, window_y (+1 more)
+### Community 31 - ".SetAlwaysOnTop"
+Cohesion: 0.26
+Nodes (7): Task 4: Win32 Window Controller & Always-on-Top Pin, Task 8: Full End-to-End Integration, Config Persistence & Polish, WinMain(), WindowController, main(), test_window_null_safety(), test_window_topmost_toggle()
 
 ### Community 32 - "Feature Specification: [FEATURE NAME]"
 Cohesion: 0.15
@@ -263,6 +266,10 @@ Nodes (6): Completion Report, Done When, Mandatory Post-Execution Hooks, Outline
 Cohesion: 0.29
 Nodes (6): Completion Report, Done When, Mandatory Post-Execution Hooks, Outline, Pre-Execution Checks, User Input
 
+### Community 44 - "ShareResult"
+Cohesion: 0.40
+Nodes (5): ShareResult, error_message, public_url, share_id, success
+
 ### Community 45 - "speckit-constitution/SKILL.md"
 Cohesion: 0.33
 Nodes (5): Outline, Post-Execution Checks, Pre-Execution Checks, Scope Guard, User Input
@@ -271,9 +278,9 @@ Nodes (5): Outline, Post-Execution Checks, Pre-Execution Checks, Scope Guard, Us
 Cohesion: 0.40
 Nodes (4): [Category 1], [Category 2], [CHECKLIST TYPE] Checklist: [FEATURE NAME], Notes
 
-### Community 47 - "value_t"
-Cohesion: 0.13
-Nodes (14): data, m_type, m_value, type(), value_t, array, binary, boolean (+6 more)
+### Community 47 - "ShareImageAttachment"
+Cohesion: 0.50
+Nodes (4): ShareImageAttachment, local_path, mime_type, width
 
 ### Community 49 - ".Serialize"
 Cohesion: 0.28
@@ -291,45 +298,41 @@ Nodes (8): 1. Note (Document Entity), 2. ToDoItem (Task Entity), 3. ReminderSche
 Cohesion: 0.25
 Nodes (7): Build & Run, Prerequisites, Quickstart: Validation & Verification Guide, Scenario 1: Inline To-Do with Scheduled Reminder (P1), Scenario 2: 1-Click Web Sharing with 100% Content & Images (P2), Scenario 3: Pinning & Ultra-Fast Desktop Scratchpad (P3), Verification Scenarios
 
-### Community 53 - "Review Focus"
-Cohesion: 0.14
-Nodes (12): Global Constraints, Note Local Windows 11 Implementation Plan, Review Focus, Self-Review Checklist, Task 1: Environment Scaffolding, CMake & Git Setup, Task 2: Core Data Types & Markdown Engine in C++, Task 5: Win32 WebView2 Host & C++ IPC Bridge, Task 6: Smart Inline Note Editor Frontend (`[]` -> Checkbox & Backspace) (+4 more)
-
 ### Community 55 - "Contract: Web Share Payload & Universal Viewer Schema"
 Cohesion: 0.50
 Nodes (3): 1. Web Share Payload Schema (Cloud Document), 2. Universal Web Viewer Requirements, Contract: Web Share Payload & Universal Viewer Schema
 
+### Community 57 - "main.cpp"
+Cohesion: 0.26
+Nodes (4): HandleWebMessage(), PostWebMessageSafe(), ResolveRedirectUrl(), ShortenUrlWithTinyUrl()
+
 ### Community 59 - "namespace"
-Cohesion: 0.13
-Nodes (7): add(), get(), json_sax_acceptor, namespace(), scan(), skip_bom(), skip_whitespace()
+Cohesion: 0.06
+Nodes (28): add(), data, m_type, m_value, get(), get_token_string(), hex_bytes(), json_sax_acceptor (+20 more)
 
 ### Community 62 - "handle_value"
-Cohesion: 0.11
-Nodes (26): back(), boolean(), get_number_float(), handle_value(), json_sax_dom_callback_parser, allow_exceptions, callback, discarded (+18 more)
-
-### Community 63 - "Technical Unknowns & Decisions"
-Cohesion: 0.29
-Nodes (6): 1. Windows Notification Architecture: Native Win32 vs C++/WinRT, 2. Background Reminder Scheduler Engine, 3. Inline Reminder Syntax & Storage Representation, 4. 100% Web Share Architecture & Image Hosting, Research: Unified Notes, To-Do with Reminders & 100% Web Share, Technical Unknowns & Decisions
+Cohesion: 0.09
+Nodes (34): back(), boolean(), dump_float(), empty(), end_array(), end_object(), get_number_float(), handle_value() (+26 more)
 
 ## Knowledge Gaps
 - **78 isolated node(s):** `m_cb`, `m_ref`, `STDMETHODCALLTYPE`, `m_cb`, `m_ref` (+73 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 469 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 462 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `string` connect `markdown_engine.cpp` to `ControllerCompletedHandler`, `share_service.h`, `json.hpp`, `ReminderManager`, `HandleWebMessage`, `ReminderSchedule`, `value_t`, `.Serialize`, `test_markdown_engine.cpp`, `Review Focus`, `main.cpp`, `test_framework.h`, `TodoItem`, `NotificationService`, `AppConfig`?**
-  _High betweenness centrality (0.177) - this node is a cross-community bridge._
+- **Why does `string` connect `ReminderManager` to `ControllerCompletedHandler`, `share_service.h`, `json.hpp`, `storage_manager.cpp`, `test_framework.h`, `markdown_engine.cpp`, `Review Focus`, `ShareResult`, `namespace`, `ShareImageAttachment`, `ReminderEntry`, `.Serialize`, `WndProc`, `AppConfig`, `main.cpp`, `TodoItem`, `NotificationService`?**
+  _High betweenness centrality (0.180) - this node is a cross-community bridge._
 - **What connects `m_cb`, `m_ref`, `STDMETHODCALLTYPE` to the rest of the system?**
   _78 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ControllerCompletedHandler` be split into smaller, more focused modules?**
   _Cohesion score 0.05028248587570622 - nodes in this community are weakly interconnected._
-- **Why does `ReminderSchedule` connect `ReminderSchedule` to `markdown_engine.cpp`, `TodoItem`, `Tasks: Unified Notes, To-Do with Reminders & 100% Web Share`?**
+- **Why does `NotificationService` connect `NotificationService` to `main.cpp`, `WndProc`, `ReminderManager`, `.SetAlwaysOnTop`?**
   _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Should `share_service.h` be split into smaller, more focused modules?**
-  _Cohesion score 0.12380952380952381 - nodes in this community are weakly interconnected._
-- **Why does `NotificationService` connect `NotificationService` to `main.cpp`, `.SetAlwaysOnTop`, `markdown_engine.cpp`, `AppConfig`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._
+- **Why does `ReminderSchedule` connect `TodoItem` to `markdown_engine.cpp`, `ReminderManager`, `Tasks: Unified Notes, To-Do with Reminders & 100% Web Share`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+- **Should `json.hpp` be split into smaller, more focused modules?**
+  _Cohesion score 0.0384180790960452 - nodes in this community are weakly interconnected._

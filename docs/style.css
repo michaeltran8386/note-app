@@ -290,7 +290,8 @@ body {
     margin: 28px 0;
 }
 
-.markdown-body img {
+.markdown-body img,
+.note-image {
     max-width: 100%;
     width: 30%;
     height: auto;

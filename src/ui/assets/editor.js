@@ -236,7 +236,7 @@
                 // 5. Image trực tiếp
                 else if (tag === "IMG") {
                     const assetSrc = node.dataset.assetSrc || (node.src.includes("assets/") ? node.src.substring(node.src.indexOf("assets/")) : node.src);
-                    let label = "image";
+                    let label = "image|30%";
                     if (node.style.width && node.style.width !== "100%") {
                         label = `image|${node.style.width}`;
                     }
@@ -252,11 +252,11 @@
                         const title = noteLink.dataset.title || noteLink.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
                         const url = noteLink.dataset.url || "";
                         if (url) {
-                            lines.push(`> [${title || url}]<${url}>`);
+                            lines.push(`[${title || url}](${url})`);
                         }
                     } else if (img) {
                         const assetSrc = img.dataset.assetSrc || (img.src.includes("assets/") ? img.src.substring(img.src.indexOf("assets/")) : img.src);
-                        let label = "image";
+                        let label = "image|30%";
                         if (img.style.width && img.style.width !== "100%") {
                             label = `image|${img.style.width}`;
                         }
@@ -1867,7 +1867,7 @@
             const ctx = canvas.getContext("2d");
             let w = imgNode.naturalWidth || imgNode.width || 800;
             let h = imgNode.naturalHeight || imgNode.height || 600;
-            const maxDim = 960;
+            const maxDim = 360;
             if (w > maxDim || h > maxDim) {
                 if (w > h) {
                     h = Math.round((h * maxDim) / w);
@@ -1880,7 +1880,7 @@
             canvas.width = w;
             canvas.height = h;
             ctx.drawImage(imgNode, 0, 0, w, h);
-            return canvas.toDataURL("image/jpeg", 0.82);
+            return canvas.toDataURL("image/jpeg", 0.45);
         } catch (err) {
             console.warn("Canvas compression fallback:", err);
             return imgNode.src;
@@ -1894,7 +1894,7 @@
         }
         // 2. Nếu đã là Data URL trực tiếp
         if (imgNode.src && imgNode.src.startsWith("data:image/")) {
-            if (imgNode.src.length > 500000) {
+            if (imgNode.src.length > 80000) {
                 return compressImageViaCanvas(imgNode);
             }
             return imgNode.src;
@@ -1911,9 +1911,11 @@
                 const txt = node.textContent.trim();
                 if (txt) lines.push(txt);
             } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName.toUpperCase();
+
                 // 0. Bảng biểu (Table hoặc .table-wrapper) - Phải kiểm tra TRƯỚC các thẻ DIV / P
-                if (node.tagName === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
-                    const tbl = (node.tagName === "TABLE") ? node : node.querySelector("table.note-table");
+                if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
+                    const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
                     if (tbl) {
                         lines.push(serializeTableToCleanHtml(tbl));
                     }
@@ -1934,14 +1936,24 @@
                         text += ` @${badge.dataset.display}`;
                     }
                     lines.push(`- [${mark}] ${text}`);
-                } else if (node.tagName === "IMG") {
+                } else if (tag === "H1") {
+                    lines.push(`# ${node.textContent.trim()}`);
+                } else if (tag === "H2") {
+                    lines.push(`## ${node.textContent.trim()}`);
+                } else if (tag === "H3") {
+                    lines.push(`### ${node.textContent.trim()}`);
+                } else if (tag === "BLOCKQUOTE") {
+                    lines.push(`> ${node.textContent.trim()}`);
+                } else if (tag === "HR") {
+                    lines.push("---");
+                } else if (tag === "IMG") {
                     const src = await getImageShareSrc(node);
-                    let label = "image";
+                    let label = "image|30%";
                     if (node.style.width && node.style.width !== "100%") {
                         label = `image|${node.style.width}`;
                     }
                     lines.push(`![${label}](${src})`);
-                } else if (node.tagName === "P" || node.tagName === "DIV") {
+                } else if (tag === "P" || tag === "DIV") {
                     let subtext = "";
                     let hasSub = false;
                     for (const child of Array.from(node.childNodes)) {
@@ -1967,7 +1979,7 @@
                             } else if (child.tagName === "IMG") {
                                 hasSub = true;
                                 const src = await getImageShareSrc(child);
-                                let label = "image";
+                                let label = "image|30%";
                                 if (child.style.width && child.style.width !== "100%") {
                                     label = `image|${child.style.width}`;
                                 }
@@ -2341,11 +2353,29 @@
             wrap.replaceWith(a);
         });
         clone.querySelectorAll(".note-link-edit-btn, button, svg").forEach(el => el.remove());
+        // Làm sạch các khối thẻ p, div bên trong ô cell td, th để tránh gãy vỡ layout table
+        clone.querySelectorAll("td, th").forEach(cell => {
+            cell.querySelectorAll("p, div").forEach(block => {
+                while (block.firstChild) {
+                    cell.insertBefore(block.firstChild, block);
+                }
+                block.remove();
+            });
+        });
         // Tự động chuẩn hóa và bảo vệ cấu trúc hàng: nếu tr có phần tử con không phải td hoặc th
         clone.querySelectorAll("tr").forEach(tr => {
             const children = Array.from(tr.childNodes);
             children.forEach(child => {
-                if (child.nodeType === Node.ELEMENT_NODE && child.tagName !== "TD" && child.tagName !== "TH") {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    if (!child.textContent.trim()) {
+                        child.remove();
+                    } else {
+                        const td = document.createElement("td");
+                        td.textContent = child.textContent;
+                        tr.insertBefore(td, child);
+                        child.remove();
+                    }
+                } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName !== "TD" && child.tagName !== "TH") {
                     const td = document.createElement("td");
                     tr.insertBefore(td, child);
                     if (child.tagName === "P" || child.tagName === "DIV") {
