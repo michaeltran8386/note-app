@@ -2112,74 +2112,83 @@
     let latestFullShareUrl = "";
     let latestShortShareUrl = "";
 
+    function closeTablePicker() {
+        if (tablePickerPopover) tablePickerPopover.classList.add("hidden");
+    }
+
     function closeSharePopover() {
         if (sharePopover) sharePopover.classList.add("hidden");
     }
 
     btnExportUrl.addEventListener("click", async function(e) {
         e.stopPropagation();
-        if (sharePopover && sharePopover.classList.contains("hidden")) {
-            closeTablePicker();
-            closeLinkEditPopover();
+        closeTablePicker();
+        closeLinkEditPopover();
+
+        // Mở popover chia sẻ
+        if (sharePopover) {
             sharePopover.classList.remove("hidden");
-            shareShortUrlInput.value = "Đang tạo link rút gọn...";
+        }
+        if (shareShortUrlInput) {
+            shareShortUrlInput.value = "Đang tạo link...";
+        }
 
-            try {
-                const activeTab = tabs.find(t => t.id === currentTabId);
-                const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
-                const mdContent = await getNoteMarkdown();
+        try {
+            const activeTab = tabs.find(t => t.id === currentTabId);
+            const title = (activeTab && activeTab.title && activeTab.title !== "Ghi chú mới") ? activeTab.title : "";
+            const mdContent = await getNoteMarkdown();
 
-                // Nén bằng deflate-raw base64url
-                const hash = await compressToTxtUrl(mdContent);
-                const serviceBase = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
-                const cleanBase = serviceBase.endsWith("/") ? serviceBase : (serviceBase + "/");
-                latestFullShareUrl = `${cleanBase}#${hash}`;
-                latestShortShareUrl = latestFullShareUrl;
+            // Nén bằng deflate-raw base64url
+            const hash = await compressToTxtUrl(mdContent);
+            const serviceBase = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
+            const cleanBase = serviceBase.endsWith("/") ? serviceBase : (serviceBase + "/");
+            latestFullShareUrl = `${cleanBase}#${hash}`;
+            latestShortShareUrl = latestFullShareUrl;
+
+            if (shareShortUrlInput) {
                 shareShortUrlInput.value = latestFullShareUrl;
                 shareShortUrlInput.focus();
                 shareShortUrlInput.select();
-
-                // Tự động sao chép link vào Clipboard ngay lập tức
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    try {
-                        await navigator.clipboard.writeText(latestFullShareUrl);
-                    } catch (e) {}
-                }
-                sendIPC("copy_to_clipboard", { text: latestFullShareUrl });
-
-                // Nếu ghi chú vừa phải (<= 2000 ký tự), gọi C++ rút gọn qua TinyURL
-                if (latestFullShareUrl.length <= 2000) {
-                    showToast("Đã tạo link Web! Đang rút gọn qua TinyURL...", 2500);
-                    sendIPC("shorten_url", { url: latestFullShareUrl });
-                } else {
-                    showToast("Ghi chú chứa ảnh lớn — đã sao chép link đầy đủ (Offline Hash) vào Clipboard!", 3500);
-                }
-
-                // Thu thập ảnh và gửi snapshot local
-                const imgNodes = editor.querySelectorAll("img");
-                const imagePaths = [];
-                imgNodes.forEach(function(img) {
-                    const assetSrc = img.dataset.assetSrc || img.getAttribute("src");
-                    if (assetSrc && assetSrc.includes("assets/")) {
-                        const rel = assetSrc.substring(assetSrc.indexOf("assets/"));
-                        imagePaths.push(rel);
-                    }
-                });
-
-                sendIPC("publish_web_share", {
-                    note_id: currentTabId,
-                    title: title,
-                    markdown_content: mdContent,
-                    referenced_images: imagePaths,
-                    public_url: latestFullShareUrl
-                });
-            } catch (err) {
-                console.error("Lỗi chia sẻ:", err);
-                shareShortUrlInput.value = "Lỗi tạo link";
-                showToast("Lỗi khi tạo link: " + err.message, 3000);
             }
-        } else {
-            closeSharePopover();
+
+            // Tự động sao chép link vào Clipboard ngay lập tức
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(latestFullShareUrl);
+                } catch (e) {}
+            }
+            sendIPC("copy_to_clipboard", { text: latestFullShareUrl });
+
+            // Thông báo người dùng link đã được copy thành công
+            if (latestFullShareUrl.length <= 2000) {
+                showToast("Đã sao chép link Web vào Clipboard! Đang rút gọn...", 2500);
+                sendIPC("shorten_url", { url: latestFullShareUrl });
+            } else {
+                showToast("Đã sao chép link chia sẻ vào Clipboard!", 3500);
+            }
+
+            // Thu thập ảnh và gửi snapshot local
+            const imgNodes = editor.querySelectorAll("img");
+            const imagePaths = [];
+            imgNodes.forEach(function(img) {
+                const assetSrc = img.dataset.assetSrc || img.getAttribute("src");
+                if (assetSrc && assetSrc.includes("assets/")) {
+                    const rel = assetSrc.substring(assetSrc.indexOf("assets/"));
+                    imagePaths.push(rel);
+                }
+            });
+
+            sendIPC("publish_web_share", {
+                note_id: currentTabId,
+                title: title,
+                markdown_content: mdContent,
+                referenced_images: imagePaths,
+                public_url: latestFullShareUrl
+            });
+        } catch (err) {
+            console.error("Lỗi chia sẻ:", err);
+            if (shareShortUrlInput) shareShortUrlInput.value = "Lỗi tạo link";
+            showToast("Lỗi khi tạo link: " + err.message, 3500);
         }
     });
 
