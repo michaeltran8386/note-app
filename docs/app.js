@@ -150,13 +150,23 @@
                 continue;
             }
 
-            // Quotes & Link Bookmarks (> [hiển thị]<link url> hoặc > [title](url) hoặc > url)
+            // Standalone Link: [title](url) hoặc https://...
+            const standaloneLinkMatch = line.trim().match(/^(?:\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)|(https?:\/\/[^\s]+))$/i);
+            if (standaloneLinkMatch) {
+                const title = (standaloneLinkMatch[1] || standaloneLinkMatch[3] || "").trim();
+                const url = (standaloneLinkMatch[2] || standaloneLinkMatch[3] || "").trim();
+                const displayTitle = title || url;
+                html += `<p><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="note-link">${escapeHtml(displayTitle)}</a></p>`;
+                continue;
+            }
+
+            // Quotes & Legacy Link Bookmarks (> [hiển thị]<link url> hoặc > [title](url) hoặc > url)
             if (line.trim().startsWith(">")) {
                 const bqContent = line.trim().slice(1).trim();
-                const bookmarkMatch = bqContent.match(/^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/\S+))/i);
-                if (bookmarkMatch) {
-                    const title = (bookmarkMatch[1] || bookmarkMatch[3] || bookmarkMatch[4] || "").trim();
-                    const url = (bookmarkMatch[2] || bookmarkMatch[3] || bookmarkMatch[4] || "").trim();
+                const legacyMatch = bqContent.match(/^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/\S+))$/i);
+                if (legacyMatch) {
+                    const title = (legacyMatch[1] || legacyMatch[3] || legacyMatch[4] || "").trim();
+                    const url = (legacyMatch[2] || legacyMatch[3] || legacyMatch[4] || "").trim();
                     const displayTitle = title || url;
                     html += `<p><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="note-link">${escapeHtml(displayTitle)}</a></p>`;
                     continue;
