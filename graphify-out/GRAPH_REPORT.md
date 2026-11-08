@@ -1,7 +1,7 @@
 # Graph Report - NOTE_LOCAL  (2026-11-08)
 
 ## Corpus Check
-- 86 files · ~145,368 words
+- 92 files · ~146,124 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 2, .css 2, .ico 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `17d176a4`
+- Built from commit: `8d736c3e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -78,8 +78,8 @@
 4. `handle_value()` - 28 edges
 5. `end()` - 26 edges
 6. `json_sax_dom_callback_parser` - 25 edges
-7. `push_back()` - 25 edges
-8. `begin()` - 25 edges
+7. `begin()` - 25 edges
+8. `push_back()` - 25 edges
 9. `size()` - 24 edges
 10. `namespace()` - 22 edges
 
@@ -90,10 +90,10 @@
   specs/001-unified-notes-reminders/tasks.md → src/core/note_model.h
 - `1. Windows Notification Architecture: Native Win32 vs C++/WinRT` --references--> `WndProc()`  [INFERRED]
   specs/001-unified-notes-reminders/research.md → src/main.cpp
-- `Task 8: Full End-to-End Integration, Config Persistence & Polish` --references--> `MarkdownEngine`  [INFERRED]
-  docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/core/markdown_engine.h
-- `Self-Review Checklist` --references--> `TodoItem`  [INFERRED]
-  docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/core/note_model.h
+- `Self-Review Checklist` --references--> `AppConfig`  [INFERRED]
+  docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/core/storage_manager.h
+- `Task 5: Win32 WebView2 Host & C++ IPC Bridge` --references--> `IPCBridge`  [INFERRED]
+  docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/platform/ipc_message.h
 
 ## Import Cycles
 - None detected.
@@ -154,7 +154,7 @@ Nodes (19): Find-SpecifyRoot(), Format-SpecKitCommand(), Get-CurrentBranch(), Ge
 
 ### Community 13 - "🚀 Hướng dẫn sử dụng chi tiết"
 Cohesion: 0.12
-Nodes (16): 1. Khởi chạy ứng dụng, 2. Soạn thảo văn bản, To-Do List & Hẹn giờ nhắc việc (Reminders), 3. Liên kết Bookmark Tối giản (Minimal Links), 4. Bảng biểu phong cách Office (Tables), 5. Chèn & Quản lý hình ảnh, 6. Quản lý Thẻ ghi chú (Tabs), 7. Ghim cửa sổ (Always on Top), 8. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages) (+8 more)
+Nodes (16): 1. Khởi chạy ứng dụng, 2. Soạn thảo văn bản, To-Do List & Hẹn giờ nhắc việc (Reminders), 3. Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links), 4. Bảng biểu phong cách Office (Tables), 5. Chèn & Quản lý hình ảnh, 6. Quản lý Thẻ ghi chú (Tabs), 7. Ghim cửa sổ (Always on Top), 8. Chia sẻ ghi chú Web Serverless & Hợp nhất 2 chiều (Share & Merge) (+8 more)
 
 ### Community 14 - "Tasks: Unified Notes, To-Do with Reminders & 100% Web Share"
 Cohesion: 0.10
@@ -313,7 +313,7 @@ Cohesion: 0.12
 Nodes (27): back(), boolean(), empty(), end_array(), end_object(), handle_value(), is_discarded(), json_sax_dom_callback_parser (+19 more)
 
 ## Knowledge Gaps
-- **78 isolated node(s):** `PENDING`, `TRIGGERED`, `DISMISSED`, `OVERDUE`, `target_timestamp` (+73 more)
+- **78 isolated node(s):** `m_cb`, `m_ref`, `STDMETHODCALLTYPE`, `m_cb`, `m_ref` (+73 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 464 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -321,16 +321,16 @@ Nodes (27): back(), boolean(), empty(), end_array(), end_object(), handle_value(
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `string` connect `ReminderManager` to `ControllerCompletedHandler`, `share_service.h`, `json.hpp`, `storage_manager.cpp`, `test_framework.h`, `markdown_engine.cpp`, `.Serialize`, `value_t`, `main.cpp`, `TodoItem`, `NotificationService`, `ipc_message.h`?**
-  _High betweenness centrality (0.162) - this node is a cross-community bridge._
-- **What connects `PENDING`, `TRIGGERED`, `DISMISSED` to the rest of the system?**
+  _High betweenness centrality (0.177) - this node is a cross-community bridge._
+- **What connects `m_cb`, `m_ref`, `STDMETHODCALLTYPE` to the rest of the system?**
   _78 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ControllerCompletedHandler` be split into smaller, more focused modules?**
   _Cohesion score 0.05325814536340852 - nodes in this community are weakly interconnected._
-- **Why does `IPCMessage` connect `ipc_message.h` to `.Serialize`, `1. Reminder Subsystem Contracts`, `ReminderManager`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `ReminderSchedule` connect `TodoItem` to `markdown_engine.cpp`, `ReminderManager`, `Tasks: Unified Notes, To-Do with Reminders & 100% Web Share`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Should `share_service.h` be split into smaller, more focused modules?**
   _Cohesion score 0.11594202898550725 - nodes in this community are weakly interconnected._
 - **Why does `NotificationService` connect `NotificationService` to `main.cpp`, `ReminderManager`, `.SetAlwaysOnTop`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._

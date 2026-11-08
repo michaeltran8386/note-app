@@ -33,8 +33,10 @@
   - **Phím tắt `Tab` thông minh**: Nhấn `Tab` để di chuyển nhanh giữa các ô; nhấn `Tab` ở ô cuối cùng sẽ **tự động thêm hàng mới** (chuẩn hành vi Word & Notion). Nhấn `Shift + Tab` để lùi lại ô trước.
   - **Menu ngữ cảnh chuột phải**: Nhấp chuột phải vào bất kỳ ô nào để thêm hàng/cột, xóa hàng/cột hoặc xóa toàn bộ bảng.
   - **Cơ chế tự sửa (Self-healing HTML)**: Giữ toàn vẹn cấu trúc bảng kể cả khi chèn liên kết hay nội dung đa dòng, không bao giờ bị lỗi vỡ khung.
-- 🔗 **Liên kết Bookmark Tối giản (Minimal Link Bookmarks)**:
-  - **Tự động nhận diện**: Gõ `> https://url` hoặc `> [tên]<url>` để biến ngay thành liên kết thông minh màu xanh thanh lịch với gạch chân tinh tế.
+- 🔗 **Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links)**:
+  - **Tự động nhận diện thông minh**: Gõ hoặc dán trực tiếp bất kỳ URL nào (`https://...` hoặc `http://...`) rồi nhấn dấu cách hoặc <kbd>Enter</kbd>, hệ thống sẽ biến ngay thành liên kết thông minh màu xanh thanh lịch với gạch chân tinh tế mà không cần gõ tiền tố cú pháp.
+  - **Dán nhiều link cùng lúc**: Tự động nhận biết danh sách nhiều đường link khi paste, tách từng dòng thành từng thẻ liên kết độc lập, không bị nối dính chuỗi.
+  - **Tương thích ngược**: Vẫn hỗ trợ đầy đủ cú pháp kinh điển `> https://url` hoặc `> [tên]<url>`.
   - **Chỉnh sửa linh hoạt**: Rê chuột lên liên kết xuất hiện nút bút chì (✏️); nhấp vào sẽ mở popover với 2 ô nhập: *Tên hiển thị* và *Đường link URL*, kèm nút Xóa liên kết.
   - **Hỗ trợ toàn diện trong Bảng**: Hoạt động mượt mà cả trong đoạn văn thường lẫn bên trong từng ô Table (`<td>`).
 - 🖼️ **Dán ảnh siêu tốc & Chống giật lag (Zero-lag Canvas Compression)**:
@@ -51,9 +53,11 @@
   - Tạo tab mới (`Ctrl + N`), đổi tên tab khi nhấp đúp, chuyển tab tuần hoàn (`Ctrl + Tab` / `Ctrl + Shift + Tab`).
   - **Tìm kiếm tab nhanh (`Ctrl + /`)**: Gõ tìm theo tên tab và dùng phím mũi tên để nhảy tab tức thì.
 - 📌 **Ghim cửa sổ (Always on Top)**: Giữ cửa sổ ghi chú luôn nổi trên các ứng dụng khác khi cần tra cứu/lập kế hoạch.
-- 🌐 **Chia sẻ Web 1-Click Serverless (100% nội dung, ảnh & bảng)**:
-  - Xuất bản ghi chú thành đường link web công khai siêu nhẹ bằng URL Hash `#<deflate-raw base64url>`.
-  - Hoạt động 100% Client-side (Zero-backend), không cần máy chủ, không cần cơ sở dữ liệu.
+- 🌐 **Chia sẻ Web 1-Click Serverless & Hợp nhất 2 chiều (Share & Merge)**:
+  - **1-Click Share & Tự động sao chép Clipboard**: Chỉ 1 cú nhấp vào icon Share, link web được tạo tức thì và nạp thẳng vào Clipboard của bạn kèm thông báo Toast xác nhận.
+  - **Tự động rút gọn TinyURL**: Tích hợp rút gọn link nền thông minh qua C++ WinINet cho các ghi chú văn bản, giúp link ngắn gọn và chuyên nghiệp khi chia sẻ qua tin nhắn.
+  - **Mã hóa URL Hash 100% Client-side**: Xuất bản ghi chú siêu nhẹ bằng URL Hash `#<deflate-raw base64url>`, hoạt động hoàn toàn không cần server (Zero-backend), không cần cơ sở dữ liệu.
+  - **Hợp nhất phiên bản chỉnh sửa (Merge Note)**: Người nhận có thể mở link trên web, chỉnh sửa trực tiếp và gửi lại URL. Bạn dán vào NoteLocal để "Áp dụng vào Tab này" hoặc "Tạo Tab mới", hỗ trợ dán hàng loạt link mở nhiều tab cùng lúc.
   - Người nhận mở trên điện thoại hay máy tính xem được trọn vẹn văn bản, checkbox, bảng biểu và toàn bộ hình ảnh sắc nét thông qua Web Viewer trên GitHub Pages (`docs/`).
 - 🔒 **Bảo mật & Cục bộ**: Toàn bộ dữ liệu ghi chú (`.md`), cấu hình (`config.json`) và hình ảnh (`assets/`) nằm hoàn toàn trên ổ cứng máy bạn.
 
@@ -83,18 +87,21 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 3. Liên kết Bookmark Tối giản (Minimal Links)
-- **Tạo liên kết nhanh**:
-  - Gõ `> https://youtube.com` rồi nhấn dấu cách hoặc phím <kbd>Enter</kbd>.
-  - Hoặc gõ `> [Tên hiển thị]<https://url>`.
-  - Liên kết lập tức hiển thị dưới dạng văn bản màu xanh có gạch chân trang nhã, nhấp vào để mở ngay trong trình duyệt mặc định.
-- **Chỉnh sửa liên kết**:
-  - Rê chuột qua liên kết, nút bút chì (✏️) sẽ xuất hiện bên cạnh.
-  - Bấm vào nút bút chì để mở popover:
+### 3. Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links)
+- **Tự động nhận diện không cần cú pháp**:
+  - Gõ hoặc dán thẳng bất kỳ đường link URL nào (ví dụ: `https://youtube.com` hay `https://github.com`) rồi nhấn phím <kbd>Space</kbd> hoặc phím <kbd>Enter</kbd>.
+  - Đường link sẽ tự động chuyển hóa thành liên kết thông minh màu xanh thanh lịch với gạch chân trang nhã, nhấp vào để mở ngay trong trình duyệt mặc định của Windows.
+- **Dán nhiều link cùng lúc (Batch Paste)**:
+  - Sao chép danh sách gồm nhiều dòng URL và dán vào trình soạn thảo. Hệ thống tự động tách từng dòng thành từng thẻ liên kết độc lập, sạch sẽ và không bao giờ bị dính chuỗi.
+- **Cú pháp thủ công (Tùy chọn tương thích ngược)**:
+  - Bạn vẫn có thể dùng cú pháp `> https://url` hoặc `> [Tên hiển thị]<https://url>`.
+- **Chỉnh sửa & Xóa liên kết**:
+  - Rê chuột qua liên kết bất kỳ, nút bút chì (✏️) sẽ xuất hiện bên cạnh.
+  - Nhấp vào nút bút chì để mở popover chỉnh sửa:
     - **Ô 1 (Tên hiển thị)**: Đổi tên hiển thị ngắn gọn (ví dụ: "Kênh YouTube").
     - **Ô 2 (Đường dẫn URL)**: Chỉnh sửa lại địa chỉ link.
     - **Nút Xóa (Thùng rác)**: Xóa liên kết và khôi phục văn bản thường.
-- **Sử dụng trong Table**: Bạn có thể gõ hoặc dán liên kết vào bất kỳ ô nào của bảng biểu, liên kết sẽ nằm gọn gàng bên trong ô đó.
+- **Sử dụng toàn diện trong Bảng (Table)**: Bạn có thể gõ hoặc dán liên kết vào bất kỳ ô nào của bảng biểu, liên kết sẽ nằm gọn gàng bên trong ô mà không làm méo mó hay vỡ khung bảng.
 
 ---
 
@@ -153,13 +160,21 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 8. Chia sẻ ghi chú qua Trình duyệt Web Serverless (GitHub Pages)
-- Ở tab ghi chú cần chia sẻ, nhấp vào nút **Chia sẻ** (icon `share-2`).
-- Toàn bộ nội dung văn bản, danh sách việc, hình ảnh và bảng biểu được nén bằng thuật toán `deflate-raw` và mã hóa thành URL Hash (`#`).
-- Đường link có dạng: `https://michaeltran8386.github.io/note-app/#<hash>`. Khi mở trên trình duyệt:
-  - Hiển thị 100% nội dung Markdown, Checkbox tương tác được, xem ảnh sắc nét với độ rộng mặc định 30% và bảng biểu chuẩn xác.
-  - Tích hợp chế độ **Soạn thảo trực tiếp trên Web** để chỉnh sửa nhanh và tự động cập nhật URL Hash.
-  - Hoạt động hoàn toàn Client-side, không lưu trữ trên máy chủ nào, hoàn toàn riêng tư và miễn phí.
+### 8. Chia sẻ ghi chú Web Serverless & Hợp nhất 2 chiều (Share & Merge)
+- **1-Click Chia sẻ & Tự động sao chép Clipboard**:
+  - Nhấp vào nút **Chia sẻ** (icon `share-2` trên thanh tiêu đề).
+  - Hệ thống nén toàn bộ văn bản, bảng biểu, ảnh bằng thuật toán `deflate-raw` và **tự động sao chép ngay đường link vào Clipboard của bạn**, đồng thời bật thông báo Toast xác nhận: *"Đã sao chép link Web vào Clipboard!"*. Bạn chỉ việc <kbd>Ctrl</kbd> + <kbd>V</kbd> gửi đi.
+  - Với ghi chú thông thường (<= 2000 ký tự), C++ tự động kết nối API TinyURL rút gọn link siêu ngắn và cập nhật lại vào Clipboard.
+  - Người dùng luôn có thể nhấp vào dòng *"Sao chép link đầy đủ (Offline Hash)"* để lấy đường link chứa 100% dữ liệu nén hoạt động hoàn toàn offline không phụ thuộc internet.
+- **Trải nghiệm trên Web Viewer (Dành cho người nhận)**:
+  - Người nhận mở link trên bất kỳ thiết bị nào (Chrome, Safari, Edge trên PC hay smartphone) đều xem được trọn vẹn văn bản, bảng biểu, ảnh với độ rộng chuẩn 30% và checkbox To-Do tương tác được.
+  - Người nhận có thể bấm nút **"Soạn thảo"** trên thanh header của Web Viewer để chỉnh sửa trực tiếp, rồi bấm **"Chia sẻ"** để lấy URL đã cập nhật gửi ngược lại cho bạn.
+- **Hợp nhất phiên bản chỉnh sửa từ người khác (Merge Note)**:
+  - Nhấp vào nút **Chia sẻ** trên NoteLocal.exe để mở popover Share & Merge.
+  - Tại mục **"2. Nhập bản chỉnh sửa từ người khác (Merge)"**, dán link nhận được vào ô văn bản:
+    - Bấm **"Áp dụng vào Tab này"**: Cập nhật trực tiếp nội dung tab hiện tại theo bản sửa mới nhất.
+    - Bấm **"Tạo Tab mới"**: Mở nội dung chia sẻ vào một Tab mới toanh để dễ dàng đối chiếu, so sánh mà không sợ ghi đè dữ liệu cũ.
+  - **Mở hàng loạt link cùng lúc**: Bạn có thể dán danh sách nhiều link (mỗi dòng 1 URL), hệ thống sẽ tự động tạo hàng loạt Tab mới tương ứng chỉ với 1 cú click chuột.
 
 > **💡 Cách bật GitHub Pages cho Repository (chỉ làm 1 lần):**
 > 1. Truy cập repo của bạn: `https://github.com/michaeltran8386/note-app/settings/pages`
@@ -177,7 +192,9 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển tiếp sang tab tiếp theo (Cycle forward) |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển lùi về tab trước (Cycle backward) |
 | <kbd>Ctrl</kbd> + <kbd>N</kbd> | Toàn ứng dụng | Tạo tab ghi chú mới |
-| `> https://...` | Trình soạn thảo / Bảng | Tạo link bookmark tối giản có nút chỉnh sửa (✏️) |
+| `https://...` / `http://...` | Trình soạn thảo / Bảng | Tự động nhận diện và tạo liên kết thông minh |
+| Dán danh sách link | Trình soạn thảo | Tự động tách từng URL thành từng thẻ liên kết riêng |
+| `> https://...` | Trình soạn thảo / Bảng | Tạo link bookmark thủ công (tương thích ngược) |
 | `[]` | Trình soạn thảo | Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do) |
 | `@HH:mm dd/MM` | Dòng To-Do | Đặt lịch hẹn giờ nhắc việc tự động (Reminder) |
 | <kbd>Backspace</kbd> | Dòng To-Do trống | Xóa ô To-Do và đưa về dạng dòng văn bản thường |
@@ -188,7 +205,7 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Ctrl</kbd> + <kbd>V</kbd> | Trình soạn thảo | Dán ảnh từ clipboard (nén tối ưu 95%, mặc định 30% width) |
 | <kbd>Double-click</kbd> vào ảnh | Trên ảnh | Mở Lightbox phóng to xem ảnh gốc toàn màn hình |
 | <kbd>Double-click</kbd> vào Tab | Thanh Header | Mở hộp thoại đổi tên tab |
-| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Lightbox ảnh, popover bảng, popover sửa link hoặc menu |
+| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Popover Chia sẻ & Hợp nhất, Lightbox, Popover bảng, sửa link |
 
 ---
 
