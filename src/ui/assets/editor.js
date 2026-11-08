@@ -138,6 +138,8 @@
                 latestShortShareUrl = payload.short_url;
                 if (shareShortUrlInput) {
                     shareShortUrlInput.value = payload.short_url;
+                    shareShortUrlInput.focus();
+                    shareShortUrlInput.select();
                 }
                 if (navigator.clipboard) {
                     try { navigator.clipboard.writeText(payload.short_url); } catch (e) {}
@@ -2134,6 +2136,8 @@
                 latestFullShareUrl = `${cleanBase}#${hash}`;
                 latestShortShareUrl = latestFullShareUrl;
                 shareShortUrlInput.value = latestFullShareUrl;
+                shareShortUrlInput.focus();
+                shareShortUrlInput.select();
 
                 // Tự động sao chép link vào Clipboard ngay lập tức
                 if (navigator.clipboard && navigator.clipboard.writeText) {

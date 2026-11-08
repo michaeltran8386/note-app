@@ -6,7 +6,7 @@
     <title>Note Local - Clean Text Viewer</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta name="description" content="Trình đọc và ghi chú Clean Text tối giản, không cần máy chủ, mã hóa toàn bộ dữ liệu trực tiếp trong URL.">
-    <link rel="stylesheet" href="style.css?v=2.4">
+    <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body>
     <header id="site-header">
@@ -64,10 +64,32 @@
         <textarea id="editor" class="raw-editor hidden" spellcheck="false" placeholder="Nhập ghi chú của bạn ở đây... (Cú pháp [] tự tạo To-Do checkbox, định dạng Markdown)"></textarea>
     </main>
 
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="share-modal-title">Chia sẻ ghi chú</h3>
+                <button id="btn-close-share-modal" class="icon-btn-close" title="Đóng (Esc)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="share-modal-desc" class="modal-desc">Đường link này chứa 100% nội dung ghi chú (Serverless). Người nhận mở ra là xem và chỉnh sửa được ngay mà không cần tài khoản hay cấu hình máy chủ.</p>
+                <div class="share-url-group">
+                    <input type="text" id="share-modal-url" class="share-input" readonly placeholder="Đang tạo link...">
+                    <button type="button" id="btn-copy-modal-url" class="btn-primary">Sao chép</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=2.4"></script>
+    <script src="app.js?v=2.5"></script>
 </body>
 </html>
 

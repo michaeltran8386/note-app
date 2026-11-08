@@ -404,6 +404,52 @@
         }
     });
 
+
+    // Share Modal Elements
+    const shareModal = document.getElementById("share-modal");
+    const shareModalTitle = document.getElementById("share-modal-title");
+    const shareModalDesc = document.getElementById("share-modal-desc");
+    const shareModalUrl = document.getElementById("share-modal-url");
+    const btnCopyModalUrl = document.getElementById("btn-copy-modal-url");
+    const btnCloseShareModal = document.getElementById("btn-close-share-modal");
+
+    function closeShareModal() {
+        if (shareModal) shareModal.classList.add("hidden");
+    }
+
+    if (btnCloseShareModal) {
+        btnCloseShareModal.addEventListener("click", closeShareModal);
+    }
+    if (shareModal) {
+        shareModal.addEventListener("click", function(e) {
+            if (e.target === shareModal) closeShareModal();
+        });
+    }
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") closeShareModal();
+    });
+
+    if (btnCopyModalUrl && shareModalUrl) {
+        btnCopyModalUrl.addEventListener("click", async function() {
+            shareModalUrl.focus();
+            shareModalUrl.select();
+            let copied = false;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(shareModalUrl.value);
+                    copied = true;
+                } catch (e) {}
+            }
+            if (!copied) {
+                try {
+                    document.execCommand("copy");
+                    copied = true;
+                } catch (e) {}
+            }
+            showToast("Đã sao chép đường link vào Clipboard!", 3000);
+        });
+    }
+
     // Sao chép & Rút gọn URL chia sẻ / Gửi bản sửa
     btnShare.addEventListener("click", async function() {
         btnShare.classList.add("loading");
@@ -435,10 +481,23 @@
             }
 
             btnShare.classList.remove("loading");
+            if (shareModal && shareModalUrl) {
+                if (isEditorMode) {
+                    if (shareModalTitle) shareModalTitle.textContent = "Chia sẻ bản chỉnh sửa";
+                    if (shareModalDesc) shareModalDesc.textContent = "Đường link dưới đây chứa bản ghi chú bạn vừa sửa. Hãy sao chép và gửi lại cho người tạo ghi chú để họ áp dụng (Merge).";
+                } else {
+                    if (shareModalTitle) shareModalTitle.textContent = "Chia sẻ ghi chú";
+                    if (shareModalDesc) shareModalDesc.textContent = "Đường link dưới đây chứa 100% nội dung (Zero-backend). Bất kỳ ai mở link cũng có thể xem và bấm 'Soạn thảo' để sửa tiếp mà không cần cấu hình máy chủ.";
+                }
+                shareModalUrl.value = fullUrl;
+                shareModal.classList.remove("hidden");
+                shareModalUrl.focus();
+                shareModalUrl.select();
+            }
             if (isEditorMode) {
-                showToast("Đã sao chép link bản sửa! Hãy gửi link này cho người tạo để họ áp dụng.", 4500);
+                showToast("Đã tạo link bản sửa và sao chép vào Clipboard!", 3500);
             } else {
-                showToast("Đã sao chép link chia sẻ vào Clipboard!", 3500);
+                showToast("Đã tạo link chia sẻ và sao chép vào Clipboard!", 3500);
             }
         } catch (err) {
             console.error("Lỗi chia sẻ:", err);

@@ -6,9 +6,9 @@
     "semantic_hash": ""
   },
   "docs/app.js": {
-    "mtime": 1794111077.2095604,
-    "seen": 1794111238.620933,
-    "ast_hash": "7827f74e73711f4e265e009aa383da29",
+    "mtime": 1794112048.8932168,
+    "seen": 1794112056.9290478,
+    "ast_hash": "1e7191c4bc761977f5990c0256e42ba1",
     "semantic_hash": ""
   },
   "src/core/markdown_engine.cpp": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "src/ui/assets/editor.js": {
-    "mtime": 1794111060.2218769,
-    "seen": 1794111238.6257353,
-    "ast_hash": "1e064f46830edaaf4bbb944b38a40740",
+    "mtime": 1794112075.416509,
+    "seen": 1794112082.1331317,
+    "ast_hash": "ed21f83dc7e269177d511dd4a1ec9379",
     "semantic_hash": ""
   },
   "tests/test_framework.h": {
@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   "docs/index.html": {
-    "mtime": 1794111154.0079427,
-    "seen": 1794111238.6297903,
-    "ast_hash": "b2410c94519740a9b04529e527698769",
+    "mtime": 1794112009.7506735,
+    "seen": 1794112056.936481,
+    "ast_hash": "c80cd44152a4f2fa19c935deb05833b0",
     "semantic_hash": ""
   },
   "docs/intent/note-local.md": {
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "src/ui/assets/index.html": {
-    "mtime": 1794111154.005049,
-    "seen": 1794111238.6314485,
-    "ast_hash": "6f0639715c8f2e851a91680af7de8d11",
+    "mtime": 1794112097.8018565,
+    "seen": 1794112119.9873593,
+    "ast_hash": "445a29318996c64d19546d89dbd3439d",
     "semantic_hash": ""
   },
   "srs.txt": {
