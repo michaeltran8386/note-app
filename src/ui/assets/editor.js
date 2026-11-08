@@ -179,6 +179,46 @@
         }
     }
 
+    function serializeListNode(listNode, indentLevel = 0) {
+        const listLines = [];
+        const indent = "  ".repeat(indentLevel);
+        const isOl = listNode.tagName === "OL";
+        let num = 1;
+
+        Array.from(listNode.children).forEach(child => {
+            if (child.tagName === "LI") {
+                let text = "";
+                let subLists = [];
+                Array.from(child.childNodes).forEach(c => {
+                    if (c.nodeType === Node.TEXT_NODE) {
+                        text += c.textContent;
+                    } else if (c.nodeType === Node.ELEMENT_NODE) {
+                        if (c.tagName === "UL" || c.tagName === "OL") {
+                            subLists.push(c);
+                        } else if (c.classList && (c.classList.contains("note-link-wrap") || c.classList.contains("link-card"))) {
+                            const title = c.dataset.title || c.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
+                            const url = c.dataset.url || "";
+                            text += `[${title || url}](${url})`;
+                        } else {
+                            text += c.textContent;
+                        }
+                    }
+                });
+
+                text = text.trim();
+                if (text || subLists.length > 0) {
+                    const prefix = isOl ? `${num++}. ` : "- ";
+                    if (text) listLines.push(`${indent}${prefix}${text}`);
+                }
+
+                subLists.forEach(sub => {
+                    listLines.push(...serializeListNode(sub, indentLevel + 1));
+                });
+            }
+        });
+        return listLines;
+    }
+
     // Tuần tự hóa DOM sang Markdown chuẩn xác 100% không làm xáo trộn thứ tự
     function serializeEditorToMarkdown() {
         const lines = [];
@@ -205,6 +245,14 @@
                     if (url) {
                         lines.push(`[${title || url}](${url})`);
                     }
+                }
+                // 0.8. Danh sách (UL / OL / LI)
+                else if (tag === "UL" || tag === "OL") {
+                    lines.push(...serializeListNode(node, 0));
+                }
+                else if (tag === "LI") {
+                    const txt = node.textContent.trim();
+                    if (txt) lines.push(`- ${txt}`);
                 }
                 // 1. To-Do Item
                 else if (node.classList && node.classList.contains("todo-item")) {
@@ -814,6 +862,9 @@
         if (node && node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent;
             const offset = range.startOffset;
+            const inTableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+            const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
+            const currentLi = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("li");
 
             // 1. Tự động nhận diện [] hoặc [ ] hoặc - [ ] thành Checkbox
             if ((offset >= 2 && text.substring(offset - 2, offset) === "[]") ||
@@ -827,7 +878,6 @@
                 const after = text.substring(offset);
 
                 const { div, span } = createTodoElement(after);
-                const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
 
                 if (parentBlock) {
                     if (before.trim() === "") {
@@ -852,6 +902,97 @@
                 const newRange = document.createRange();
                 newRange.setStart(span, 0);
                 newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+
+                triggerSave();
+                return;
+            }
+
+            // 1.5. Tự động nhận diện dấu gạch đầu dòng '- ' hoặc '* ' tạo Bullet List
+            if (!inTableCell && !currentLi && (text.startsWith("- ") || text.startsWith("* ")) && !text.startsWith("- [") && !text.startsWith("* [")) {
+                const afterText = text.substring(2);
+                const prevSibling = parentBlock ? parentBlock.previousElementSibling : node.previousElementSibling;
+                let ul = null;
+                let targetLi = document.createElement("li");
+
+                if (prevSibling && prevSibling.tagName === "UL") {
+                    ul = prevSibling;
+                    ul.appendChild(targetLi);
+                } else {
+                    ul = document.createElement("ul");
+                    ul.appendChild(targetLi);
+                    if (parentBlock) {
+                        parentBlock.replaceWith(ul);
+                    } else {
+                        node.replaceWith(ul);
+                    }
+                }
+
+                if (afterText.trim()) {
+                    targetLi.textContent = afterText;
+                } else {
+                    targetLi.innerHTML = "<br>";
+                }
+
+                if (prevSibling && prevSibling.tagName === "UL" && parentBlock && parentBlock.parentNode) {
+                    parentBlock.remove();
+                }
+
+                const newRange = document.createRange();
+                if (afterText.trim()) {
+                    newRange.selectNodeContents(targetLi);
+                    newRange.collapse(false);
+                } else {
+                    newRange.setStart(targetLi, 0);
+                    newRange.collapse(true);
+                }
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+
+                triggerSave();
+                return;
+            }
+
+            // 1.6. Tự động nhận diện danh sách đánh số '1. ' tạo Numbered List (OL)
+            const numMatch = text.match(/^1\.\s+(.*)/);
+            if (!inTableCell && !currentLi && numMatch) {
+                const afterText = numMatch[1];
+                const prevSibling = parentBlock ? parentBlock.previousElementSibling : node.previousElementSibling;
+                let ol = null;
+                let targetLi = document.createElement("li");
+
+                if (prevSibling && prevSibling.tagName === "OL") {
+                    ol = prevSibling;
+                    ol.appendChild(targetLi);
+                } else {
+                    ol = document.createElement("ol");
+                    ol.appendChild(targetLi);
+                    if (parentBlock) {
+                        parentBlock.replaceWith(ol);
+                    } else {
+                        node.replaceWith(ol);
+                    }
+                }
+
+                if (afterText.trim()) {
+                    targetLi.textContent = afterText;
+                } else {
+                    targetLi.innerHTML = "<br>";
+                }
+
+                if (prevSibling && prevSibling.tagName === "OL" && parentBlock && parentBlock.parentNode) {
+                    parentBlock.remove();
+                }
+
+                const newRange = document.createRange();
+                if (afterText.trim()) {
+                    newRange.selectNodeContents(targetLi);
+                    newRange.collapse(false);
+                } else {
+                    newRange.setStart(targetLi, 0);
+                    newRange.collapse(true);
+                }
                 sel.removeAllRanges();
                 sel.addRange(newRange);
 
@@ -928,8 +1069,6 @@
             }
 
             // 3. Tự động nhận diện Markdown Headings: # , ## , ###
-            const inTableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
-            const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
             if (!inTableCell && parentBlock && (parentBlock.tagName === "P" || parentBlock.tagName === "DIV")) {
                 let hLevel = 0;
                 let hContent = "";
@@ -1021,6 +1160,194 @@
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
+
+        // 0. Xử lý phím Enter, Backspace, Tab trong danh sách LI (Bullet & Numbered Lists)
+        const li = range.startContainer.parentElement?.closest("li") ||
+                   (range.startContainer.tagName === "LI" ? range.startContainer : null);
+
+        if (li) {
+            const parentList = li.closest("ul, ol");
+
+            // 0.1. Phím Enter trong LI
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const isLiEmpty = (li.textContent.trim() === "" || li.innerHTML === "<br>" || li.innerHTML === "");
+
+                if (isLiEmpty) {
+                    // Người dùng ấn Enter ở dòng bullet rỗng -> Thoát danh sách (Exit list)!
+                    const p = document.createElement("p");
+                    p.innerHTML = "<br>";
+
+                    if (li.nextElementSibling) {
+                        const newParent = document.createElement(parentList ? parentList.tagName.toLowerCase() : "ul");
+                        while (li.nextSibling) {
+                            newParent.appendChild(li.nextSibling);
+                        }
+                        li.remove();
+                        if (parentList && parentList.parentNode) {
+                            parentList.parentNode.insertBefore(p, parentList.nextSibling);
+                            parentList.parentNode.insertBefore(newParent, p.nextSibling);
+                        }
+                    } else {
+                        li.remove();
+                        if (parentList && parentList.children.length === 0) {
+                            parentList.replaceWith(p);
+                        } else if (parentList && parentList.parentNode) {
+                            parentList.parentNode.insertBefore(p, parentList.nextSibling);
+                        }
+                    }
+
+                    const newRange = document.createRange();
+                    newRange.setStart(p, 0);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                    triggerSave();
+                    return;
+                } else {
+                    // Tạo li tiếp theo bên dưới và tách nội dung nếu con trỏ ở giữa
+                    const afterRange = document.createRange();
+                    afterRange.setStart(range.endContainer, range.endOffset);
+                    afterRange.setEnd(li, li.childNodes.length);
+                    const afterFrag = afterRange.extractContents();
+
+                    const newLi = document.createElement("li");
+                    if (afterFrag.textContent.trim() === "" && afterFrag.childNodes.length === 0) {
+                        newLi.innerHTML = "<br>";
+                    } else {
+                        newLi.appendChild(afterFrag);
+                    }
+
+                    li.parentNode.insertBefore(newLi, li.nextSibling);
+
+                    const newRange = document.createRange();
+                    newRange.setStart(newLi, 0);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                    triggerSave();
+                    return;
+                }
+            }
+
+            // 0.2. Phím Backspace ở đầu LI
+            if (e.key === "Backspace") {
+                const isAtStart = (range.startOffset === 0 && (
+                    range.startContainer === li ||
+                    range.startContainer === li.firstChild ||
+                    (range.startContainer.nodeType === Node.TEXT_NODE && !range.startContainer.previousSibling)
+                ));
+
+                if (isAtStart) {
+                    e.preventDefault();
+                    const hasText = li.textContent.trim().length > 0;
+
+                    if (!hasText) {
+                        // LI rỗng: xóa và đưa con trỏ về LI trước hoặc tạo <p>
+                        const prevLi = li.previousElementSibling;
+                        if (prevLi) {
+                            li.remove();
+                            const newRange = document.createRange();
+                            newRange.selectNodeContents(prevLi);
+                            newRange.collapse(false);
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                        } else {
+                            const p = document.createElement("p");
+                            p.innerHTML = "<br>";
+                            li.remove();
+                            if (parentList && parentList.children.length === 0) {
+                                parentList.replaceWith(p);
+                            } else if (parentList && parentList.parentNode) {
+                                parentList.parentNode.insertBefore(p, parentList);
+                            }
+                            const newRange = document.createRange();
+                            newRange.setStart(p, 0);
+                            newRange.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                        }
+                    } else {
+                        // LI có text nhưng ấn Backspace ở đầu: chuyển thành <p> thường
+                        const p = document.createElement("p");
+                        while (li.firstChild) {
+                            p.appendChild(li.firstChild);
+                        }
+                        if (li.nextElementSibling) {
+                            const nextList = document.createElement(parentList ? parentList.tagName.toLowerCase() : "ul");
+                            while (li.nextSibling) {
+                                nextList.appendChild(li.nextSibling);
+                            }
+                            li.remove();
+                            if (parentList && parentList.parentNode) {
+                                parentList.parentNode.insertBefore(p, parentList.nextSibling);
+                                parentList.parentNode.insertBefore(nextList, p.nextSibling);
+                            }
+                        } else {
+                            li.remove();
+                            if (parentList && parentList.children.length === 0) {
+                                parentList.replaceWith(p);
+                            } else if (parentList && parentList.parentNode) {
+                                parentList.parentNode.insertBefore(p, parentList.nextSibling);
+                            }
+                        }
+                        const newRange = document.createRange();
+                        newRange.setStart(p, 0);
+                        newRange.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+                    }
+                    triggerSave();
+                    return;
+                }
+            }
+
+            // 0.3. Phím Tab / Shift + Tab trong LI: Thụt dòng (Indent / Outdent)
+            if (e.key === "Tab") {
+                e.preventDefault();
+                if (!parentList) return;
+
+                if (e.shiftKey) {
+                    // Outdent: Lùi cấp
+                    const parentLi = parentList.parentElement?.closest("li");
+                    if (parentLi) {
+                        const grandParentList = parentLi.closest("ul, ol");
+                        if (grandParentList) {
+                            grandParentList.insertBefore(li, parentLi.nextSibling);
+                            if (parentList.children.length === 0) {
+                                parentList.remove();
+                            }
+                            const newRange = document.createRange();
+                            newRange.setStart(li, 0);
+                            newRange.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                            triggerSave();
+                            return;
+                        }
+                    }
+                } else {
+                    // Indent: Thụt cấp con
+                    const prevLi = li.previousElementSibling;
+                    if (prevLi) {
+                        let subList = prevLi.querySelector("ul, ol");
+                        if (!subList) {
+                            subList = document.createElement(parentList.tagName.toLowerCase());
+                            prevLi.appendChild(subList);
+                        }
+                        subList.appendChild(li);
+
+                        const newRange = document.createRange();
+                        newRange.setStart(li, 0);
+                        newRange.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(newRange);
+                        triggerSave();
+                        return;
+                    }
+                }
+            }
+        }
 
         // 1. Phím Enter trong Headings (H1, H2, H3): tạo đoạn văn bản <p> mới bên dưới
         const heading = range.startContainer.parentElement?.closest("h1, h2, h3") ||
@@ -1928,6 +2255,11 @@
                     if (url) {
                         lines.push(`[${title || url}](${url})`);
                     }
+                } else if (tag === "UL" || tag === "OL") {
+                    lines.push(...serializeListNode(node, 0));
+                } else if (tag === "LI") {
+                    const txt = node.textContent.trim();
+                    if (txt) lines.push(`- ${txt}`);
                 } else if (node.classList.contains("todo-item")) {
                     const cb = node.querySelector(".todo-check");
                     const span = node.querySelector(".todo-text");

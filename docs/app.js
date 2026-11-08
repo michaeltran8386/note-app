@@ -150,6 +150,22 @@
                 continue;
             }
 
+            // Bullet List Items (- item or * item)
+            const bulletMatch = line.trim().match(/^[-*]\s+(.*)$/);
+            if (bulletMatch && !line.trim().startsWith("- [") && !line.trim().startsWith("* [")) {
+                const text = bulletMatch[1].trim();
+                html += `<ul><li>${parseInline(text)}</li></ul>`;
+                continue;
+            }
+
+            // Numbered List Items (1. item)
+            const numMatch = line.trim().match(/^(\d+)\.\s+(.*)$/);
+            if (numMatch) {
+                const text = numMatch[2].trim();
+                html += `<ol><li>${parseInline(text)}</li></ol>`;
+                continue;
+            }
+
             // Standalone Link: [title](url) hoặc [title]<url> hoặc https://...
             const standaloneLinkMatch = line.trim().match(/^(?:\[([^\]]+)\][<\(](https?:\/\/[^\s>\)]+)[>\)]|(https?:\/\/[^\s]+))$/i);
             if (standaloneLinkMatch) {
@@ -240,6 +256,7 @@
             html += `<pre><code>${escapeHtml(codeBlockContent.join("\n"))}</code></pre>`;
         }
 
+        html = html.replace(/<\/ul>\s*<ul>/gi, "").replace(/<\/ol>\s*<ol>/gi, "");
         return html;
     }
 

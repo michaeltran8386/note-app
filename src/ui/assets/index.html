@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Note Local</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="style.css?v=2.6">
+    <link rel="stylesheet" href="style.css?v=2.7">
     <script>
         window.addEventListener("error", function(e) {
             console.error("Global JS Error:", e.error || e.message);
@@ -79,7 +79,7 @@
 
     <!-- Ultra-Minimal Editor -->
     <main id="editor-container">
-        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo việc cần làm, gõ @15:30 để hẹn giờ, dán ảnh Ctrl+V)"></div>
+        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo To-Do, gõ - để tạo gạch đầu dòng, gõ @15:30 để hẹn giờ, dán ảnh Ctrl+V)"></div>
         
         <!-- Image Resizer Overlay -->
         <div id="image-resizer-box" class="hidden">
@@ -272,6 +272,8 @@
                         <li><span>Chuyển lùi tab</span> <kbd>Ctrl + Shift + Tab</kbd></li>
                         <li><span>Tạo tab mới</span> <kbd>Ctrl + N</kbd></li>
                         <li><span>Tạo ô việc cần làm</span> <kbd>[]</kbd></li>
+                        <li><span>Gạch đầu dòng (Bullet)</span> <kbd>- </kbd> hoặc <kbd>* </kbd></li>
+                        <li><span>Danh sách đánh số</span> <kbd>1. </kbd></li>
                         <li><span>Cú pháp hẹn giờ</span> <kbd>@15:30 15/11</kbd> hoặc <kbd>@mai 09:00</kbd></li>
                         <li><span>Xem ảnh phóng to</span> <kbd>Double-click ảnh</kbd></li>
                     </ul>
@@ -302,6 +304,6 @@
     <!-- Minimal Toast Notification -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="editor.js?v=2.6"></script>
+    <script src="editor.js?v=2.7"></script>
 </body>
 </html>

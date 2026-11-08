@@ -225,8 +225,8 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
     clean_html = std::regex_replace(clean_html, std::regex("<div[^>]*class=[\"'][^\"']*col-resizer[^\"']*[\"'][^>]*></div>", std::regex::icase), "");
     clean_html = std::regex_replace(clean_html, std::regex("<button[^>]*class=[\"'][^\"']*tbl-btn-add-[^\"']*[\"'][^>]*>.*?</button>", std::regex::icase), "");
 
-    // Phân tích các khối dòng theo thứ tự: table, h1-h3, blockquote, hr, img, p, div
-    std::regex block_regex("<(table|p|div|h1|h2|h3|blockquote)([^>]*)>([\\s\\S]*?)</\\1>|<(img|hr)([^>]*)>", std::regex::icase);
+    // Phân tích các khối dòng theo thứ tự: table, ul, ol, li, h1-h3, blockquote, hr, img, p, div
+    std::regex block_regex("<(table|ul|ol|li|p|div|h1|h2|h3|blockquote)([^>]*)>([\\s\\S]*?)</\\1>|<(img|hr)([^>]*)>", std::regex::icase);
     std::sregex_iterator begin(clean_html.begin(), clean_html.end(), block_regex);
     std::sregex_iterator end;
 
@@ -273,6 +273,46 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
                 md << "[" << UnescapeHtml(card_title) << "](" << UnescapeHtml(card_url) << ")\n";
                 continue;
             }
+        }
+
+        // 0.6. Danh sách không thứ tự (ul / bullet list)
+        if (tag_lower == "ul") {
+            std::regex li_regex("<li[^>]*>([\\s\\S]*?)</li>", std::regex::icase);
+            std::sregex_iterator li_it(inner.begin(), inner.end(), li_regex);
+            std::sregex_iterator li_end;
+            for (; li_it != li_end; ++li_it) {
+                std::string li_inner = (*li_it)[1].str();
+                std::string li_text = UnescapeHtml(StripHtmlTags(li_inner));
+                if (!Trim(li_text).empty()) {
+                    md << "- " << Trim(li_text) << "\n";
+                }
+            }
+            continue;
+        }
+
+        // 0.7. Danh sách có thứ tự (ol / numbered list)
+        if (tag_lower == "ol") {
+            std::regex li_regex("<li[^>]*>([\\s\\S]*?)</li>", std::regex::icase);
+            std::sregex_iterator li_it(inner.begin(), inner.end(), li_regex);
+            std::sregex_iterator li_end;
+            int num = 1;
+            for (; li_it != li_end; ++li_it) {
+                std::string li_inner = (*li_it)[1].str();
+                std::string li_text = UnescapeHtml(StripHtmlTags(li_inner));
+                if (!Trim(li_text).empty()) {
+                    md << std::to_string(num++) << ". " << Trim(li_text) << "\n";
+                }
+            }
+            continue;
+        }
+
+        // 0.8. Thẻ li đứng riêng lẻ
+        if (tag_lower == "li") {
+            std::string li_text = UnescapeHtml(StripHtmlTags(inner));
+            if (!Trim(li_text).empty()) {
+                md << "- " << Trim(li_text) << "\n";
+            }
+            continue;
         }
 
         // 1. Headings
@@ -676,6 +716,23 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
+        // Bullet List (- or *)
+        if ((trimmed.rfind("- ", 0) == 0 || trimmed.rfind("* ", 0) == 0) &&
+            trimmed.rfind("- [", 0) != 0 && trimmed.rfind("* [", 0) != 0) {
+            std::string text = Trim(trimmed.substr(2));
+            html << "<ul><li>" << text << "</li></ul>";
+            continue;
+        }
+
+        // Numbered List (1. , 2. )
+        std::regex num_list_regex(R"(^([0-9]+)\.\s+(.*)$)");
+        std::smatch nlm;
+        if (std::regex_match(trimmed, nlm, num_list_regex)) {
+            std::string text = Trim(nlm[2].str());
+            html << "<ol><li>" << text << "</li></ol>";
+            continue;
+        }
+
         // Image ![image|300px](path)
         std::regex md_img_regex("!\\[([^\\]]*)\\]\\(([^\\)]+)\\)");
         std::smatch img_match;
@@ -708,7 +765,10 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
         html << "<p>" << trimmed << "</p>";
     }
 
-    return html.str();
+    std::string res = html.str();
+    res = std::regex_replace(res, std::regex(R"(</ul>\s*<ul>)", std::regex::icase), "");
+    res = std::regex_replace(res, std::regex(R"(</ol>\s*<ol>)", std::regex::icase), "");
+    return res;
 }
 
 std::vector<TodoItem> MarkdownEngine::ExtractTodos(const std::string& markdown_text, const std::string& note_id) {

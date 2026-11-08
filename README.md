@@ -44,9 +44,17 @@
   - **Kích thước mặc định 30%**: Ảnh dán vào mặc định ở mức 30% gọn gàng, đồng bộ giữa App Editor và Web Viewer.
   - **Hộp công cụ co giãn ảnh**: Chọn nhanh `30%`, `60%`, `100%` hoặc kéo tự do ở góc ảnh để phóng to/thu nhỏ.
   - **Phóng to sắc nét (Lightbox)**: **Nhấp đúp chuột (Double-click)** vào ảnh bất kỳ để xem toàn màn hình.
-- ⏰ **To-Do List & Hẹn giờ nhắc việc thông minh (Reminders & Toast Notifications)**:
-  - Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do).
-  - Nhận diện cú pháp hẹn giờ tự nhiên: gõ `@14:30 15/11`, `@09:00`, `@mai 08:30`... Hệ thống tự tạo badge đồng hồ hẹn giờ.
+- ⏰ **To-Do List, Danh sách Gạch đầu dòng (Bullets) & Hẹn giờ nhắc việc**:
+  - **Danh sách gạch đầu dòng (Bullet Points)**: Gõ `- ` hoặc `* ` ở đầu dòng để tự động tạo danh sách gạch đầu dòng với dấu chấm tròn màu cyan thanh lịch.
+  - **Danh sách đánh số (Numbered Lists)**: Gõ `1. ` ở đầu dòng để tự động tạo danh sách số thứ tự tăng dần.
+  - **Thao tác danh sách mượt mà chuẩn Office/Notion**:
+    - Nhấn <kbd>Enter</kbd> để tạo dòng bullet tiếp theo.
+    - Nhấn <kbd>Enter</kbd> tại dòng bullet trống để **tự động thoát danh sách** và quay về đoạn văn bản bình thường.
+    - Nhấn <kbd>Backspace</kbd> ở đầu dòng bullet để đưa về văn bản thường.
+    - Nhấn <kbd>Tab</kbd> để thụt dòng thành cấp con (Indent), nhấn <kbd>Shift + Tab</kbd> để lùi cấp (Outdent).
+    - Phân biệt độc lập 100% với To-Do Checkbox (`- [ ]`), không bao giờ bị xung đột cú pháp.
+  - **To-Do Checkbox**: Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do).
+  - **Nhận diện cú pháp hẹn giờ tự nhiên**: gõ `@14:30 15/11`, `@09:00`, `@mai 08:30`... Hệ thống tự tạo badge đồng hồ hẹn giờ.
   - Hộp thoại chọn ngày giờ tùy chỉnh kèm các nút tắt tiện lợi `+15 phút`, `+1 giờ`, `Ngày mai 09:00`.
   - **Thông báo Windows Native**: Windows 10/11 Action Center bật thông báo Toast nổi ngay cả khi ứng dụng đang ẩn. Nhấp vào thông báo sẽ tự động mở lại ghi chú và đưa con trỏ đến đúng dòng công việc.
 - 📑 **Quản lý đa Tab trực quan & Tìm kiếm siêu tốc**:
@@ -72,9 +80,19 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 2. Soạn thảo văn bản, To-Do List & Hẹn giờ nhắc việc (Reminders)
+### 2. Soạn thảo văn bản, Bullet Points, To-Do List & Hẹn giờ nhắc việc
 - **Tự động lưu**: Mọi thao tác gõ văn bản được tự động lưu ngầm vào file `.md` sau 300ms (debounce).
-- **Tạo ô Checkbox việc cần làm**:
+- **Tạo danh sách gạch đầu dòng (Bullet Points)**:
+  - Gõ `- ` hoặc `* ` ở đầu dòng rồi gõ nội dung -> Tự động chuyển thành thẻ danh sách với dấu bullet tròn màu cyan.
+  - Nhấn <kbd>Enter</kbd> để tạo dòng bullet tiếp theo.
+  - Nhấn <kbd>Enter</kbd> trên dòng bullet trống: Tự động thoát danh sách và trở về văn bản thường.
+  - Nhấn <kbd>Backspace</kbd> ở đầu dòng: Chuyển thẻ bullet thành dòng văn bản thường.
+  - Nhấn <kbd>Tab</kbd>: Thụt lề cấp con (Indent).
+  - Nhấn <kbd>Shift</kbd> + <kbd>Tab</kbd>: Lùi cấp lề (Outdent).
+- **Tạo danh sách đánh số (Numbered Lists)**:
+  - Gõ `1. ` ở đầu dòng rồi gõ nội dung -> Tự động tạo danh sách số thứ tự.
+  - Thao tác <kbd>Enter</kbd>, <kbd>Backspace</kbd>, <kbd>Tab</kbd> tương tự danh sách bullet.
+- **Tạo ô Checkbox việc cần làm (To-Do List)**:
   - Gõ hai ký tự `[]` liền nhau -> Hệ thống tự động chuyển đổi thành ô Checkbox.
   - Nhấp vào ô vuông để đánh dấu hoàn thành (chữ tự động gạch ngang và mờ đi).
   - Nhấn <kbd>Enter</kbd> tại dòng To-Do để tự động tạo tiếp dòng To-Do mới bên dưới.
@@ -196,6 +214,10 @@ Sau khi tải hoặc biên dịch:
 | Dán danh sách link | Trình soạn thảo | Tự động tách từng URL thành từng thẻ liên kết riêng |
 | `> https://...` | Trình soạn thảo / Bảng | Tạo link bookmark thủ công (tương thích ngược) |
 | `[]` | Trình soạn thảo | Gõ `[]` để tạo ô việc cần làm (Checkbox To-Do) |
+| `- ` hoặc `* ` | Trình soạn thảo | Gõ `- ` hoặc `* ` ở đầu dòng để tạo Bullet Point |
+| `1. ` | Trình soạn thảo | Gõ `1. ` ở đầu dòng để tạo Danh sách đánh số |
+| <kbd>Enter</kbd> (dòng bullet rỗng) | Trong danh sách | Thoát khỏi danh sách và trở về dòng văn bản thường |
+| <kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd> | Trong danh sách | Thụt lề cấp con (Indent) / Lùi cấp lề (Outdent) |
 | `@HH:mm dd/MM` | Dòng To-Do | Đặt lịch hẹn giờ nhắc việc tự động (Reminder) |
 | <kbd>Backspace</kbd> | Dòng To-Do trống | Xóa ô To-Do và đưa về dạng dòng văn bản thường |
 | <kbd>Enter</kbd> | Dòng To-Do | Tạo dòng việc cần làm tiếp theo bên dưới |

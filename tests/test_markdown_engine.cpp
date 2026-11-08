@@ -161,6 +161,42 @@ void test_link_card_serialization_and_parsing() {
     ASSERT_TRUE(clean_table_md.find("✏️") == std::string::npos);
 }
 
+void test_bullet_and_numbered_lists() {
+    // 1. Parse bullet list (- item) to HTML
+    std::string md_bullet = "- Mục đầu tiên\n"
+                            "- Mục thứ hai\n"
+                            "- Mục thứ ba";
+    std::string html_bullet = MarkdownEngine::ParseToHtml(md_bullet);
+    ASSERT_TRUE(html_bullet.find("<ul><li>Mục đầu tiên</li><li>Mục thứ hai</li><li>Mục thứ ba</li></ul>") != std::string::npos);
+
+    // 2. Serialize bullet list back to Markdown
+    std::string md_back = MarkdownEngine::SerializeToMarkdown("Tab bullet", html_bullet);
+    ASSERT_TRUE(md_back.find("- Mục đầu tiên\n") != std::string::npos);
+    ASSERT_TRUE(md_back.find("- Mục thứ hai\n") != std::string::npos);
+    ASSERT_TRUE(md_back.find("- Mục thứ ba\n") != std::string::npos);
+
+    // 3. Numbered list (1. item)
+    std::string md_numbered = "1. Bước 1 chuẩn bị\n"
+                              "2. Bước 2 thực hiện\n"
+                              "3. Bước 3 hoàn tất";
+    std::string html_numbered = MarkdownEngine::ParseToHtml(md_numbered);
+    ASSERT_TRUE(html_numbered.find("<ol><li>Bước 1 chuẩn bị</li><li>Bước 2 thực hiện</li><li>Bước 3 hoàn tất</li></ol>") != std::string::npos);
+
+    std::string md_numbered_back = MarkdownEngine::SerializeToMarkdown("Tab numbered", html_numbered);
+    ASSERT_TRUE(md_numbered_back.find("1. Bước 1 chuẩn bị\n") != std::string::npos);
+    ASSERT_TRUE(md_numbered_back.find("2. Bước 2 thực hiện\n") != std::string::npos);
+    ASSERT_TRUE(md_numbered_back.find("3. Bước 3 hoàn tất\n") != std::string::npos);
+
+    // 4. Ensure Todo checkbox is not confused with bullet lists
+    std::string md_mixed = "- [ ] Task cần làm\n"
+                           "- [x] Task đã xong\n"
+                           "- Gạch đầu dòng bình thường";
+    std::string html_mixed = MarkdownEngine::ParseToHtml(md_mixed);
+    ASSERT_TRUE(html_mixed.find("<input type=\"checkbox\" class=\"todo-check\">") != std::string::npos);
+    ASSERT_TRUE(html_mixed.find("<input type=\"checkbox\" class=\"todo-check\" checked>") != std::string::npos);
+    ASSERT_TRUE(html_mixed.find("<ul><li>Gạch đầu dòng bình thường</li></ul>") != std::string::npos);
+}
+
 int main() {
     std::cout << "Running Markdown Engine Tests..." << std::endl;
     test_serialize_todos_and_text();
@@ -170,5 +206,6 @@ int main() {
     test_table_serialization_and_parsing();
     test_gfm_pipe_table_parsing();
     test_link_card_serialization_and_parsing();
+    test_bullet_and_numbered_lists();
     return test_framework_report();
 }
