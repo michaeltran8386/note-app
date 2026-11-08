@@ -248,11 +248,15 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
         if (tag_lower == "table") {
             std::string tbl = "<table" + tag_attrs + ">" + inner + "</table>";
             tbl = std::regex_replace(tbl, std::regex("contenteditable=[\"'][^\"']*[\"']", std::regex::icase), "");
+            tbl = std::regex_replace(tbl, std::regex("<div[^>]*class=[\"'][^\"']*(col-resizer|tbl-btn-add-col|tbl-btn-add-row)[^\"']*[\"'][^>]*></div>", std::regex::icase), "");
+            tbl = std::regex_replace(tbl, std::regex("<button[^>]*class=[\"'][^\"']*note-link-edit-btn[^\"']*[\"'][^>]*>[\\s\\S]*?</button>", std::regex::icase), "");
+            tbl = std::regex_replace(tbl, std::regex("<span[^>]*class=[\"'][^\"']*note-link-wrap[^\"']*[\"'][^>]*data-title=[\"']([^\"']*)[\"'][^>]*data-url=[\"']([^\"']*)[\"'][^>]*>[\\s\\S]*?</span>", std::regex::icase), "<a class=\"note-link\" href=\"$2\">$1</a>");
+            tbl = std::regex_replace(tbl, std::regex("<span[^>]*class=[\"'][^\"']*note-link-wrap[^\"']*[\"'][^>]*data-url=[\"']([^\"']*)[\"'][^>]*data-title=[\"']([^\"']*)[\"'][^>]*>[\\s\\S]*?</span>", std::regex::icase), "<a class=\"note-link\" href=\"$1\">$2</a>");
             md << Trim(tbl) << "\n";
             continue;
         }
 
-        // 0.5. Link Bookmark (> [hiển thị]<link url>)
+        // 0.5. Link Bookmark ([hiển thị](link url))
         if (tag_attrs.find("note-link-wrap") != std::string::npos || inner.find("note-link-wrap") != std::string::npos ||
             tag_attrs.find("link-card") != std::string::npos || inner.find("link-card") != std::string::npos) {
             std::regex title_regex(R"(data-title=[\"']([^\"']*)[\"'])", std::regex::icase);
@@ -266,7 +270,7 @@ std::string MarkdownEngine::SerializeToMarkdown(const std::string& title, const 
 
             if (!card_url.empty()) {
                 if (card_title.empty()) card_title = card_url;
-                md << "> [" << UnescapeHtml(card_title) << "]<" << UnescapeHtml(card_url) << ">\n";
+                md << "[" << UnescapeHtml(card_title) << "](" << UnescapeHtml(card_url) << ")\n";
                 continue;
             }
         }
@@ -449,15 +453,20 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
                 table_tag = tbl_m[0].str();
             }
 
+            // Dọn dẹp các thẻ lỗi/hỏng cấu trúc table nếu có
+            table_tag = std::regex_replace(table_tag, std::regex("<th\\s+ead=\"\"[^>]*>.*?</th>", std::regex::icase), "");
+            table_tag = std::regex_replace(table_tag, std::regex("<th\\s+contenteditable=\"true\"\\s*ead=\"\"[^>]*>.*?</th>", std::regex::icase), "");
+            table_tag = std::regex_replace(table_tag, std::regex("</?thead[^>]*>", std::regex::icase), "");
+
             // Sửa lỗi nếu có thẻ p nằm trực tiếp trong tr để đảm bảo cấu trúc table luôn hợp lệ
             table_tag = std::regex_replace(table_tag, std::regex("<p><br\\s*/?></p>", std::regex::icase), "");
             table_tag = std::regex_replace(table_tag, std::regex("<tr>\\s*<p>", std::regex::icase), "<tr><td>");
             table_tag = std::regex_replace(table_tag, std::regex("</p>\\s*<td>", std::regex::icase), "</td><td>");
             table_tag = std::regex_replace(table_tag, std::regex("</p>\\s*</tr>", std::regex::icase), "</td></tr>");
 
-            // Đảm bảo th và td có contenteditable="true"
-            table_tag = std::regex_replace(table_tag, std::regex("<th(?![^>]*contenteditable)", std::regex::icase), "<th contenteditable=\"true\"");
-            table_tag = std::regex_replace(table_tag, std::regex("<td(?![^>]*contenteditable)", std::regex::icase), "<td contenteditable=\"true\"");
+            // Đảm bảo th và td có contenteditable="true" (sử dụng ranh giới từ để không chạm vào thẻ khác)
+            table_tag = std::regex_replace(table_tag, std::regex("<th(?=[\\s>])(?![^>]*contenteditable)", std::regex::icase), "<th contenteditable=\"true\"");
+            table_tag = std::regex_replace(table_tag, std::regex("<td(?=[\\s>])(?![^>]*contenteditable)", std::regex::icase), "<td contenteditable=\"true\"");
 
             // Đảm bảo th có thanh kéo col-resizer
             if (table_tag.find("col-resizer") == std::string::npos) {
@@ -539,6 +548,36 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
+        // 0.4. Link standalone: [title](url) hoặc http(s)://...
+        std::regex standalone_link_r(R"(^(?:\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)|(https?:\/\/[^\s]+))$)", std::regex::icase);
+        std::smatch slm;
+        if (std::regex_match(trimmed, slm, standalone_link_r)) {
+            std::string title = "";
+            std::string url = "";
+            if (slm[1].matched && slm[2].matched) {
+                title = slm[1].str();
+                url = slm[2].str();
+            } else if (slm[3].matched) {
+                url = slm[3].str();
+                title = url;
+            }
+            title = Trim(title);
+            url = Trim(url);
+            if (title.empty()) title = url;
+            if (!url.empty()) {
+                std::string safe_title = EscapeHtml(title);
+                std::string safe_url = EscapeHtml(url);
+                html << "<p><span class=\"note-link-wrap\" contenteditable=\"false\" data-title=\"" << safe_title 
+                     << "\" data-url=\"" << safe_url << "\">"
+                     << "<a class=\"note-link\" title=\"Nhấp để mở: " << safe_url << "\">"
+                     << safe_title << "</a>"
+                     << "<button type=\"button\" class=\"note-link-edit-btn\" title=\"Chỉnh sửa liên kết\">"
+                     << "<svg class=\"lucide-pencil\" xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"></path><path d=\"m15 5 4 4\"></path></svg>"
+                     << "</button></span></p>";
+                continue;
+            }
+        }
+
         // Headings: #, ##, ###
         if (trimmed.rfind("### ", 0) == 0) {
             html << "<h3>" << trimmed.substr(4) << "</h3>";
@@ -553,17 +592,13 @@ std::string MarkdownEngine::ParseToHtml(const std::string& markdown_text) {
             continue;
         }
 
-        // Blockquotes & Link Bookmarks: >
+        // Blockquotes & Legacy Link Bookmarks: >
         if (trimmed.rfind(">", 0) == 0) {
             std::string bq_content = Trim(trimmed.substr(1));
-            // Check link card patterns:
-            // 1. [title]<url>
-            // 2. [title](url)
-            // 3. <url>
-            // 4. http(s)://...
-            std::regex link_card_r(R"(^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/[^\s]+)))", std::regex::icase);
+            // Tương thích ngược: chỉ chuyển thành bookmark nếu toàn bộ nội dung dòng trích dẫn là một link
+            std::regex legacy_link_r(R"(^(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/[^\s]+))$)", std::regex::icase);
             std::smatch lm;
-            if (std::regex_search(bq_content, lm, link_card_r)) {
+            if (std::regex_match(bq_content, lm, legacy_link_r)) {
                 std::string title = "";
                 std::string url = "";
                 if (lm[1].matched && lm[2].matched) {

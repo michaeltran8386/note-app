@@ -150,8 +150,8 @@
                 continue;
             }
 
-            // Standalone Link: [title](url) hoặc https://...
-            const standaloneLinkMatch = line.trim().match(/^(?:\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)|(https?:\/\/[^\s]+))$/i);
+            // Standalone Link: [title](url) hoặc [title]<url> hoặc https://...
+            const standaloneLinkMatch = line.trim().match(/^(?:\[([^\]]+)\][<\(](https?:\/\/[^\s>\)]+)[>\)]|(https?:\/\/[^\s]+))$/i);
             if (standaloneLinkMatch) {
                 const title = (standaloneLinkMatch[1] || standaloneLinkMatch[3] || "").trim();
                 const url = (standaloneLinkMatch[2] || standaloneLinkMatch[3] || "").trim();
@@ -182,7 +182,16 @@
                     i++;
                     tableHtml += " " + lines[i];
                 }
-                tableHtml = tableHtml.replace(/<p><br\s*\/?><\/p>/gi, "")
+                // Sửa lỗi thẻ hỏng do foster parenting hoặc dữ liệu cũ
+                tableHtml = tableHtml.replace(/<th\s+ead=""[^>]*>.*?<\/th>/gi, "")
+                                     .replace(/<th\s+contenteditable="true"\s*ead=""[^>]*>.*?<\/th>/gi, "")
+                                     .replace(/<\/thead>/gi, "")
+                                     .replace(/<thead[^>]*>/gi, "")
+                                     .replace(/<button[^>]*class="note-link-edit-btn"[^>]*>[\s\S]*?<\/button>/gi, "")
+                                     .replace(/<button[^>]*>[\s\S]*?<\/button>/gi, "")
+                                     .replace(/<span[^>]*class="note-link-wrap"[^>]*data-title="([^"]*)"[^>]*data-url="([^"]*)"[^>]*>[\s\S]*?<\/span>/gi, '<a class="note-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                                     .replace(/<span[^>]*class="note-link-wrap"[^>]*data-url="([^"]*)"[^>]*data-title="([^"]*)"[^>]*>[\s\S]*?<\/span>/gi, '<a class="note-link" href="$1" target="_blank" rel="noopener noreferrer">$2</a>')
+                                     .replace(/<p><br\s*\/?><\/p>/gi, "")
                                      .replace(/<tr>\s*<p>/gi, "<tr><td>")
                                      .replace(/<\/p>\s*<td>/gi, "</td><td>")
                                      .replace(/<\/p>\s*<\/tr>/gi, "</td></tr>");
@@ -233,14 +242,14 @@
 
     function parseInline(text) {
         let out = escapeHtml(text);
-        // Parse inline images first before links
+        // Parse inline images first before links - mặc định width: 30%
         out = out.replace(/!\[(.*?)\]\((.+?)\)/g, (m, label, src) => {
-            let style = "";
+            let width = "30%";
             if (label.includes("|")) {
                 const w = label.split("|")[1].trim();
-                if (w) style = ` style="width: ${w}; max-width: 100%;"`;
+                if (w) width = w;
             }
-            return `<img src="${src}" alt="" class="note-image"${style}>`;
+            return `<img src="${src}" alt="" class="note-image" style="width: ${width}; max-width: 100%;">`;
         });
 
         // Then parse links, bold, italic, strikethrough, inline code
@@ -249,7 +258,8 @@
             .replace(/\*(.*?)\*/g, "<em>$1</em>")
             .replace(/~~(.*?)~~/g, "<del>$1</del>")
             .replace(/`([^`]+)`/g, "<code>$1</code>")
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            .replace(/\[([^\]]+)\][<\(](https?:\/\/[^\s>\)]+)[>\)]/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="note-link">$1</a>')
+            .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="note-link">$2</a>');
     }
 
     function extractTitle(text) {
@@ -394,20 +404,31 @@
     // Sao chép & Rút gọn URL chia sẻ / Gửi bản sửa
     btnShare.addEventListener("click", async function() {
         btnShare.classList.add("loading");
-        showToast(isEditorMode ? "Đang tạo link bản sửa rút gọn..." : "Đang rút gọn link...", 2000);
-
         try {
             const targetText = isEditorMode ? editor.value : currentRawText;
             const hash = await compress(targetText);
             const fullUrl = `${window.location.origin}${window.location.pathname}#${hash}`;
 
-            let finalUrl = fullUrl;
-            if (fullUrl.length <= 2000) {
-                finalUrl = await shortenUrl(fullUrl);
+            let copied = false;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(fullUrl);
+                    copied = true;
+                } catch (e) {}
             }
-
-            if (navigator.clipboard) {
-                await navigator.clipboard.writeText(finalUrl);
+            if (!copied) {
+                const ta = document.createElement("textarea");
+                ta.value = fullUrl;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try {
+                    document.execCommand("copy");
+                    copied = true;
+                } catch (e) {}
+                document.body.removeChild(ta);
             }
 
             btnShare.classList.remove("loading");

@@ -71,19 +71,19 @@ ShareResult ShareService::PublishNote(const std::string& note_id,
         auto payload = BuildSharePayload(note_id, title, markdown, image_rel_paths, base_dir);
         std::string share_id = payload["shareId"].get<std::string>();
 
-        // Lưu bản snapshot vào docs/viewer/shares/<share_id>.json
-        fs::path shares_dir = fs::path(base_dir) / "docs" / "viewer" / "shares";
-        fs::create_directories(shares_dir);
-
-        fs::path share_file = shares_dir / (share_id + ".json");
-        std::ofstream out(share_file);
-        if (!out) {
-            result.success = false;
-            result.error_message = "Không thể ghi file snapshot chia sẻ";
-            return result;
+        // Lưu bản snapshot vào docs/viewer/shares/<share_id>.json (nếu có thể ghi)
+        try {
+            fs::path shares_dir = fs::path(base_dir) / "docs" / "viewer" / "shares";
+            fs::create_directories(shares_dir);
+            fs::path share_file = shares_dir / (share_id + ".json");
+            std::ofstream out(share_file);
+            if (out) {
+                out << payload.dump(2);
+                out.close();
+            }
+        } catch (...) {
+            // Không làm gián đoạn chia sẻ nếu không ghi được snapshot đĩa local
         }
-        out << payload.dump(2);
-        out.close();
 
         result.success = true;
         result.share_id = share_id;

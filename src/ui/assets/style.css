@@ -1327,7 +1327,8 @@ table.note-table td:focus {
     gap: 6px;
 }
 
-.share-url-row input {
+.share-url-row input,
+.share-url-row textarea {
     flex: 1;
     background: #242429;
     border: 1px solid var(--border-subtle);
@@ -1338,9 +1339,17 @@ table.note-table td:focus {
     outline: none;
     font-family: var(--font-family);
     min-width: 0;
+    transition: border-color 0.12s ease;
 }
 
-.share-url-row input:focus {
+.share-url-row textarea {
+    resize: vertical;
+    min-height: 44px;
+    line-height: 1.4;
+}
+
+.share-url-row input:focus,
+.share-url-row textarea:focus {
     border-color: var(--accent);
 }
 

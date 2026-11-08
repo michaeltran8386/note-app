@@ -16,6 +16,7 @@
 #include <winhttp.h>
 #include <sstream>
 #include <iomanip>
+#include <thread>
 
 namespace fs = std::filesystem;
 
@@ -90,13 +91,92 @@ static std::string ShortenUrlWithTinyUrl(const std::string& long_url) {
     return long_url;
 }
 
+static std::string ResolveRedirectUrl(const std::string& short_url) {
+    HINTERNET hSession = WinHttpOpen(L"NoteLocal/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!hSession) return short_url;
+
+    URL_COMPONENTSW urlCompW = {};
+    urlCompW.dwStructSize = sizeof(urlCompW);
+    wchar_t hostW[256] = {};
+    wchar_t pathW[2048] = {};
+    urlCompW.lpszHostName = hostW;
+    urlCompW.dwHostNameLength = 256;
+    urlCompW.lpszUrlPath = pathW;
+    urlCompW.dwUrlPathLength = 2048;
+
+    std::wstring wUrl(short_url.begin(), short_url.end());
+    if (!WinHttpCrackUrl(wUrl.c_str(), 0, 0, &urlCompW)) {
+        WinHttpCloseHandle(hSession);
+        return short_url;
+    }
+
+    INTERNET_PORT port = (urlCompW.nScheme == INTERNET_SCHEME_HTTP) ? INTERNET_DEFAULT_HTTP_PORT : INTERNET_DEFAULT_HTTPS_PORT;
+    DWORD flags = (urlCompW.nScheme == INTERNET_SCHEME_HTTPS) ? WINHTTP_FLAG_SECURE : 0;
+
+    HINTERNET hConnect = WinHttpConnect(hSession, hostW, port, 0);
+    if (!hConnect) {
+        WinHttpCloseHandle(hSession);
+        return short_url;
+    }
+
+    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", pathW, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags);
+    if (!hRequest) {
+        WinHttpCloseHandle(hConnect);
+        WinHttpCloseHandle(hSession);
+        return short_url;
+    }
+
+    DWORD redirectPolicy = WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
+    WinHttpSetOption(hRequest, WINHTTP_OPTION_REDIRECT_POLICY, &redirectPolicy, sizeof(redirectPolicy));
+    WinHttpSetTimeouts(hRequest, 3000, 3000, 3000, 3000);
+
+    std::string finalUrl = short_url;
+    if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+        WinHttpReceiveResponse(hRequest, NULL)) {
+        DWORD dwStatusCode = 0;
+        DWORD dwSize = sizeof(dwStatusCode);
+        WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &dwStatusCode, &dwSize, WINHTTP_NO_HEADER_INDEX);
+
+        if (dwStatusCode == 301 || dwStatusCode == 302 || dwStatusCode == 307 || dwStatusCode == 308) {
+            DWORD dwHeaderSize = 0;
+            WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, NULL, &dwHeaderSize, WINHTTP_NO_HEADER_INDEX);
+            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && dwHeaderSize > 0) {
+                std::vector<wchar_t> headerBuf(dwHeaderSize / sizeof(wchar_t) + 1, 0);
+                if (WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, headerBuf.data(), &dwHeaderSize, WINHTTP_NO_HEADER_INDEX)) {
+                    int len = WideCharToMultiByte(CP_UTF8, 0, headerBuf.data(), -1, nullptr, 0, nullptr, nullptr);
+                    if (len > 0) {
+                        std::string loc(len - 1, 0);
+                        WideCharToMultiByte(CP_UTF8, 0, headerBuf.data(), -1, &loc[0], len, nullptr, nullptr);
+                        finalUrl = loc;
+                    }
+                }
+            }
+        }
+    }
+
+    WinHttpCloseHandle(hRequest);
+    WinHttpCloseHandle(hConnect);
+    WinHttpCloseHandle(hSession);
+
+    return finalUrl;
+}
+
 #define TIMER_REMINDER_ID 1001
 #define WM_TRAY_NOTIFICATION (WM_APP + 101)
+#define WM_POST_WEBVIEW_MESSAGE (WM_APP + 102)
 
 static AppConfig g_config;
 static WebViewHost g_webview;
 static HWND g_hwnd = nullptr;
 static std::string g_base_dir;
+
+void PostWebMessageSafe(const std::string& serialized_msg) {
+    if (!g_hwnd) return;
+    std::string* pStr = new std::string(serialized_msg);
+    if (!PostMessage(g_hwnd, WM_POST_WEBVIEW_MESSAGE, 0, (LPARAM)pStr)) {
+        delete pStr;
+    }
+}
 
 void SendInitState() {
     std::string md = StorageManager::LoadNoteMarkdown(g_base_dir + "/notes", g_config.active_tab_id);
@@ -189,7 +269,9 @@ void HandleWebMessage(const std::string& raw_json) {
         if (title.empty()) title = "Ghi chú chia sẻ";
 
         if (mode == "new_tab") {
-            std::string new_id = "tab_" + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+            static uint32_t s_import_seq = 0;
+            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            std::string new_id = "tab_" + std::to_string(now_ms) + "_" + std::to_string(++s_import_seq);
             g_config.tabs.push_back({new_id, title});
             g_config.active_tab_id = new_id;
             StorageManager::SaveNoteMarkdown(g_base_dir + "/notes", new_id, md);
@@ -208,11 +290,24 @@ void HandleWebMessage(const std::string& raw_json) {
         }
     } else if (msg.action == "shorten_url") {
         std::string long_url = msg.payload.value("url", "");
-        std::string short_url = ShortenUrlWithTinyUrl(long_url);
-        nlohmann::json reply;
-        reply["short_url"] = short_url;
-        reply["long_url"] = long_url;
-        g_webview.PostWebMessage(IPCBridge::Serialize("shorten_url_result", reply));
+        std::thread([long_url]() {
+            std::string short_url = ShortenUrlWithTinyUrl(long_url);
+            nlohmann::json reply;
+            reply["short_url"] = short_url;
+            reply["long_url"] = long_url;
+            PostWebMessageSafe(IPCBridge::Serialize("shorten_url_result", reply));
+        }).detach();
+    } else if (msg.action == "resolve_url") {
+        std::string short_url = msg.payload.value("url", "");
+        std::string req_id = msg.payload.value("req_id", "");
+        std::thread([short_url, req_id]() {
+            std::string resolved_url = ResolveRedirectUrl(short_url);
+            nlohmann::json reply;
+            reply["short_url"] = short_url;
+            reply["resolved_url"] = resolved_url;
+            reply["req_id"] = req_id;
+            PostWebMessageSafe(IPCBridge::Serialize("resolve_url_result", reply));
+        }).detach();
     } else if (msg.action == Actions::SAVE_IMAGE || msg.action == "save_image") {
         std::string b64 = msg.payload.value("data", "");
         std::string ext = msg.payload.value("ext", "png");
@@ -298,6 +393,7 @@ void HandleWebMessage(const std::string& raw_json) {
         ShareResult res = ShareService::Instance().PublishNote(note_id, title, md, image_paths, g_base_dir);
         if (!client_public_url.empty()) {
             res.public_url = client_public_url;
+            res.success = true;
         }
         
         // Tự động sao chép public URL vào clipboard
@@ -327,6 +423,14 @@ void HandleWebMessage(const std::string& raw_json) {
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
+        case WM_POST_WEBVIEW_MESSAGE: {
+            std::string* pStr = reinterpret_cast<std::string*>(lParam);
+            if (pStr) {
+                g_webview.PostWebMessage(*pStr);
+                delete pStr;
+            }
+            return 0;
+        }
         case WM_GETMINMAXINFO: {
             LPMINMAXINFO mmi = (LPMINMAXINFO)lParam;
             mmi->ptMinTrackSize.x = 280; // Giới hạn chiều rộng tối thiểu 280px

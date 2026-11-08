@@ -129,12 +129,12 @@
         } else if (action === "web_share_completed") {
             btnExportUrl.classList.remove("loading");
             if (payload.success) {
-                showToast("Đã tạo link Web và sao chép vào Clipboard!", 3500);
+                // Không ghi đè toast nếu shorten_url_result đang chạy
             } else {
-                showToast("Lỗi chia sẻ: " + (payload.error_message || "Thất bại"), 3000);
+                console.warn("Snapshot local warning:", payload.error_message);
             }
         } else if (action === "shorten_url_result") {
-            if (payload.short_url && payload.short_url !== payload.long_url) {
+            if (payload.short_url && payload.short_url !== payload.long_url && payload.short_url.startsWith("http")) {
                 latestShortShareUrl = payload.short_url;
                 if (shareShortUrlInput) {
                     shareShortUrlInput.value = payload.short_url;
@@ -144,6 +144,21 @@
                 }
                 sendIPC("copy_to_clipboard", { text: payload.short_url });
                 showToast("Đã rút gọn & sao chép link vào Clipboard!", 3500);
+            } else {
+                if (shareShortUrlInput) {
+                    shareShortUrlInput.value = payload.long_url || latestFullShareUrl;
+                }
+                if (navigator.clipboard) {
+                    try { navigator.clipboard.writeText(shareShortUrlInput.value); } catch (e) {}
+                }
+                sendIPC("copy_to_clipboard", { text: shareShortUrlInput.value });
+                showToast("Đã tạo & sao chép link chia sẻ vào Clipboard!", 3500);
+            }
+        } else if (action === "resolve_url_result") {
+            const reqId = payload.req_id;
+            if (reqId && pendingUrlResolvers[reqId]) {
+                pendingUrlResolvers[reqId](payload.resolved_url || payload.short_url);
+                delete pendingUrlResolvers[reqId];
             }
         } else if (action === "reminder_triggered") {
             showToast("🔔 Nhắc việc: " + (payload.text || ""), 5000);
@@ -186,7 +201,7 @@
                     const title = wrap.dataset.title || wrap.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
                     const url = wrap.dataset.url || "";
                     if (url) {
-                        lines.push(`> [${title || url}]<${url}>`);
+                        lines.push(`[${title || url}](${url})`);
                     }
                 }
                 // 1. To-Do Item
@@ -842,21 +857,31 @@
                 return;
             }
 
-            // 2. Tự động nhận diện đường dẫn link khi gõ '>' rồi tới link
-            // Cú pháp A: > [tiêu đề]<url>
-            const syntaxMatch = text.match(/>\s*\[([^\]]*)\]<([^>]+)>/);
-            // Cú pháp B: >https://... hoặc > http://... (khi gõ thêm khoảng trắng phía sau)
-            const urlMatch = text.match(/>\s*(https?:\/\/[^\s<>]+)\s+/);
+            // 2. Tự động nhận diện đường dẫn link khi gõ URL hoặc cú pháp Markdown
+            // Cú pháp A: [tiêu đề](url) hoặc [tiêu đề]<url>
+            const syntaxMatch = text.match(/(?:^|\s)\[([^\]]*)\][<\(](https?:\/\/[^\s>\)]+)[>\)]/);
+            // Cú pháp B: gõ trực tiếp link https://... hoặc http://... rồi gõ dấu cách
+            const urlMatch = text.match(/(?:^|\s)(https?:\/\/[^\s<>]+)\s+/);
+            // Cú pháp C: tương thích ngược > [tiêu đề]<url> hoặc >https://...
+            const legacyMatch = text.match(/^>\s*(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|(https?:\/\/[^\s<>]+)\s*)/);
 
-            if (syntaxMatch || urlMatch) {
+            if (syntaxMatch || urlMatch || legacyMatch) {
                 let title = "";
                 let url = "";
                 if (syntaxMatch) {
                     title = syntaxMatch[1].trim() || syntaxMatch[2].trim();
                     url = syntaxMatch[2].trim();
-                } else {
+                } else if (urlMatch) {
                     url = urlMatch[1].trim();
-                    title = url;
+                    title = getDomainOrTitleFromUrl(url);
+                } else if (legacyMatch) {
+                    if (legacyMatch[1] || legacyMatch[2]) {
+                        title = (legacyMatch[1] || "").trim() || (legacyMatch[2] || "").trim();
+                        url = (legacyMatch[2] || "").trim();
+                    } else {
+                        url = legacyMatch[3].trim();
+                        title = getDomainOrTitleFromUrl(url);
+                    }
                 }
 
                 const linkEl = createLinkElement(title, url);
@@ -1050,16 +1075,25 @@
             return;
         }
 
-        // 3. Phím Enter khi vừa gõ xong >https://... trên dòng mà chưa gõ dấu cách
+        // 3. Phím Enter khi vừa gõ xong link URL trên dòng
         if (e.key === "Enter") {
             const node = range.startContainer;
             if (node && node.nodeType === Node.TEXT_NODE) {
                 const text = node.textContent.trim();
-                const urlMatch = text.match(/^>\s*(https?:\/\/[^\s<>]+)$/);
-                if (urlMatch) {
+                const urlMatch = text.match(/^(?:>\s*)?(https?:\/\/[^\s<>]+)$/);
+                const syntaxMatch = text.match(/^(?:>\s*)?\[([^\]]*)\][<\(](https?:\/\/[^\s>\)]+)[>\)]$/);
+                if (urlMatch || syntaxMatch) {
                     e.preventDefault();
-                    const url = urlMatch[1];
-                    const linkEl = createLinkElement(url, url);
+                    let url = "";
+                    let title = "";
+                    if (syntaxMatch) {
+                        title = syntaxMatch[1].trim() || syntaxMatch[2].trim();
+                        url = syntaxMatch[2].trim();
+                    } else {
+                        url = urlMatch[1];
+                        title = getDomainOrTitleFromUrl(url);
+                    }
+                    const linkEl = createLinkElement(title, url);
                     const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
                     if (tableCell) {
                         tableCell.innerHTML = "";
@@ -1435,7 +1469,54 @@
             return;
         }
 
-        // Xử lý dán URL liên kết khi vừa gõ '>' hoặc dán cú pháp > [hiển thị]<link url>
+        // Helper: Trích xuất tên miền hoặc hostname làm tiêu đề hiển thị ngắn gọn
+        function getDomainOrTitleFromUrl(rawUrl) {
+            try {
+                const u = new URL(rawUrl);
+                let host = u.hostname.replace(/^www\./i, "");
+                return host || rawUrl;
+            } catch (e) {
+                return rawUrl;
+            }
+        }
+
+        // Helper: Trích xuất danh sách các URL hợp lệ từ văn bản dán vào (hỗ trợ nhiều dòng)
+        function extractUrlsFromText(text) {
+            if (!text) return [];
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const results = [];
+
+            for (const line of lines) {
+                // Cú pháp A: > [title]<url> hoặc [title](url)
+                const m1 = line.match(/^>?\s*\[([^\]]*)\][<\(]([^>\)]+)[>\)]/i);
+                if (m1) {
+                    let title = (m1[1] || "").trim();
+                    let url = (m1[2] || "").trim();
+                    if (!title) title = getDomainOrTitleFromUrl(url);
+                    results.push({ title, url });
+                    continue;
+                }
+
+                // Cú pháp B: > <url> hoặc <url>
+                const m2 = line.match(/^>?\s*<([^>]+)>/i);
+                if (m2 && /^https?:\/\/\S+$/i.test(m2[1].trim())) {
+                    const url = m2[1].trim();
+                    results.push({ title: getDomainOrTitleFromUrl(url), url });
+                    continue;
+                }
+
+                // Cú pháp C: > https://... hoặc https://...
+                const m3 = line.match(/^>?\s*(https?:\/\/\S+)$/i);
+                if (m3) {
+                    const url = m3[1].trim();
+                    results.push({ title: getDomainOrTitleFromUrl(url), url });
+                    continue;
+                }
+            }
+            return results;
+        }
+
+        // Xử lý dán URL liên kết (đơn lẻ hoặc nhiều link cùng lúc)
         const pastedText = clipboardData.getData("text");
         if (pastedText) {
             const trimmedPaste = pastedText.trim();
@@ -1444,10 +1525,7 @@
                 const range = sel.getRangeAt(0);
                 const node = range.startContainer;
 
-                // TH 1: Dán trực tiếp cú pháp bookmark > [title]<url> hoặc > url
-                const matchBookmark = trimmedPaste.match(/^>\s*(?:\[([^\]]*)\][<\(]([^>\)]+)[>\)]|<([^>]+)>|(https?:\/\/\S+))/i);
-
-                // TH 2: Con trỏ đứng ngay sau '>' hoặc '> ' trên dòng, và chuỗi dán vào là URL
+                // Kiểm tra xem vị trí con trỏ có tiền tố '>' không
                 let hasPrefixArrow = false;
                 let textBeforeCursor = "";
                 let containerBlock = null;
@@ -1464,72 +1542,139 @@
                     hasPrefixArrow = true;
                 }
 
-                const isUrl = /^https?:\/\/\S+$/i.test(trimmedPaste);
+                const extracted = extractUrlsFromText(trimmedPaste);
+                const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
 
-                if (matchBookmark || (hasPrefixArrow && isUrl)) {
+                // Điều kiện kích hoạt chèn link bookmark:
+                // 1. Dán nhiều link cùng lúc (extracted.length >= 2)
+                // 2. Dán vào ô Table và có link (tableCell && extracted.length >= 1)
+                // 3. Có tiền tố '>' trước con trỏ và có link (hasPrefixArrow && extracted.length >= 1)
+                // 4. Chuỗi dán bắt đầu bằng cú pháp bookmark '> ' (trimmedPaste.startsWith(">") && extracted.length >= 1)
+                const shouldHandleAsLinks = (extracted.length >= 2) || 
+                                           (tableCell && extracted.length >= 1) || 
+                                           (hasPrefixArrow && extracted.length >= 1) || 
+                                           (trimmedPaste.startsWith(">") && extracted.length >= 1);
+
+                if (shouldHandleAsLinks) {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    let title = "";
-                    let url = "";
-
-                    if (matchBookmark) {
-                        title = matchBookmark[1] || matchBookmark[3] || matchBookmark[4] || "";
-                        url = matchBookmark[2] || matchBookmark[3] || matchBookmark[4] || "";
-                    } else {
-                        url = trimmedPaste;
-                        title = url;
-                    }
-
-                    title = title.trim();
-                    url = url.trim();
-                    if (!title) title = url;
-
-                    const linkEl = createLinkElement(title, url);
-                    const tableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
+                    // TRƯỜNG HỢP 1: DÁN VÀO TRONG BẢNG (TABLE) - ĐIỀN DỌC THEO CÁC HÀNG
                     if (tableCell) {
-                        if (containerBlock && (containerBlock.textContent.trim() === ">" || containerBlock.textContent.trim() === "> ")) {
-                            tableCell.innerHTML = "";
-                            tableCell.appendChild(linkEl);
-                            tableCell.appendChild(document.createTextNode(" "));
-                        } else {
-                            range.deleteContents();
-                            range.insertNode(linkEl);
-                        }
+                        let curTr = tableCell.closest("tr");
+                        const tableEl = curTr ? curTr.closest("table") : null;
+                        const colIndex = curTr ? Array.from(curTr.children).indexOf(tableCell) : 0;
+                        const colCount = curTr ? curTr.children.length : 1;
+                        let lastCell = tableCell;
+
+                        extracted.forEach(function(item, idx) {
+                            if (idx === 0) {
+                                tableCell.innerHTML = "";
+                                tableCell.appendChild(createLinkElement(item.title, item.url));
+                                tableCell.appendChild(document.createTextNode(" "));
+                                lastCell = tableCell;
+                            } else {
+                                let nextTr = curTr ? curTr.nextElementSibling : null;
+                                if (!nextTr && tableEl) {
+                                    // Tự động thêm hàng mới nếu hết hàng
+                                    const tbody = tableEl.querySelector("tbody") || tableEl;
+                                    nextTr = document.createElement("tr");
+                                    for (let c = 0; c < colCount; c++) {
+                                        const td = document.createElement("td");
+                                        td.setAttribute("contenteditable", "true");
+                                        td.innerHTML = "<br>";
+                                        nextTr.appendChild(td);
+                                    }
+                                    tbody.appendChild(nextTr);
+                                }
+                                if (nextTr) {
+                                    curTr = nextTr;
+                                    const targetTd = curTr.children[colIndex] || curTr.firstElementChild;
+                                    if (targetTd) {
+                                        targetTd.innerHTML = "";
+                                        targetTd.appendChild(createLinkElement(item.title, item.url));
+                                        targetTd.appendChild(document.createTextNode(" "));
+                                        lastCell = targetTd;
+                                    }
+                                }
+                            }
+                        });
+
                         const newRange = document.createRange();
-                        newRange.selectNodeContents(tableCell);
+                        newRange.selectNodeContents(lastCell);
                         newRange.collapse(false);
                         sel.removeAllRanges();
                         sel.addRange(newRange);
 
                         setupAllLinks();
+                        setupAllTables();
                         triggerSave();
+                        if (extracted.length > 1) {
+                            showToast("Đã điền " + extracted.length + " liên kết vào bảng!", 2500);
+                        }
                         return;
                     }
 
-                    const p = document.createElement("p");
-                    p.appendChild(linkEl);
-                    p.appendChild(document.createTextNode(" "));
+                    // TRƯỜNG HỢP 2: DÁN VÀO TRÌNH SOẠN THẢO THƯỜNG - TỰ TÁCH THÀNH DANH SÁCH LINK
+                    const createdPs = [];
+                    extracted.forEach(function(item) {
+                        const p = document.createElement("p");
+                        p.appendChild(createLinkElement(item.title, item.url));
+                        p.appendChild(document.createTextNode(" "));
+                        createdPs.push(p);
+                    });
 
                     if (containerBlock && containerBlock !== editor && (containerBlock.textContent.trim() === ">" || containerBlock.textContent.trim() === "> " || containerBlock.tagName === "BLOCKQUOTE")) {
-                        containerBlock.replaceWith(p);
+                        containerBlock.replaceWith(createdPs[0]);
+                        let prev = createdPs[0];
+                        for (let k = 1; k < createdPs.length; k++) {
+                            prev.parentNode.insertBefore(createdPs[k], prev.nextSibling);
+                            prev = createdPs[k];
+                        }
                     } else if (node.nodeType === Node.TEXT_NODE && (textBeforeCursor === ">" || textBeforeCursor === "> ")) {
                         node.textContent = node.textContent.substring(range.startOffset);
-                        if (containerBlock && containerBlock !== editor) {
-                            containerBlock.parentNode.insertBefore(p, containerBlock);
-                            if (!containerBlock.textContent.trim()) {
-                                containerBlock.remove();
-                            }
-                        } else {
-                            editor.insertBefore(p, node);
+                        let anchor = (containerBlock && containerBlock !== editor) ? containerBlock : node;
+                        for (let k = 0; k < createdPs.length; k++) {
+                            anchor.parentNode.insertBefore(createdPs[k], anchor);
+                        }
+                        if (containerBlock && !containerBlock.textContent.trim()) {
+                            containerBlock.remove();
                         }
                     } else {
-                        range.deleteContents();
-                        range.insertNode(linkEl);
+                        const targetBlock = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("p, div, h1, h2, h3, blockquote");
+                        if (targetBlock && targetBlock !== editor && !targetBlock.textContent.trim()) {
+                            targetBlock.replaceWith(createdPs[0]);
+                            let prev = createdPs[0];
+                            for (let k = 1; k < createdPs.length; k++) {
+                                prev.parentNode.insertBefore(createdPs[k], prev.nextSibling);
+                                prev = createdPs[k];
+                            }
+                        } else if (targetBlock && targetBlock !== editor) {
+                            let prev = targetBlock;
+                            for (let k = 0; k < createdPs.length; k++) {
+                                targetBlock.parentNode.insertBefore(createdPs[k], prev.nextSibling);
+                                prev = createdPs[k];
+                            }
+                        } else {
+                            range.deleteContents();
+                            for (let k = 0; k < createdPs.length; k++) {
+                                range.insertNode(createdPs[k]);
+                            }
+                        }
                     }
+
+                    const lastP = createdPs[createdPs.length - 1];
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(lastP);
+                    newRange.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
 
                     setupAllLinks();
                     triggerSave();
+                    if (extracted.length > 1) {
+                        showToast("Đã chèn " + extracted.length + " liên kết bookmark gọn gàng!", 3000);
+                    }
                     return;
                 }
             }
@@ -1777,7 +1922,7 @@
                     const title = wrap.dataset.title || wrap.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
                     const url = wrap.dataset.url || "";
                     if (url) {
-                        lines.push(`> [${title || url}]<${url}>`);
+                        lines.push(`[${title || url}](${url})`);
                     }
                 } else if (node.classList.contains("todo-item")) {
                     const cb = node.querySelector(".todo-check");
@@ -1806,7 +1951,7 @@
                                 const title = child.dataset.title || child.querySelector(".note-link, .link-card-title")?.textContent?.trim() || "";
                                 const url = child.dataset.url || "";
                                 if (url) {
-                                    lines.push(`> [${title || url}]<${url}>`);
+                                    lines.push(`[${title || url}](${url})`);
                                 }
                             } else if (child.classList && child.classList.contains("todo-item")) {
                                 hasSub = true;
@@ -1988,7 +2133,7 @@
 
                 // Nếu ghi chú vừa phải (<= 2000 ký tự), gọi C++ rút gọn qua TinyURL
                 if (latestFullShareUrl.length <= 2000) {
-                    shareShortUrlInput.value = "Đang rút gọn link...";
+                    showToast("Đã tạo link Web! Đang rút gọn qua TinyURL...", 2500);
                     sendIPC("shorten_url", { url: latestFullShareUrl });
                 } else {
                     showToast("Ghi chú chứa ảnh lớn — đã sao chép link đầy đủ (Offline Hash) vào Clipboard!", 3500);
@@ -2044,22 +2189,32 @@
         });
     }
 
+    const pendingUrlResolvers = {};
+    let urlResolverSeq = 0;
+
+    function resolveShortUrlViaIPC(shortUrl) {
+        return new Promise(resolve => {
+            const reqId = "res_" + (++urlResolverSeq) + "_" + Date.now();
+            pendingUrlResolvers[reqId] = resolve;
+            sendIPC("resolve_url", { url: shortUrl, req_id: reqId });
+            setTimeout(() => {
+                if (pendingUrlResolvers[reqId]) {
+                    delete pendingUrlResolvers[reqId];
+                    resolve(shortUrl);
+                }
+            }, 4000);
+        });
+    }
+
     // Helper: Trích xuất Markdown từ link chia sẻ hoặc link rút gọn
     async function extractMarkdownFromUrl(inputUrl) {
         let raw = (inputUrl || "").trim();
         if (!raw) return null;
 
-        // Nếu là link rút gọn TinyURL / is.gd -> theo dấu chuyển hướng
+        // Nếu là link rút gọn TinyURL / is.gd -> theo dấu chuyển hướng qua C++ native
         if (raw.includes("tinyurl.com") || raw.includes("is.gd")) {
-            try {
-                showToast("Đang kết nối link rút gọn...", 2000);
-                const res = await fetch(raw);
-                if (res.url && res.url !== raw) {
-                    raw = res.url;
-                }
-            } catch (e) {
-                console.warn("Follow redirect failed:", e);
-            }
+            showToast("Đang kết nối link rút gọn...", 2000);
+            raw = await resolveShortUrlViaIPC(raw);
         }
 
         let encodedData = "";
@@ -2092,36 +2247,48 @@
             return;
         }
 
-        showToast("Đang giải mã và hợp nhất bản chỉnh sửa...", 2000);
-        try {
-            const md = await extractMarkdownFromUrl(inputVal);
-            if (!md) {
-                showToast("Không thể giải mã dữ liệu từ link này!", 3000);
-                return;
-            }
+        const lines = inputVal.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0) return;
 
-            // Trích xuất tiêu đề từ dòng đầu tiên có #
-            let title = "";
-            for (const line of md.split("\n")) {
-                const m = line.match(/^#+\s+(.*\S)/);
-                if (m) {
-                    title = m[1].trim();
-                    break;
+        showToast(lines.length > 1 ? `Đang giải mã và nhập ${lines.length} ghi chú...` : "Đang giải mã bản chỉnh sửa...", 2500);
+        
+        let successCount = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const urlItem = lines[i];
+            try {
+                const md = await extractMarkdownFromUrl(urlItem);
+                if (!md) continue;
+
+                // Trích xuất tiêu đề từ dòng đầu tiên có #
+                let title = "";
+                for (const line of md.split("\n")) {
+                    const m = line.match(/^#+\s+(.*\S)/);
+                    if (m) {
+                        title = m[1].trim();
+                        break;
+                    }
                 }
+
+                const targetMode = (mode === "current" && i === 0) ? "current" : "new_tab";
+                sendIPC("import_shared_note", {
+                    mode: targetMode,
+                    markdown: md,
+                    title: title || (lines.length > 1 ? `Ghi chú ${i + 1}` : "Ghi chú chia sẻ")
+                });
+                successCount++;
+            } catch (err) {
+                console.warn("Import failed for item:", urlItem, err);
             }
+        }
 
-            sendIPC("import_shared_note", {
-                mode: mode,
-                markdown: md,
-                title: title
-            });
-
-            closeSharePopover();
-            importUpdateUrlInput.value = "";
+        closeSharePopover();
+        importUpdateUrlInput.value = "";
+        if (successCount === 0) {
+            showToast("Không thể giải mã dữ liệu từ link!", 3000);
+        } else if (successCount === 1) {
             showToast(mode === "new_tab" ? "Đã tạo Tab mới từ bản chia sẻ!" : "Đã cập nhật thành công vào Tab hiện tại!", 3500);
-        } catch (err) {
-            console.error("Import update failed:", err);
-            showToast("Lỗi nhập dữ liệu: " + err.message, 3000);
+        } else {
+            showToast(`Đã nhập thành công ${successCount} ghi chú thành các tab!`, 4000);
         }
     }
 
@@ -2154,6 +2321,26 @@
             el.removeAttribute("contenteditable");
             el.classList.remove("resizing");
         });
+        // Loại bỏ thead và thuộc tính ead nếu có từ dữ liệu cũ
+        clone.querySelectorAll("thead").forEach(th => {
+            const tbody = clone.querySelector("tbody") || clone;
+            while (th.firstChild) {
+                tbody.insertBefore(th.firstChild, tbody.firstChild);
+            }
+            th.remove();
+        });
+        clone.querySelectorAll("th[ead]").forEach(th => th.removeAttribute("ead"));
+        // Tự động chuẩn hóa link trong ô bảng: biến .note-link-wrap thành <a> sạch, loại bỏ button pencil
+        clone.querySelectorAll(".note-link-wrap").forEach(wrap => {
+            const url = wrap.dataset.url || "";
+            const title = wrap.dataset.title || wrap.querySelector(".note-link")?.textContent?.trim() || url;
+            const a = document.createElement("a");
+            a.className = "note-link";
+            a.href = url;
+            a.textContent = title;
+            wrap.replaceWith(a);
+        });
+        clone.querySelectorAll(".note-link-edit-btn, button, svg").forEach(el => el.remove());
         // Tự động chuẩn hóa và bảo vệ cấu trúc hàng: nếu tr có phần tử con không phải td hoặc th
         clone.querySelectorAll("tr").forEach(tr => {
             const children = Array.from(tr.childNodes);
@@ -2801,6 +2988,16 @@
     }
 
     function setupAllLinks() {
+        // Tự động nâng cấp các link thuần trong bảng hoặc nội dung thành note-link-wrap có nút cây bút
+        const plainLinks = editor.querySelectorAll("a.note-link");
+        plainLinks.forEach(a => {
+            if (!a.closest(".note-link-wrap") && !a.closest(".link-card")) {
+                const url = a.getAttribute("href") || a.textContent.trim();
+                const title = a.textContent.trim() || url;
+                const wrap = createLinkElement(title, url);
+                a.replaceWith(wrap);
+            }
+        });
         const wraps = editor.querySelectorAll(".note-link-wrap, .link-card");
         wraps.forEach(bindLinkEvents);
     }
