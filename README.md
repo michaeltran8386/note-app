@@ -46,6 +46,10 @@
 - Giao diện Fluent Dark Mode hiện đại của Windows 11 với bo góc tinh tế, triệt tiêu hoàn toàn menu chuột phải rườm rà của trình duyệt.
 
 ### 🪄 2. Trải nghiệm soạn thảo phong cách Notion
+<p align="center">
+  <img src="resources/demos/demo-notion-blocks.gif" alt="Notion Blocks Demo" width="100%">
+</p>
+
 - **Kéo thả khối (Drag & Drop)**: Rê chuột vào lề trái để thấy tay cầm `⋮⋮`. Nhấc và kéo thả để sắp xếp lại các đoạn văn bản một cách trực quan với đường kẻ xanh dẫn hướng.
 - **Tự động mở rộng Markdown**:
   - Gõ `- ` hoặc `* ` $\rightarrow$ Tự biến thành danh sách gạch đầu dòng (Bullet list).
@@ -59,6 +63,10 @@
 - **Thanh công cụ nổi (Bubble Toolbar)**: Bôi đen chữ để nhanh chóng định dạng **In đậm**, *In nghiêng*, ~~Gạch ngang~~, Đặt liên kết hoặc Gửi cho AI xử lý.
 
 ### 🤖 3. Trợ lý Trí tuệ Nhân tạo thông minh
+<p align="center">
+  <img src="resources/demos/demo-ai-assistant.gif" alt="AI Assistant Demo" width="100%">
+</p>
+
 - **Tự động nhận diện API Key (Key Sniffer)**: Bạn chỉ cần dán khóa API vào ô Cài đặt, NoteLocal sẽ tự động phát hiện nhà cung cấp tương ứng (Google Gemini, OpenAI, DeepSeek, Groq) mà không cần chỉnh tay phức tạp.
 - **Hỗ trợ Google Gemini 2.5 Flash**: Tận dụng model AI mới nhất của Google qua endpoint tốc độ cao, trả lời thông minh và súc tích bằng tiếng Việt.
 - **Hỗ trợ Local AI (Ollama)**: Kết nối với Ollama chạy trên máy bạn để dùng AI hoàn toàn ngoại tuyến (offline), miễn phí và bảo mật dữ liệu 100%.
@@ -69,6 +77,10 @@
 - Hệ thống tự tạo đồng hồ đếm giờ. Khi đến thời điểm, **Windows Action Center** sẽ gửi thông báo Toast ở góc màn hình ngay cả khi ứng dụng đang thu nhỏ.
 
 ### 📊 5. Bảng biểu phong cách Office (Table)
+<p align="center">
+  <img src="resources/demos/demo-tables.gif" alt="Tables Demo" width="100%">
+</p>
+
 - Chèn bảng nhanh từ 2x2 đến 6x6.
 - Kéo thả mép cột để thay đổi độ rộng theo ý thích.
 - Nhấn phím <kbd>Tab</kbd> để di chuyển mượt mà giữa các ô; nhấn <kbd>Tab</kbd> ở ô cuối cùng sẽ **tự động thêm hàng mới** chuẩn như Microsoft Word.
