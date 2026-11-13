@@ -66,3 +66,4 @@ Dự án được cấu hình sẵn GitHub Actions tại `.github/workflows/rele
 3. Chạy toàn bộ test C++ và E2E browser tests.
 4. Đóng gói ra `NoteLocal-Setup-x64.exe`.
 5. Tạo GitHub Release và đính kèm file cài đặt tự động.
+

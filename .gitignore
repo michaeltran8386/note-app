@@ -12,5 +12,15 @@ config.json
 /notes/
 /assets/
 third_party/webview2/
-graphify-out/cache/
+graphify-out/
+
+# Internal developer planning, notes, and handover documents
+docs/HANDOVER_CHATGPT_CODEX.md
+docs/notion_outputs_reference/
+docs/superpowers/
+docs/intent/
+specs/
+.specify/
+srs.txt
+
 
