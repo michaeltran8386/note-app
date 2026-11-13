@@ -1,6 +1,7 @@
 // Zero-dependency browser regression suite. Run: node tests/editor_interactions.mjs
 // Uses an isolated Edge profile; all AI responses and IPC are test doubles.
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -104,7 +105,14 @@ try {
         .replace(/<script src="editor.js[^>]*><\/script>/, () => `<script>${setup}</script><script>${app}</script>`);
     server=createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html)});
     server.listen(0,'127.0.0.1');await once(server,'listening');
-    edge=spawn(process.env.EDGE_PATH || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',[
+    const candidatePaths = [
+        process.env.EDGE_PATH,
+        'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files/Google/Chrome/Application/chrome.exe'
+    ].filter(Boolean);
+    const edgeExe = candidatePaths.find(p => existsSync(p)) || 'msedge';
+    edge=spawn(edgeExe,[
         '--headless=new','--disable-gpu','--no-first-run',`--user-data-dir=${profile}`,
         '--remote-debugging-port=0','about:blank'
     ],{windowsHide:true,stdio:'ignore'});
