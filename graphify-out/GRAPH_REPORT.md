@@ -1,17 +1,17 @@
 # Graph Report - NOTE_LOCAL  (2026-11-13)
 
 ## Corpus Check
-- 107 files · ~162,792 words
+- 107 files · ~165,409 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 2, .css 2, .ico 1)
 
 ## Summary
-- 1350 nodes · 2425 edges · 105 communities (62 shown, 43 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 75 edges (avg confidence: 0.89)
+- 1350 nodes · 2425 edges · 107 communities (63 shown, 44 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `04e549ab`
+- Built from commit: `8338572b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -30,7 +30,7 @@
 - devDependencies
 - common.ps1
 - 🚀 Hướng dẫn sử dụng chi tiết
-- Tasks: Unified Notes, To-Do with Reminders & 100% Web Share
+- iostream
 - rbegin
 - app.js
 - 1. Reminder Subsystem Contracts
@@ -76,7 +76,7 @@
 - main.cpp
 - 4. Các Dịch Vụ Cần Xây Dựng (Required Services)
 - namespace
-- @atlaskit/pragmatic-drag-and-drop-hitbox@1.0.3
+- @common/applecartRouting@file:../common/applecartRouting
 - 2. Hệ Thống Cơ Sở Dữ Liệu (Databases & Views)
 - handle_value
 - 5. Cộng Tác Thời Gian Thực & Chia Sẻ (Collaboration & Sharing)
@@ -85,37 +85,39 @@
 - classnames@2.3.2
 - colord@2.9.3
 - @common/ai@file:../common/ai
-- @base-ui/react@1.6.0
+- @common/lazyDependency@file:../common/lazyDependency
 - @common/crdt@file:../common/crdt
 - @common/i18n@file:../common/i18n
-- cf-prefs@2.0.1
-- @common/importEntitySizeLimits@file:../common/importEntitySizeLimits
+- @common/nds@file:../common/nds
+- @common/recordModels@file:../common/recordModels
 - @common/ndsIcons@file:../common/ndsIcons
 - @common/ndsToaster@file:../common/ndsToaster
 - @common/oauthPopup@file:../common/oauthPopup
-- @common/suspense@file:../common/suspense
+- @common/utils@file:../common/utils
 - @common/resourceScheduler@file:../common/resourceScheduler
-- debug@4.4.0
-- @electron-forge/maker-base@7.8.1
-- email-validator@2.0.4
-- md5@2.2.1
+- date-fns@4.1.0
+- dbus-next@0.10.2
+- electron-log@4.4.8
+- events@3.3.0
 - electron-store@8.2.0
 - electron-updater@6.8.9
 - @electron/windows-sign@1.2.0
 - @eneris/push-receiver@4.3.1
-- @notionhq/ai-meetingNotes@file:../ai-meetingNotes
+- @jasonscheirer/native-progress-bar@1.1.2
 - @hitarth-gg/devtron@0.0.0-development.11
-- @notionhq/desktop-native@file:../desktop-native
+- @notionhq/shared@file:../shared
 - js-yaml@3.13.1
 - loudness@0.4.2
 - @noble/hashes@1.7.1
 - node-addon-api@6.1.0
-- @notionhq/electron-forge-maker-msix@file:../desktop-msix-maker
-- @notionhq/shared-routes@file:../shared-routes
+- @notionhq/shared-clientMcp@file:../shared-clientMcp
+- @notionhq/shared-mcpFileTransfer@file:../shared-mcpFileTransfer
 - @notionhq/shared-icons@file:../shared-icons
 - @notionhq/shared-intl@file:../shared-intl
-- path-to-regexp@8.2.0
+- @notionhq/shared-sqlite@file:../shared-sqlite
+- react@19.3.0-canary-2dc7da79-20260828
 - @photon-ai/imessage-kit@3.0.0
+- @statsig/client-core@3.17.1
 - react-dom@19.3.0-canary-2dc7da79-20260828
 - react-intl@6.6.8
 - semver@7.3.5
@@ -135,29 +137,29 @@
 10. `triggerSave()` - 22 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `5.1 Kiến trúc Đồng Bộ Thời Gian Thực (CRDT & Transactions)` --references--> `update()`  [INFERRED]
-  docs/notion_outputs_reference/02_notion_features_deep_dive.md → third_party/json/json.hpp
 - `Task 5: Win32 WebView2 Host & C++ IPC Bridge` --references--> `IPCBridge`  [INFERRED]
   docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/platform/ipc_message.h
 - `Task 7: Multi-Tab UI, Tab Renaming & Clipboard Image Paste (`Ctrl+V`)` --references--> `IPCBridge`  [INFERRED]
   docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/platform/ipc_message.h
 - `Task 2: Core Data Types & Markdown Engine in C++` --references--> `MarkdownEngine`  [INFERRED]
   docs/superpowers/plans/2026-11-07-note-local-windows11.md → src/core/markdown_engine.h
+- `5.1 Kiến trúc Đồng Bộ Thời Gian Thực (CRDT & Transactions)` --references--> `update()`  [INFERRED]
+  docs/notion_outputs_reference/02_notion_features_deep_dive.md → third_party/json/json.hpp
 - `1. Windows Notification Architecture: Native Win32 vs C++/WinRT` --references--> `WndProc()`  [INFERRED]
   specs/001-unified-notes-reminders/research.md → src/main.cpp
 
 ## Import Cycles
 - None detected.
 
-## Communities (105 total, 43 thin omitted)
+## Communities (107 total, 44 thin omitted)
 
 ### Community 0 - "ControllerCompletedHandler"
 Cohesion: 0.05
 Nodes (18): ControllerCompletedHandler, m_cb, m_ref, STDMETHODCALLTYPE, EnvironmentCompletedHandler, m_cb, m_ref, STDMETHODCALLTYPE (+10 more)
 
 ### Community 1 - "share_service.h"
-Cohesion: 0.11
-Nodes (14): GenerateShareId(), ReadBinaryFile(), ShareImageAttachment, local_path, mime_type, width, ShareResult, error_message (+6 more)
+Cohesion: 0.13
+Nodes (12): GenerateShareId(), ReadBinaryFile(), ShareImageAttachment, local_path, mime_type, width, ShareResult, error_message (+4 more)
 
 ### Community 2 - "steps"
 Cohesion: 0.06
@@ -172,8 +174,8 @@ Cohesion: 0.17
 Nodes (20): begin(), cbegin(), cend(), contains(), count(), diff(), emplace(), end() (+12 more)
 
 ### Community 5 - "ReminderManager"
-Cohesion: 0.11
-Nodes (12): MakeKey(), ReminderEntry, display_time, item_id, note_id, notified_at, status, target_timestamp (+4 more)
+Cohesion: 0.14
+Nodes (13): MakeKey(), ReminderEntry, display_time, item_id, note_id, notified_at, status, target_timestamp (+5 more)
 
 ### Community 6 - "editor.js"
 Cohesion: 0.05
@@ -185,14 +187,14 @@ Nodes (25): concurrency, cancel-in-progress, group, environment, runs-on, steps,
 
 ### Community 8 - "storage_manager.cpp"
 Cohesion: 0.11
-Nodes (21): Task 3: Local Storage Manager & Tab Lifecycle, AppConfig, active_tab_id, always_on_top, tabs, window_h, window_w, window_x (+13 more)
+Nodes (15): Task 3: Local Storage Manager & Tab Lifecycle, AppConfig, active_tab_id, always_on_top, tabs, window_h, window_w, window_x (+7 more)
 
 ### Community 9 - "string_t"
 Cohesion: 0.16
 Nodes (10): convert(), dump_float(), get_number_float(), json_pointer, json_pointer operator/(), number_float(), number_float_t, operator "" _json_pointer() (+2 more)
 
 ### Community 10 - "markdown_engine.cpp"
-Cohesion: 0.19
+Cohesion: 0.20
 Nodes (15): EscapeHtml(), MarkdownEngine, StripHtmlTags(), Trim(), UnescapeHtml(), main(), test_bullet_and_numbered_lists(), test_extract_todos() (+7 more)
 
 ### Community 11 - "devDependencies"
@@ -207,9 +209,9 @@ Nodes (19): Find-SpecifyRoot(), Format-SpecKitCommand(), Get-CurrentBranch(), Ge
 Cohesion: 0.11
 Nodes (18): 10. Chia sẻ ghi chú Web Serverless & Hợp nhất 2 chiều (Share & Merge), 1. Khởi chạy ứng dụng, 2. Soạn thảo văn bản, Bullet Points, To-Do List & Hẹn giờ nhắc việc, 3. Trải nghiệm tương tác phong cách Notion (Mini-Notion UX), 4. Trợ lý Trí tuệ Nhân tạo (Notion AI Assistant - Local & Cloud), 5. Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links), 6. Bảng biểu phong cách Office (Tables), 7. Chèn & Quản lý hình ảnh (+10 more)
 
-### Community 14 - "Tasks: Unified Notes, To-Do with Reminders & 100% Web Share"
-Cohesion: 0.11
-Nodes (18): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description with exact file paths`, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation Strategy, Incremental Delivery, MVP First (User Story 1 Only) (+10 more)
+### Community 14 - "iostream"
+Cohesion: 0.21
+Nodes (4): test_framework_report(), main(), main(), main()
 
 ### Community 15 - "rbegin"
 Cohesion: 0.53
@@ -225,7 +227,7 @@ Nodes (9): 1. Reminder Subsystem Contracts, 2. 100% Web Share Subsystem Contract
 
 ### Community 18 - "dependencies"
 Cohesion: 0.04
-Nodes (47): dependencies, app-builder-lib@24.13.3, better-sqlite3@13.0.1, @common/applecartRouting@file:../common/applecartRouting, @common/nds@file:../common/nds, @common/ndsTokens@file:../common/ndsTokens, @common/recordModels@file:../common/recordModels, @common/subscriptions@file:../common/subscriptions (+39 more)
+Nodes (45): dependencies, app-builder-lib@24.13.3, @atlaskit/pragmatic-drag-and-drop-hitbox@1.0.3, @base-ui/react@1.6.0, better-sqlite3@13.0.1, cf-prefs@2.0.1, @common/importEntitySizeLimits@file:../common/importEntitySizeLimits, debug@4.4.0 (+37 more)
 
 ### Community 19 - "Tasks: [FEATURE NAME]"
 Cohesion: 0.07
@@ -233,11 +235,11 @@ Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Descripti
 
 ### Community 20 - "notion_package.json"
 Cohesion: 0.06
-Nodes (35): author, @atlaskit/pragmatic-drag-and-drop@1.4.0, @common/lazyDependency@file:../common/lazyDependency, dbus-next@0.10.2, intl-messageformat@10.5.0, luxon@git://github.com/makenotion/luxon.git..., @notionhq/shared-clientMcp@file:../shared-clientMcp, @notionhq/shared-mcpFileTransfer@file:../shared-mcpFileTransfer (+27 more)
+Nodes (33): author, @atlaskit/pragmatic-drag-and-drop@1.4.0, @common/ndsTokens@file:../common/ndsTokens, @common/subscriptions@file:../common/subscriptions, @common/suspense@file:../common/suspense, email-validator@2.0.4, luxon@git://github.com/makenotion/luxon.git..., @notionhq/ai-meetingNotes@file:../ai-meetingNotes (+25 more)
 
 ### Community 21 - ".Serialize"
-Cohesion: 0.15
-Nodes (12): IPCBridge, IPCMessage, action, payload, test_framework_report(), main(), test_ipc_base64_roundtrip(), test_ipc_copy_to_clipboard_message() (+4 more)
+Cohesion: 0.21
+Nodes (10): IPCBridge, IPCMessage, action, payload, main(), test_ipc_base64_roundtrip(), test_ipc_copy_to_clipboard_message(), test_ipc_malformed_json() (+2 more)
 
 ### Community 22 - "back"
 Cohesion: 0.22
@@ -344,8 +346,8 @@ Cohesion: 0.22
 Nodes (9): 1. Triết Lý Thiết Kế: "Notion Core, Không Cồng Kềnh" (Philosophy), 2. Kiến Trúc Phân Lớp (Layered Architecture Blueprint), 3. Lược Đồ Cơ Sở Dữ Liệu Tinh Gọn (Minimal SQLite Schema), 5. Lộ Trình Triển Khai 3 Giai Đoạn (Phased Roadmap), 6. Kết Luận, Giai đoạn 1: Nền Tảng Khối & Biên Tập (Block Foundations - 1 tuần), Giai đoạn 2: Cơ Sở Dữ Liệu & Chế Độ Xem (Database & Views - 2 tuần), Giai đoạn 3: Trí Tuệ Nhân Tạo & Xuất Bản (AI, MCP & Export - 1 tuần) (+1 more)
 
 ### Community 49 - ".Serialize"
-Cohesion: 0.13
-Nodes (16): Global Constraints, Note Local Windows 11 Implementation Plan, Review Focus, Self-Review Checklist, Task 1: Environment Scaffolding, CMake & Git Setup, Task 2: Core Data Types & Markdown Engine in C++, Task 4: Win32 Window Controller & Always-on-Top Pin, Task 5: Win32 WebView2 Host & C++ IPC Bridge (+8 more)
+Cohesion: 0.06
+Nodes (34): Global Constraints, Note Local Windows 11 Implementation Plan, Review Focus, Self-Review Checklist, Task 1: Environment Scaffolding, CMake & Git Setup, Task 2: Core Data Types & Markdown Engine in C++, Task 4: Win32 Window Controller & Always-on-Top Pin, Task 5: Win32 WebView2 Host & C++ IPC Bridge (+26 more)
 
 ### Community 50 - "⚖️ Ma Trận Kiểm Chứng Kỹ Thuật (Proven vs. Inferred vs. Hidden)"
 Cohesion: 0.25
@@ -374,6 +376,10 @@ Nodes (3): 1. Web Share Payload Schema (Cloud Document), 2. Universal Web Viewer
 ### Community 56 - "Technical Unknowns & Decisions"
 Cohesion: 0.29
 Nodes (6): 1. Windows Notification Architecture: Native Win32 vs C++/WinRT, 2. Background Reminder Scheduler Engine, 3. Inline Reminder Syntax & Storage Representation, 4. 100% Web Share Architecture & Image Hosting, Research: Unified Notes, To-Do with Reminders & 100% Web Share, Technical Unknowns & Decisions
+
+### Community 57 - "main.cpp"
+Cohesion: 0.13
+Nodes (6): HandleWebMessage(), PostWebMessageSafe(), ResolveRedirectUrl(), SendInitState(), ShortenUrlWithTinyUrl(), WndProc()
 
 ### Community 58 - "4. Các Dịch Vụ Cần Xây Dựng (Required Services)"
 Cohesion: 0.33
@@ -404,22 +410,22 @@ Nodes (3): @electron/packager@18.3.5, electron-packager@17.1.2, @electron/packag
 ## Knowledge Gaps
 - **78 isolated node(s):** `m_cb`, `m_ref`, `STDMETHODCALLTYPE`, `m_cb`, `m_ref` (+73 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 537 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **44 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `string` connect `storage_manager.cpp` to `ControllerCompletedHandler`, `share_service.h`, `json.hpp`, `ReminderManager`, `markdown_engine.cpp`, `.Serialize`, `value_t`, `main.cpp`, `TodoItem`, `NotificationService`?**
-  _High betweenness centrality (0.121) - this node is a cross-community bridge._
+- **Why does `string` connect `ReminderManager` to `ControllerCompletedHandler`, `share_service.h`, `json.hpp`, `storage_manager.cpp`, `markdown_engine.cpp`, `iostream`, `.Serialize`, `value_t`, `main.cpp`, `TodoItem`, `NotificationService`?**
+  _High betweenness centrality (0.153) - this node is a cross-community bridge._
 - **What connects `m_cb`, `m_ref`, `STDMETHODCALLTYPE` to the rest of the system?**
   _78 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ControllerCompletedHandler` be split into smaller, more focused modules?**
   _Cohesion score 0.05325814536340852 - nodes in this community are weakly interconnected._
-- **Why does `📖 Phân Tích Chuyên Sâu Các Tính Năng Cốt Lõi Của Notion (Features Deep-Dive)` connect `📖 Phân Tích Chuyên Sâu Các Tính Năng Cốt Lõi Của Notion (Features Deep-Dive)` to `2. Hệ Thống Cơ Sở Dữ Liệu (Databases & Views)`, `notion_outputs_reference/README.md`, `5. Cộng Tác Thời Gian Thực & Chia Sẻ (Collaboration & Sharing)`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `5. Cộng Tác Thời Gian Thực & Chia Sẻ (Collaboration & Sharing)` connect `5. Cộng Tác Thời Gian Thực & Chia Sẻ (Collaboration & Sharing)` to `📖 Phân Tích Chuyên Sâu Các Tính Năng Cốt Lõi Của Notion (Features Deep-Dive)`?**
+  _High betweenness centrality (0.112) - this node is a cross-community bridge._
 - **Should `share_service.h` be split into smaller, more focused modules?**
-  _Cohesion score 0.10846560846560846 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
 - **Why does `update()` connect `end` to `json.hpp`, `back`, `5. Cộng Tác Thời Gian Thực & Chia Sẻ (Collaboration & Sharing)`?**
-  _High betweenness centrality (0.097) - this node is a cross-community bridge._
+  _High betweenness centrality (0.111) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._

@@ -2162,12 +2162,43 @@
         }
     }
 
-    function updateAISettingsVisibility() {
-        const selected = document.querySelector('input[name="ai-provider"]:checked')?.value || "local";
-        if (selected === "local") {
+    // Modern Settings Tabs Navigation
+    const settingsTabBtns = document.querySelectorAll(".settings-tab-btn");
+    const settingsTabPanes = document.querySelectorAll(".settings-tab-pane");
+
+    settingsTabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const tab = btn.dataset.tab;
+            settingsTabBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            settingsTabPanes.forEach(pane => {
+                if (pane.id === `tab-pane-${tab}`) {
+                    pane.classList.remove("hidden");
+                } else {
+                    pane.classList.add("hidden");
+                }
+            });
+        });
+    });
+
+    // 3 Visual Choice Cards for AI Provider
+    const aiModeCards = document.querySelectorAll(".ai-mode-card");
+    function selectAIMode(mode) {
+        aiModeCards.forEach(card => {
+            if (card.dataset.mode === mode) {
+                card.classList.add("selected");
+            } else {
+                card.classList.remove("selected");
+            }
+        });
+        if (aiRadioLocal) aiRadioLocal.checked = (mode === "local");
+        if (aiRadioCloud) aiRadioCloud.checked = (mode === "cloud");
+        if (aiRadioOff) aiRadioOff.checked = (mode === "off");
+
+        if (mode === "local") {
             aiConfigLocal?.classList.remove("hidden");
             aiConfigCloud?.classList.add("hidden");
-        } else if (selected === "cloud") {
+        } else if (mode === "cloud") {
             aiConfigLocal?.classList.add("hidden");
             aiConfigCloud?.classList.remove("hidden");
         } else {
@@ -2176,20 +2207,70 @@
         }
     }
 
-    [aiRadioLocal, aiRadioCloud, aiRadioOff].forEach(radio => {
-        radio?.addEventListener("change", updateAISettingsVisibility);
+    aiModeCards.forEach(card => {
+        card.addEventListener("click", () => {
+            selectAIMode(card.dataset.mode);
+        });
     });
+
+    // Quick Chips for Local AI Model
+    document.querySelectorAll(".preset-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+            const m = pill.dataset.model;
+            if (aiLocalModel) aiLocalModel.value = m;
+        });
+    });
+
+    // Cloud Provider Preset Buttons
+    const cloudPresetBtns = document.querySelectorAll(".cloud-preset-btn");
+    const cloudProviders = {
+        gemini: {
+            url: "https://generativelanguage.googleapis.com/v1beta/openai/",
+            model: "gemini-1.5-flash"
+        },
+        deepseek: {
+            url: "https://api.deepseek.com/v1",
+            model: "deepseek-chat"
+        },
+        openai: {
+            url: "https://api.openai.com/v1",
+            model: "gpt-4o-mini"
+        },
+        groq: {
+            url: "https://api.groq.com/openai/v1",
+            model: "llama-3.3-70b-versatile"
+        }
+    };
+
+    cloudPresetBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            cloudPresetBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const prov = btn.dataset.provider;
+            if (cloudProviders[prov]) {
+                if (aiCloudUrl) aiCloudUrl.value = cloudProviders[prov].url;
+                if (aiCloudModel) aiCloudModel.value = cloudProviders[prov].model;
+            }
+        });
+    });
+
+    // Password Visibility Toggle for Cloud API Key
+    const btnToggleKey = document.getElementById("btn-toggle-key-visibility");
+    if (btnToggleKey && aiCloudKey) {
+        btnToggleKey.addEventListener("click", () => {
+            const isPass = aiCloudKey.type === "password";
+            aiCloudKey.type = isPass ? "text" : "password";
+            btnToggleKey.innerHTML = isPass
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-off"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        });
+    }
 
     function openSettingsModal() {
         txturlServiceInput.value = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
         const aiCfg = getAIConfig();
-        if (aiCfg.provider === "cloud") {
-            if (aiRadioCloud) aiRadioCloud.checked = true;
-        } else if (aiCfg.provider === "off") {
-            if (aiRadioOff) aiRadioOff.checked = true;
-        } else {
-            if (aiRadioLocal) aiRadioLocal.checked = true;
-        }
+        selectAIMode(aiCfg.provider || "local");
+
         if (aiLocalUrl) aiLocalUrl.value = aiCfg.localUrl;
         if (aiLocalModel) aiLocalModel.value = aiCfg.localModel;
         if (aiCloudUrl) aiCloudUrl.value = aiCfg.cloudUrl;
@@ -2197,9 +2278,11 @@
         if (aiCloudModel) aiCloudModel.value = aiCfg.cloudModel;
         if (testLocalResult) testLocalResult.textContent = "";
         if (testCloudResult) testCloudResult.textContent = "";
-        updateAISettingsVisibility();
+
+        // Reset to first tab (AI) on open
+        settingsTabBtns[0]?.click();
+
         settingsModal.classList.remove("hidden");
-        txturlServiceInput.focus();
     }
 
     function closeSettingsModal() {
@@ -3735,7 +3818,10 @@
                     triggerSave();
                     hideBubbleToolbar();
                 } else if (cmd === "bullet") {
-                    document.execCommand("insertUnorderedList");
+                    const sel = window.getSelection();
+                    const text = sel ? sel.toString().trim() : "";
+                    const bulletHtml = `<ul><li>${escapeHtml(text) || "<br>"}</li></ul>`;
+                    document.execCommand("insertHTML", false, bulletHtml);
                     triggerSave();
                     hideBubbleToolbar();
                 } else if (cmd === "link") {
@@ -3745,10 +3831,16 @@
                         const linkEl = createLinkElement(text, text);
                         insertNodeAtCaret(linkEl);
                     } else {
-                        const url = prompt("Nhập đường dẫn URL liên kết:", "https://");
-                        if (url && url.trim()) {
-                            const linkEl = createLinkElement(text || url.trim(), url.trim());
-                            insertNodeAtCaret(linkEl);
+                        // Mở popup link-edit-popover mượt mà, không dùng prompt() gây đơ
+                        if (linkEditPopover && linkInputTitle && linkInputUrl) {
+                            linkInputTitle.value = text;
+                            linkInputUrl.value = "https://";
+                            const rect = btn.getBoundingClientRect();
+                            linkEditPopover.style.top = `${rect.bottom + 8}px`;
+                            linkEditPopover.style.left = `${Math.max(10, rect.left - 80)}px`;
+                            linkEditPopover.classList.remove("hidden");
+                            currentEditingCard = null;
+                            setTimeout(() => linkInputUrl.focus(), 50);
                         }
                     }
                     hideBubbleToolbar();
@@ -3777,17 +3869,17 @@
         let slashQuery = "";
 
         const allItems = [
-            { id: "text", title: "Văn bản thường", desc: "Đoạn văn bản bình thường", icon: "📝", keywords: ["text", "p"] },
-            { id: "todo", title: "Việc cần làm", desc: "Ô To-Do checkbox hoàn thành", icon: "☑️", keywords: ["todo", "task", "check"] },
-            { id: "bullet", title: "Gạch đầu dòng", desc: "Danh sách chấm tròn", icon: "•", keywords: ["bullet", "ul", "list"] },
-            { id: "number", title: "Danh sách số", desc: "Danh sách 1, 2, 3 tăng dần", icon: "1.", keywords: ["number", "ol"] },
-            { id: "h1", title: "Tiêu đề lớn", desc: "Tiêu đề chính cấp 1", icon: "H1", keywords: ["h1", "heading"] },
-            { id: "h2", title: "Tiêu đề vừa", desc: "Tiêu đề phân mục cấp 2", icon: "H2", keywords: ["h2", "heading"] },
-            { id: "table", title: "Bảng biểu", desc: "Chèn bảng dữ liệu", icon: "📊", keywords: ["table", "bang", "grid"] },
-            { id: "quote", title: "Trích dẫn", desc: "Khối trích dẫn viền đứng", icon: "💬", keywords: ["quote"] },
-            { id: "callout", title: "Hộp nổi bật", desc: "Khối ghi chú viền màu nổi bật", icon: "💡", keywords: ["callout", "box"] },
-            { id: "divider", title: "Đường phân cách", desc: "Vạch ngang chia phần", icon: "➖", keywords: ["divider", "hr", "line"] },
-            { id: "ai", title: "Trí tuệ nhân tạo (AI)", desc: "Nhờ AI viết tiếp, tóm tắt...", icon: "✨", keywords: ["ai", "ask", "prompt"] }
+            { id: "text", title: "Văn bản thường", desc: "Đoạn văn bản bình thường", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>`, keywords: ["text", "p"] },
+            { id: "todo", title: "Việc cần làm", desc: "Ô To-Do checkbox hoàn thành", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-square"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`, keywords: ["todo", "task", "check"] },
+            { id: "bullet", title: "Gạch đầu dòng", desc: "Danh sách chấm tròn", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`, keywords: ["bullet", "ul", "list"] },
+            { id: "number", title: "Danh sách số", desc: "Danh sách 1, 2, 3 tăng dần", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-ordered"><line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>`, keywords: ["number", "ol"] },
+            { id: "h1", title: "Tiêu đề lớn", desc: "Tiêu đề chính cấp 1", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heading-1"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>`, keywords: ["h1", "heading"] },
+            { id: "h2", title: "Tiêu đề vừa", desc: "Tiêu đề phân mục cấp 2", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heading-2"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>`, keywords: ["h2", "heading"] },
+            { id: "table", title: "Bảng biểu", desc: "Chèn bảng dữ liệu", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>`, keywords: ["table", "bang", "grid"] },
+            { id: "quote", title: "Trích dẫn", desc: "Khối trích dẫn viền đứng", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-quote"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>`, keywords: ["quote"] },
+            { id: "callout", title: "Hộp nổi bật", desc: "Khối ghi chú viền màu nổi bật", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`, keywords: ["callout", "box"] },
+            { id: "divider", title: "Đường phân cách", desc: "Vạch ngang chia phần", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus"><line x1="5" x2="19" y1="12" y2="12"/></svg>`, keywords: ["divider", "hr", "line"] },
+            { id: "ai", title: "Trí tuệ nhân tạo (AI)", desc: "Nhờ AI viết tiếp, tóm tắt...", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`, keywords: ["ai", "ask", "prompt"] }
         ];
 
         closeSlashMenu = function() {
@@ -3856,7 +3948,7 @@
         function executeSlashCommand(cmd) {
             closeSlashMenu();
 
-            // Xóa dấu / và query đã gõ trên dòng hiện tại
+            // Xóa dấu / và query đã gõ trên dòng hiện tại bằng Range để không mất vị trí caret
             const sel = window.getSelection();
             if (sel && sel.rangeCount > 0) {
                 const node = sel.anchorNode;
@@ -3864,10 +3956,21 @@
                     const text = node.textContent;
                     const slashIdx = text.lastIndexOf("/");
                     if (slashIdx !== -1) {
-                        node.textContent = text.substring(0, slashIdx);
+                        try {
+                            const range = document.createRange();
+                            range.setStart(node, slashIdx);
+                            range.setEnd(node, sel.anchorOffset);
+                            range.deleteContents();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        } catch (err) {
+                            node.textContent = text.substring(0, slashIdx);
+                        }
                     }
                 }
             }
+
+            editor.focus();
 
             if (cmd === "text") {
                 document.execCommand("formatBlock", false, "p");
@@ -3875,9 +3978,11 @@
                 const todoHtml = `<div class="todo-item"><span class="todo-checkbox"></span><span class="todo-content"><br></span></div>`;
                 document.execCommand("insertHTML", false, todoHtml);
             } else if (cmd === "bullet") {
-                document.execCommand("insertUnorderedList");
+                const bulletHtml = `<ul><li><br></li></ul>`;
+                document.execCommand("insertHTML", false, bulletHtml);
             } else if (cmd === "number") {
-                document.execCommand("insertOrderedList");
+                const numHtml = `<ol><li><br></li></ol>`;
+                document.execCommand("insertHTML", false, numHtml);
             } else if (cmd === "h1") {
                 document.execCommand("formatBlock", false, "h1");
             } else if (cmd === "h2") {
@@ -3887,7 +3992,7 @@
             } else if (cmd === "quote") {
                 document.execCommand("formatBlock", false, "blockquote");
             } else if (cmd === "callout") {
-                const calloutHtml = `<blockquote style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 6px 12px; border-radius: 4px; font-style: normal; margin: 6px 0;">💡 Ghi chú nổi bật...</blockquote><p><br></p>`;
+                const calloutHtml = `<blockquote style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 6px 12px; border-radius: 4px; font-style: normal; margin: 6px 0;">Ghi chú nổi bật...</blockquote><p><br></p>`;
                 document.execCommand("insertHTML", false, calloutHtml);
             } else if (cmd === "divider") {
                 document.execCommand("insertHorizontalRule");
@@ -3961,9 +4066,18 @@
         });
 
         editor.addEventListener("input", (e) => {
-            if (isSlashOpen && e.data) {
-                slashQuery += e.data;
-                renderSlashItems(filterSlashItems(slashQuery));
+            if (isSlashOpen) {
+                const sel = window.getSelection();
+                if (sel && sel.anchorNode && sel.anchorNode.nodeType === Node.TEXT_NODE) {
+                    const txt = sel.anchorNode.textContent;
+                    const sIdx = txt.lastIndexOf("/");
+                    if (sIdx !== -1) {
+                        slashQuery = txt.substring(sIdx + 1, sel.anchorOffset).trim();
+                        renderSlashItems(filterSlashItems(slashQuery));
+                    } else {
+                        closeSlashMenu();
+                    }
+                }
             }
         });
 
@@ -3980,23 +4094,33 @@
     function initBlockHandles() {
         const handle = document.getElementById("block-drag-handle");
         const popover = document.getElementById("block-menu-popover");
-        if (!handle || !popover) return;
+        const editorContainer = document.getElementById("editor-container");
+        if (!handle || !popover || !editorContainer) return;
 
         let currentHoverBlock = null;
 
-        editor.addEventListener("mousemove", (e) => {
+        editorContainer.addEventListener("mousemove", (e) => {
             if (!popover.classList.contains("hidden")) return;
-            const target = e.target.closest("#editor > *");
+            // Nếu con trỏ chuột đang ở trên chính chiếc tay cầm hoặc menu popover thì giữ nguyên, không giật
+            if (e.target === handle || handle.contains(e.target)) return;
+
+            let target = e.target.closest("#editor > *");
+            // Nếu con trỏ chuột đang ở vùng lề trái sát tay cầm (left gutter)
+            if (!target && e.clientX < 50) {
+                const probed = document.elementFromPoint(70, e.clientY);
+                target = probed?.closest("#editor > *");
+            }
+
             if (target && target !== editor) {
                 currentHoverBlock = target;
                 const rect = target.getBoundingClientRect();
-                const editorRect = editor.getBoundingClientRect();
-                handle.style.top = `${rect.top - editorRect.top + editor.scrollTop + 4}px`;
+                const containerRect = editorContainer.getBoundingClientRect();
+                handle.style.top = `${rect.top - containerRect.top + editorContainer.scrollTop + 3}px`;
                 handle.classList.remove("hidden");
             }
         });
 
-        editor.addEventListener("mouseleave", () => {
+        editorContainer.addEventListener("mouseleave", () => {
             if (popover.classList.contains("hidden")) {
                 handle.classList.add("hidden");
             }
@@ -4075,9 +4199,17 @@
         if (!aiPromptBar) return;
 
         let activeContextText = "";
+        let savedAIRange = null;
 
         toggleAIPromptBar = function(context = "") {
             activeContextText = context || "";
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                savedAIRange = sel.getRangeAt(0).cloneRange();
+            } else {
+                savedAIRange = null;
+            }
+
             const cfg = getAIConfig();
             if (aiProviderBadge) {
                 if (cfg.provider === "local") {
@@ -4101,6 +4233,7 @@
             if (aiStatusRow) aiStatusRow.classList.add("hidden");
             if (aiPromptInput) aiPromptInput.value = "";
             activeContextText = "";
+            savedAIRange = null;
         };
 
         btnCloseAiBar?.addEventListener("click", closeAIPromptBar);
@@ -4204,7 +4337,7 @@
 
                 insertAITextIntoEditor(content);
                 closeAIPromptBar();
-                showToast("✨ AI đã hoàn thành phản hồi!");
+                showToast("Trợ lý AI đã phản hồi xong!");
             } catch (err) {
                 console.error("AI Error:", err);
                 let msg = err.message || err;
@@ -4222,6 +4355,11 @@
 
         function insertAITextIntoEditor(text) {
             editor.focus();
+            if (savedAIRange) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedAIRange);
+            }
             const formatted = text.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>");
             document.execCommand("insertHTML", false, `<p>${formatted}</p>`);
             triggerSave();
