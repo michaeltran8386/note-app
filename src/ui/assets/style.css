@@ -323,10 +323,11 @@ body {
 .block-drop-line {
     position: absolute;
     height: 2px;
-    background: #60a5fa;
+    background: #38bdf8;
     border-radius: 1px;
     pointer-events: none;
     z-index: 100;
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
 }
 
 .todo-check {
@@ -1601,25 +1602,93 @@ table.note-table td:focus {
     color: #c084fc;
 }
 
-/* Block Drag Handle (⋮⋮) & Block Menu */
-.block-drag-handle {
+/* Notion-Style Block Gutter Controls ([+] Add & [⋮⋮] Drag Handle) */
+.block-gutter-controls {
     position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    left: 2px;
+    z-index: 55;
+    user-select: none;
+    transition: opacity 0.12s ease;
+}
+
+.gutter-btn {
     width: 18px;
     height: 18px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     color: var(--text-subtle);
     border-radius: 4px;
     cursor: pointer;
-    transition: opacity 0.15s, color 0.15s;
-    z-index: 50;
-    left: 4px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    transition: color 0.12s, background 0.12s, transform 0.1s;
 }
 
-.block-drag-handle:hover {
+.gutter-btn:hover {
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.gutter-btn:active {
+    transform: scale(0.92);
+}
+
+#block-add-btn:hover {
+    color: var(--accent);
+}
+
+.block-drag-handle {
+    cursor: grab;
+}
+
+.block-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Multi-Column Layout (.block-columns & .block-column) */
+.block-columns {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    margin: 8px 0;
+    align-items: stretch;
+}
+
+.block-column {
+    flex: 1;
+    min-width: 0;
+    padding: 2px 4px;
+    border-radius: 6px;
+    position: relative;
+    border: 1px dashed transparent;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.block-column:hover {
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Vertical Drop Indicator for Lateral Column Snapping */
+.block-drop-line-v {
+    position: absolute;
+    width: 3px;
+    background: #38bdf8;
+    border-radius: 1.5px;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+}
+
+/* Dragging Ghost State */
+.block-dragging {
+    opacity: 0.35 !important;
+    background: rgba(56, 189, 248, 0.04) !important;
+    border-radius: 4px;
 }
 
 .block-menu-popover {

@@ -85,6 +85,16 @@
         }, duration);
     }
 
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // Gửi thông điệp tới C++ Host
     function sendIPC(action, payload) {
         if (window.chrome && window.chrome.webview) {
@@ -245,8 +255,17 @@
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const tag = node.tagName.toUpperCase();
 
+                // 0.1 Bố cục đa cột (Multi-column Layout kiểu Notion)
+                if (node.classList && node.classList.contains("block-columns")) {
+                    lines.push(node.outerHTML);
+                }
+                // 0.2 Hộp lưu ý (Callout)
+                else if (node.classList && node.classList.contains("block-callout")) {
+                    const txt = node.querySelector(".callout-text")?.textContent?.trim() || node.textContent.replace(/^[💡ℹ️⚠️📌🔥]\s*/, "").trim();
+                    lines.push(`> [!NOTE]\n> ${txt}`);
+                }
                 // 0. Bảng biểu (Table hoặc .table-wrapper) - Phải kiểm tra TRƯỚC các thẻ DIV / P
-                if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
+                else if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
                     const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
                     if (tbl) {
                         lines.push(serializeTableToCleanHtml(tbl));
@@ -350,9 +369,19 @@
         }
         return lines.join("\n");
     }
+    window.serializeEditorToMarkdown = serializeEditorToMarkdown;
 
-    // Tự động lưu ghi chú với debounce 300ms
+    // Global IME Composition Listener (Bảo vệ gõ Tiếng Việt Telex/VNI không bị nhảy ký tự)
+    let isGlobalComposing = false;
+    editor.addEventListener("compositionstart", () => { isGlobalComposing = true; });
+    editor.addEventListener("compositionend", () => {
+        isGlobalComposing = false;
+        triggerSave();
+    });
+
+    // Tự động lưu ghi chú với debounce 300ms (hoàn toàn an toàn trước IME tiếng Việt)
     function triggerSave() {
+        if (isGlobalComposing) return;
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(function() {
             const md = serializeEditorToMarkdown();
@@ -2359,8 +2388,17 @@
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const tag = node.tagName.toUpperCase();
 
+                // 0.1 Bố cục đa cột (Multi-column Layout kiểu Notion)
+                if (node.classList && node.classList.contains("block-columns")) {
+                    lines.push(node.outerHTML);
+                }
+                // 0.2 Hộp lưu ý (Callout)
+                else if (node.classList && node.classList.contains("block-callout")) {
+                    const txt = node.querySelector(".callout-text")?.textContent?.trim() || node.textContent.replace(/^[💡ℹ️⚠️📌🔥]\s*/, "").trim();
+                    lines.push(`> [!NOTE]\n> ${txt}`);
+                }
                 // 0. Bảng biểu (Table hoặc .table-wrapper) - Phải kiểm tra TRƯỚC các thẻ DIV / P
-                if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
+                else if (tag === "TABLE" || (node.classList && node.classList.contains("table-wrapper")) || (node.querySelector && node.querySelector("table.note-table"))) {
                     const tbl = (tag === "TABLE") ? node : node.querySelector("table.note-table");
                     if (tbl) {
                         lines.push(serializeTableToCleanHtml(tbl));
@@ -3953,164 +3991,323 @@
     // ==========================================
     // MINI-NOTION UX: BLOCK HANDLES & CONTEXT MENU
     // ==========================================
+    // NOTION-STYLE BLOCK INTERACTION ENGINE
+    // Pointer Events, Closest-Edge Detection, Multi-Column & Gutter
+    // ==========================================
     function initBlockHandles() {
+        const gutter = document.getElementById("block-gutter-controls") || document.getElementById("block-drag-handle");
+        const addBtn = document.getElementById("block-add-btn");
         const handle = document.getElementById("block-drag-handle");
         const popover = document.getElementById("block-menu-popover");
         const editorContainer = document.getElementById("editor-container");
-        if (!handle || !popover || !editorContainer) return;
+        if (!editorContainer) return;
 
         let currentHoverBlock = null;
+        let isDragging = false;
         let draggedBlock = null;
         let dropTarget = null;
-        let dropAfter = false;
-        let didDrag = false;
+        let dropEdge = "bottom"; // "top" | "bottom" | "left" | "right"
+        let ghostEl = null;
+
         const dropLine = document.createElement("div");
         dropLine.className = "block-drop-line hidden";
         editorContainer.appendChild(dropLine);
 
+        const dropLineV = document.createElement("div");
+        dropLineV.className = "block-drop-line-v hidden";
+        editorContainer.appendChild(dropLineV);
+
         function clearDrag() {
+            isDragging = false;
+            if (draggedBlock) draggedBlock.classList.remove("block-dragging");
             draggedBlock = null;
             dropTarget = null;
+            if (ghostEl) { ghostEl.remove(); ghostEl = null; }
             dropLine.classList.add("hidden");
+            dropLineV.classList.add("hidden");
         }
 
-        handle.addEventListener("mousedown", () => {
-            handle.draggable = true;
-            didDrag = false;
-        });
-        handle.addEventListener("dragstart", (e) => {
-            if (!currentHoverBlock || currentHoverBlock.parentNode !== editor) {
-                e.preventDefault();
-                return;
-            }
-            draggedBlock = currentHoverBlock;
-            didDrag = true;
-            popover.classList.add("hidden");
-            e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", "");
-            e.dataTransfer.setDragImage(draggedBlock, 0, 0);
-        });
-        editor.addEventListener("dragover", (e) => {
-            if (!draggedBlock) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            dropTarget = e.target.closest("#editor > *");
-            if (!dropTarget || dropTarget === draggedBlock) {
-                dropTarget = null;
-                dropLine.classList.add("hidden");
-                return;
-            }
-            const rect = dropTarget.getBoundingClientRect();
-            const containerRect = editorContainer.getBoundingClientRect();
-            dropAfter = e.clientY >= rect.top + rect.height / 2;
-            dropLine.style.top = `${(dropAfter ? rect.bottom : rect.top) - containerRect.top + editorContainer.scrollTop}px`;
-            dropLine.style.left = `${rect.left - containerRect.left + editorContainer.scrollLeft}px`;
-            dropLine.style.width = `${rect.width}px`;
-            dropLine.classList.remove("hidden");
-        });
-        editor.addEventListener("drop", (e) => {
-            if (!draggedBlock) return;
-            e.preventDefault();
-            if (dropTarget?.parentNode === editor && draggedBlock.parentNode === editor) {
-                editor.insertBefore(draggedBlock, dropAfter ? dropTarget.nextSibling : dropTarget);
+        // Helper: get top block element
+        function getTopBlock(el) {
+            if (!el || el === editor) return null;
+            return el.closest("#editor > *, .block-column > *");
+        }
+
+        // Quick Add Button [+]
+        if (addBtn) {
+            addBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (!currentHoverBlock) return;
+                const newP = document.createElement("p");
+                newP.innerHTML = "<br>";
+                currentHoverBlock.after(newP);
+
+                // Focus caret into new block
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(newP, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+
+                if (gutter) gutter.classList.add("hidden");
                 triggerSave();
-            }
-            clearDrag();
-        });
-        editor.addEventListener("dragleave", (e) => {
-            if (!editor.contains(e.relatedTarget)) {
-                dropTarget = null;
-                dropLine.classList.add("hidden");
-            }
-        });
-        window.addEventListener("dragend", clearDrag);
-        window.addEventListener("drop", clearDrag);
+            });
+        }
 
+        // Pointer-Driven Dragging on [⋮⋮]
+        if (handle) {
+            let startX = 0, startY = 0;
+            let pointerDown = false;
+
+            handle.addEventListener("pointerdown", (e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                pointerDown = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                handle.setPointerCapture(e.pointerId);
+            });
+
+            handle.addEventListener("pointermove", (e) => {
+                if (!pointerDown) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                if (!isDragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+                    if (!currentHoverBlock) return;
+                    isDragging = true;
+                    draggedBlock = currentHoverBlock;
+                    if (popover) popover.classList.add("hidden");
+                    draggedBlock.classList.add("block-dragging");
+
+                    // Floating ghost preview
+                    ghostEl = draggedBlock.cloneNode(true);
+                    ghostEl.style.cssText = `position:fixed; pointer-events:none; z-index:999999; opacity:0.85; max-width:380px; max-height:70px; overflow:hidden; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.6); background:#18181b; border:1px solid #38bdf8; padding:6px 10px; transform:translate(${e.clientX + 14}px, ${e.clientY + 14}px);`;
+                    document.body.appendChild(ghostEl);
+                }
+
+                if (isDragging && ghostEl) {
+                    ghostEl.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+
+                    // Probe drop target beneath ghost
+                    ghostEl.style.display = "none";
+                    const probed = document.elementFromPoint(e.clientX, e.clientY);
+                    ghostEl.style.display = "";
+
+                    const target = getTopBlock(probed);
+                    if (!target || target === draggedBlock || target.contains(draggedBlock)) {
+                        dropTarget = null;
+                        dropLine.classList.add("hidden");
+                        dropLineV.classList.add("hidden");
+                        return;
+                    }
+
+                    dropTarget = target;
+                    const rect = target.getBoundingClientRect();
+                    const containerRect = editorContainer.getBoundingClientRect();
+
+                    // Edge detection: 22% lateral threshold for creating columns
+                    const lateralWidth = Math.min(65, rect.width * 0.22);
+                    if (e.clientX < rect.left + lateralWidth) {
+                        dropEdge = "left";
+                    } else if (e.clientX > rect.right - lateralWidth) {
+                        dropEdge = "right";
+                    } else if (e.clientY < rect.top + rect.height / 2) {
+                        dropEdge = "top";
+                    } else {
+                        dropEdge = "bottom";
+                    }
+
+                    if (dropEdge === "top" || dropEdge === "bottom") {
+                        dropLineV.classList.add("hidden");
+                        const y = (dropEdge === "bottom" ? rect.bottom : rect.top) - containerRect.top + editorContainer.scrollTop;
+                        dropLine.style.top = `${y}px`;
+                        dropLine.style.left = `${rect.left - containerRect.left + editorContainer.scrollLeft}px`;
+                        dropLine.style.width = `${rect.width}px`;
+                        dropLine.classList.remove("hidden");
+                    } else {
+                        dropLine.classList.add("hidden");
+                        const x = (dropEdge === "left" ? rect.left : rect.right) - containerRect.left + editorContainer.scrollLeft;
+                        dropLineV.style.left = `${x}px`;
+                        dropLineV.style.top = `${rect.top - containerRect.top + editorContainer.scrollTop}px`;
+                        dropLineV.style.height = `${rect.height}px`;
+                        dropLineV.classList.remove("hidden");
+                    }
+                }
+            });
+
+            handle.addEventListener("pointerup", (e) => {
+                if (!pointerDown) return;
+                pointerDown = false;
+                try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+
+                if (isDragging) {
+                    if (dropTarget && draggedBlock && dropTarget !== draggedBlock) {
+                        if (dropEdge === "top") {
+                            dropTarget.parentNode.insertBefore(draggedBlock, dropTarget);
+                        } else if (dropEdge === "bottom") {
+                            dropTarget.parentNode.insertBefore(draggedBlock, dropTarget.nextSibling);
+                        } else if (dropEdge === "left" || dropEdge === "right") {
+                            // Multi-column grouping
+                            const inCol = dropTarget.closest(".block-column");
+                            if (inCol && inCol.parentElement?.classList.contains("block-columns")) {
+                                const newCol = document.createElement("div");
+                                newCol.className = "block-column";
+                                newCol.appendChild(draggedBlock);
+                                if (dropEdge === "left") {
+                                    inCol.parentElement.insertBefore(newCol, inCol);
+                                } else {
+                                    inCol.parentElement.insertBefore(newCol, inCol.nextSibling);
+                                }
+                            } else {
+                                const cols = document.createElement("div");
+                                cols.className = "block-columns";
+                                const col1 = document.createElement("div");
+                                col1.className = "block-column";
+                                const col2 = document.createElement("div");
+                                col2.className = "block-column";
+                                dropTarget.replaceWith(cols);
+                                if (dropEdge === "left") {
+                                    col1.appendChild(draggedBlock);
+                                    col2.appendChild(dropTarget);
+                                } else {
+                                    col1.appendChild(dropTarget);
+                                    col2.appendChild(draggedBlock);
+                                }
+                                cols.appendChild(col1);
+                                cols.appendChild(col2);
+                            }
+                        }
+
+                        // Clean up any empty columns/containers
+                        document.querySelectorAll(".block-columns").forEach(c => {
+                            const cols = c.querySelectorAll(".block-column");
+                            if (cols.length === 0) c.remove();
+                        });
+
+                        setupCheckboxListeners();
+                        triggerSave();
+                    }
+                    clearDrag();
+                } else {
+                    // Quick click: toggle context popover
+                    if (popover && currentHoverBlock) {
+                        popover.__targetBlock = currentHoverBlock;
+                        const rect = handle.getBoundingClientRect();
+                        popover.style.top = `${rect.bottom + 4}px`;
+                        popover.style.left = `${rect.left}px`;
+                        popover.classList.toggle("hidden");
+                    }
+                }
+            });
+
+            handle.addEventListener("pointercancel", clearDrag);
+        }
+
+        // Proximity Gutter Tracking on mousemove
         editorContainer.addEventListener("mousemove", (e) => {
-            if (draggedBlock) return;
-            if (!popover.classList.contains("hidden")) return;
-            // Nếu con trỏ chuột đang ở trên chính chiếc tay cầm hoặc menu popover thì giữ nguyên, không giật
-            if (e.target === handle || handle.contains(e.target)) return;
+            if (isDragging) return;
+            if (popover && !popover.classList.contains("hidden")) return;
+            if (gutter && (e.target === gutter || gutter.contains(e.target))) return;
 
-            let target = e.target.closest("#editor > *");
-            // Nếu con trỏ chuột đang ở vùng lề trái sát tay cầm (left gutter)
-            if (!target && e.clientX < 50) {
-                const probed = document.elementFromPoint(70, e.clientY);
-                target = probed?.closest("#editor > *");
+            let target = getTopBlock(e.target);
+            // Left gutter proximity (< 55px)
+            if (!target && e.clientX < 55) {
+                const probed = document.elementFromPoint(75, e.clientY);
+                target = getTopBlock(probed);
             }
 
             if (target && target !== editor) {
                 currentHoverBlock = target;
+                if (popover) popover.__targetBlock = target;
                 const rect = target.getBoundingClientRect();
                 const containerRect = editorContainer.getBoundingClientRect();
-                handle.style.top = `${rect.top - containerRect.top + editorContainer.scrollTop + 3}px`;
-                handle.classList.remove("hidden");
+                if (gutter) {
+                    const topPos = rect.top - containerRect.top + editorContainer.scrollTop + 2;
+                    const leftPos = Math.max(2, rect.left - containerRect.left + editorContainer.scrollLeft - 44);
+                    gutter.style.top = `${topPos}px`;
+                    gutter.style.left = `${leftPos}px`;
+                    gutter.classList.remove("hidden");
+                }
             }
         });
 
         editorContainer.addEventListener("mouseleave", () => {
-            if (!draggedBlock && popover.classList.contains("hidden")) {
-                handle.classList.add("hidden");
+            if (!isDragging && popover && popover.classList.contains("hidden")) {
+                if (gutter) gutter.classList.add("hidden");
             }
         });
 
-        handle.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (didDrag) { didDrag = false; return; }
-            if (!currentHoverBlock) return;
-            const rect = handle.getBoundingClientRect();
-            popover.style.top = `${rect.bottom + 4}px`;
-            popover.style.left = `${rect.left}px`;
-            popover.classList.toggle("hidden");
-        });
+        // Popover Block Transformations
+        if (popover) {
+            popover.querySelectorAll(".block-menu-item").forEach(item => {
+                item.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const targetBlock = popover.__targetBlock || currentHoverBlock;
+                    if (!targetBlock) return;
+                    const action = item.dataset.action;
+                    const text = targetBlock.innerText || "";
 
-        popover.querySelectorAll(".block-menu-item").forEach(item => {
-            item.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (!currentHoverBlock) return;
-                const action = item.dataset.action;
-                if (action === "delete") {
-                    currentHoverBlock.remove();
-                    triggerSave();
-                } else if (action === "duplicate") {
-                    const clone = currentHoverBlock.cloneNode(true);
-                    currentHoverBlock.after(clone);
-                    setupCheckboxListeners();
-                    triggerSave();
-                } else if (action === "turn-todo") {
-                    const text = currentHoverBlock.innerText || "";
-                    const { div: newEl } = createTodoElement(text);
-                    currentHoverBlock.replaceWith(newEl);
-                    triggerSave();
-                } else if (action === "turn-bullet") {
-                    const text = currentHoverBlock.innerText || "";
-                    const ul = document.createElement("ul");
-                    ul.innerHTML = `<li>${escapeHtml(text) || "<br>"}</li>`;
-                    currentHoverBlock.replaceWith(ul);
-                    triggerSave();
-                } else if (action === "turn-h1") {
-                    const text = currentHoverBlock.innerText || "";
-                    const h1 = document.createElement("h1");
-                    h1.innerHTML = escapeHtml(text) || "<br>";
-                    currentHoverBlock.replaceWith(h1);
-                    triggerSave();
-                } else if (action === "turn-text") {
-                    const text = currentHoverBlock.innerText || "";
-                    const p = document.createElement("p");
-                    p.innerHTML = escapeHtml(text) || "<br>";
-                    currentHoverBlock.replaceWith(p);
-                    triggerSave();
-                }
-                popover.classList.add("hidden");
-                handle.classList.add("hidden");
+                    if (action === "delete") {
+                        targetBlock.remove();
+                        triggerSave();
+                    } else if (action === "duplicate") {
+                        const clone = targetBlock.cloneNode(true);
+                        targetBlock.after(clone);
+                        setupCheckboxListeners();
+                        triggerSave();
+                    } else if (action === "turn-todo") {
+                        const { div: newEl } = createTodoElement(text);
+                        targetBlock.replaceWith(newEl);
+                        setupCheckboxListeners();
+                        triggerSave();
+                    } else if (action === "turn-bullet") {
+                        const ul = document.createElement("ul");
+                        ul.innerHTML = `<li>${escapeHtml(text) || "<br>"}</li>`;
+                        targetBlock.replaceWith(ul);
+                        triggerSave();
+                    } else if (action === "turn-h1") {
+                        const h1 = document.createElement("h1");
+                        h1.innerHTML = escapeHtml(text) || "<br>";
+                        targetBlock.replaceWith(h1);
+                        triggerSave();
+                    } else if (action === "turn-callout") {
+                        const callout = document.createElement("div");
+                        callout.className = "block-callout";
+                        callout.style.cssText = "background:rgba(56,189,248,0.08); border-left:3px solid #38bdf8; border-radius:6px; padding:10px 14px; margin:8px 0; font-size:14px; color:#e2e8f0; display:flex; align-items:center; gap:8px;";
+                        callout.innerHTML = `<span>💡</span><span class="callout-text">${escapeHtml(text) || "Ghi chú lưu ý..."}</span>`;
+                        targetBlock.replaceWith(callout);
+                        triggerSave();
+                    } else if (action === "turn-quote") {
+                        const bq = document.createElement("blockquote");
+                        bq.innerHTML = escapeHtml(text) || "<br>";
+                        targetBlock.replaceWith(bq);
+                        triggerSave();
+                    } else if (action === "turn-text") {
+                        const p = document.createElement("p");
+                        p.innerHTML = escapeHtml(text) || "<br>";
+                        targetBlock.replaceWith(p);
+                        triggerSave();
+                    }
+                    popover.classList.add("hidden");
+                    popover.__targetBlock = null;
+                    if (gutter) gutter.classList.add("hidden");
+                });
             });
-        });
 
-        document.addEventListener("click", (e) => {
-            if (!popover.contains(e.target) && e.target !== handle) {
-                popover.classList.add("hidden");
-            }
-        });
+            document.addEventListener("click", (e) => {
+                if (!popover.contains(e.target) && (!gutter || !gutter.contains(e.target))) {
+                    popover.classList.add("hidden");
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && !popover.classList.contains("hidden")) {
+                    popover.classList.add("hidden");
+                }
+            });
+        }
     }
 
     // ==========================================

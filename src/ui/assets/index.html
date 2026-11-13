@@ -79,13 +79,21 @@
 
     <!-- Ultra-Minimal Editor -->
     <main id="editor-container">
-        <!-- Block Drag Handle (⋮⋮) -->
-        <div id="block-drag-handle" class="block-drag-handle hidden" title="Thao tác dòng">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
-                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
-                <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
-            </svg>
+        <!-- Block Gutter Controls (Notion-style [+] Add and [⋮⋮] Drag Handle) -->
+        <div id="block-gutter-controls" class="block-gutter-controls hidden">
+            <button id="block-add-btn" class="gutter-btn" title="Thêm khối bên dưới (Click để thêm)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+            <div id="block-drag-handle" class="gutter-btn block-drag-handle" title="Kéo để di chuyển, click để mở menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                    <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                    <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+                </svg>
+            </div>
         </div>
 
         <!-- Block Context Menu -->
@@ -110,6 +118,14 @@
             <div class="block-menu-item" data-action="turn-h1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heading-1"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>
                 <span>Chuyển thành Tiêu đề 1</span>
+            </div>
+            <div class="block-menu-item" data-action="turn-callout">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                <span>Chuyển thành Hộp lưu ý (Callout)</span>
+            </div>
+            <div class="block-menu-item" data-action="turn-quote">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+                <span>Chuyển thành Trích dẫn (Quote)</span>
             </div>
             <div class="block-menu-item" data-action="turn-text">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
@@ -636,6 +652,6 @@
     <!-- Minimal Toast Notification -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="editor.js?v=2.9"></script>
+    <script src="editor.js?v=3.0.0"></script>
 </body>
 </html>
