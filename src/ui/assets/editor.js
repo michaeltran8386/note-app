@@ -2121,10 +2121,83 @@
     }
 
     // ==========================================
-    // CÀI ĐẶT (SETTINGS MODAL)
+    // CÀI ĐẶT (SETTINGS MODAL & AI CONFIG)
     // ==========================================
+    const aiRadioLocal = document.getElementById("ai-radio-local");
+    const aiRadioCloud = document.getElementById("ai-radio-cloud");
+    const aiRadioOff = document.getElementById("ai-radio-off");
+    const aiConfigLocal = document.getElementById("ai-config-local");
+    const aiConfigCloud = document.getElementById("ai-config-cloud");
+    const aiLocalUrl = document.getElementById("ai-local-url");
+    const aiLocalModel = document.getElementById("ai-local-model");
+    const btnTestLocalAi = document.getElementById("btn-test-local-ai");
+    const testLocalResult = document.getElementById("test-local-result");
+    const aiCloudUrl = document.getElementById("ai-cloud-url");
+    const aiCloudKey = document.getElementById("ai-cloud-key");
+    const aiCloudModel = document.getElementById("ai-cloud-model");
+    const btnTestCloudAi = document.getElementById("btn-test-cloud-ai");
+    const testCloudResult = document.getElementById("test-cloud-result");
+
+    function getAIConfig() {
+        try {
+            const raw = localStorage.getItem("note_local_ai_config");
+            const parsed = raw ? JSON.parse(raw) : {};
+            return {
+                provider: parsed.provider || "local",
+                localUrl: parsed.localUrl || "http://localhost:11434/v1",
+                localModel: parsed.localModel || "llama3.2",
+                cloudUrl: parsed.cloudUrl || "https://generativelanguage.googleapis.com/v1beta/openai/",
+                cloudKey: parsed.cloudKey || "",
+                cloudModel: parsed.cloudModel || "gemini-1.5-flash"
+            };
+        } catch (e) {
+            return {
+                provider: "local",
+                localUrl: "http://localhost:11434/v1",
+                localModel: "llama3.2",
+                cloudUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+                cloudKey: "",
+                cloudModel: "gemini-1.5-flash"
+            };
+        }
+    }
+
+    function updateAISettingsVisibility() {
+        const selected = document.querySelector('input[name="ai-provider"]:checked')?.value || "local";
+        if (selected === "local") {
+            aiConfigLocal?.classList.remove("hidden");
+            aiConfigCloud?.classList.add("hidden");
+        } else if (selected === "cloud") {
+            aiConfigLocal?.classList.add("hidden");
+            aiConfigCloud?.classList.remove("hidden");
+        } else {
+            aiConfigLocal?.classList.add("hidden");
+            aiConfigCloud?.classList.add("hidden");
+        }
+    }
+
+    [aiRadioLocal, aiRadioCloud, aiRadioOff].forEach(radio => {
+        radio?.addEventListener("change", updateAISettingsVisibility);
+    });
+
     function openSettingsModal() {
         txturlServiceInput.value = localStorage.getItem("note_local_txturl_service") || "https://michaeltran8386.github.io/note-app/";
+        const aiCfg = getAIConfig();
+        if (aiCfg.provider === "cloud") {
+            if (aiRadioCloud) aiRadioCloud.checked = true;
+        } else if (aiCfg.provider === "off") {
+            if (aiRadioOff) aiRadioOff.checked = true;
+        } else {
+            if (aiRadioLocal) aiRadioLocal.checked = true;
+        }
+        if (aiLocalUrl) aiLocalUrl.value = aiCfg.localUrl;
+        if (aiLocalModel) aiLocalModel.value = aiCfg.localModel;
+        if (aiCloudUrl) aiCloudUrl.value = aiCfg.cloudUrl;
+        if (aiCloudKey) aiCloudKey.value = aiCfg.cloudKey;
+        if (aiCloudModel) aiCloudModel.value = aiCfg.cloudModel;
+        if (testLocalResult) testLocalResult.textContent = "";
+        if (testCloudResult) testCloudResult.textContent = "";
+        updateAISettingsVisibility();
         settingsModal.classList.remove("hidden");
         txturlServiceInput.focus();
     }
@@ -2138,8 +2211,88 @@
     btnSaveSettings.addEventListener("click", () => {
         const service = txturlServiceInput.value.trim() || "https://michaeltran8386.github.io/note-app/";
         localStorage.setItem("note_local_txturl_service", service);
+
+        const selectedProvider = document.querySelector('input[name="ai-provider"]:checked')?.value || "local";
+        const aiCfg = {
+            provider: selectedProvider,
+            localUrl: aiLocalUrl?.value.trim() || "http://localhost:11434/v1",
+            localModel: aiLocalModel?.value.trim() || "llama3.2",
+            cloudUrl: aiCloudUrl?.value.trim() || "https://generativelanguage.googleapis.com/v1beta/openai/",
+            cloudKey: aiCloudKey?.value.trim() || "",
+            cloudModel: aiCloudModel?.value.trim() || "gemini-1.5-flash"
+        };
+        localStorage.setItem("note_local_ai_config", JSON.stringify(aiCfg));
+
         closeSettingsModal();
-        showToast("Đã lưu cài đặt thành công!");
+        showToast("Đã lưu cài đặt và cấu hình AI thành công!");
+    });
+
+    // Test Local AI
+    btnTestLocalAi?.addEventListener("click", async () => {
+        if (!testLocalResult) return;
+        testLocalResult.className = "test-result";
+        testLocalResult.textContent = "Đang kiểm tra kết nối...";
+        const url = (aiLocalUrl?.value.trim() || "http://localhost:11434/v1").replace(/\/+$/, "");
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`${url}/models`, { method: "GET", signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                testLocalResult.className = "test-result success";
+                testLocalResult.textContent = "✓ Kết nối Ollama thành công!";
+            } else {
+                testLocalResult.className = "test-result error";
+                testLocalResult.textContent = `✗ HTTP ${res.status}`;
+            }
+        } catch (e) {
+            testLocalResult.className = "test-result error";
+            testLocalResult.textContent = "✗ Không kết nối được. Hãy chạy 'ollama run <model>'";
+        }
+    });
+
+    // Test Cloud AI
+    btnTestCloudAi?.addEventListener("click", async () => {
+        if (!testCloudResult) return;
+        testCloudResult.className = "test-result";
+        testCloudResult.textContent = "Đang kiểm tra API Key...";
+        const url = (aiCloudUrl?.value.trim() || "https://generativelanguage.googleapis.com/v1beta/openai/").replace(/\/+$/, "");
+        const key = aiCloudKey?.value.trim() || "";
+        const model = aiCloudModel?.value.trim() || "gemini-1.5-flash";
+        if (!key) {
+            testCloudResult.className = "test-result error";
+            testCloudResult.textContent = "✗ Vui lòng nhập API Key";
+            return;
+        }
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(`${url}/chat/completions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${key}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{ role: "user", content: "ping" }],
+                    max_tokens: 5
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                testCloudResult.className = "test-result success";
+                testCloudResult.textContent = "✓ API Key hợp lệ và sẵn sàng!";
+            } else {
+                const errJson = await res.json().catch(() => ({}));
+                testCloudResult.className = "test-result error";
+                testCloudResult.textContent = `✗ Lỗi ${res.status}: ${errJson.error?.message || res.statusText}`;
+            }
+        } catch (e) {
+            testCloudResult.className = "test-result error";
+            testCloudResult.textContent = "✗ Lỗi kết nối mạng: " + (e.message || e);
+        }
     });
 
     // ==========================================
@@ -2171,9 +2324,26 @@
             return;
         }
 
+        // Ctrl + J : Bật/Tắt trợ lý AI (Notion AI)
+        if (e.ctrlKey && (e.key === "j" || e.key === "J")) {
+            e.preventDefault();
+            if (typeof toggleAIPromptBar === "function") {
+                toggleAIPromptBar();
+            }
+            return;
+        }
+
         // Escape: Đóng các modal đang mở
         if (e.key === "Escape") {
-            if (sharePopover && !sharePopover.classList.contains("hidden")) {
+            if (typeof closeAIPromptBar === "function" && document.getElementById("ai-prompt-bar") && !document.getElementById("ai-prompt-bar").classList.contains("hidden")) {
+                closeAIPromptBar();
+            } else if (typeof closeSlashMenu === "function" && document.getElementById("slash-menu") && !document.getElementById("slash-menu").classList.contains("hidden")) {
+                closeSlashMenu();
+            } else if (typeof hideBubbleToolbar === "function" && document.getElementById("bubble-toolbar") && !document.getElementById("bubble-toolbar").classList.contains("hidden")) {
+                hideBubbleToolbar();
+            } else if (document.getElementById("block-menu-popover") && !document.getElementById("block-menu-popover").classList.contains("hidden")) {
+                document.getElementById("block-menu-popover").classList.add("hidden");
+            } else if (sharePopover && !sharePopover.classList.contains("hidden")) {
                 closeSharePopover();
             } else if (!imageLightboxModal.classList.contains("hidden")) {
                 closeLightbox();
@@ -3476,9 +3646,595 @@
         });
     }
 
+    // ==========================================
+    // MINI-NOTION UX: FLOATING BUBBLE TOOLBAR
+    // ==========================================
+    function initBubbleToolbar() {
+        const bubbleToolbar = document.getElementById("bubble-toolbar");
+        if (!bubbleToolbar) return;
+
+        hideBubbleToolbar = function() {
+            bubbleToolbar.classList.add("hidden");
+        };
+
+        function updateBubblePosition() {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+                hideBubbleToolbar();
+                return;
+            }
+
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) {
+                hideBubbleToolbar();
+                return;
+            }
+
+            const text = sel.toString().trim();
+            if (!text) {
+                hideBubbleToolbar();
+                return;
+            }
+
+            const rect = range.getBoundingClientRect();
+            const tbWidth = 270;
+            const tbHeight = 36;
+            const margin = 8;
+
+            let top = rect.top - tbHeight - margin;
+            let left = rect.left + (rect.width / 2) - (tbWidth / 2);
+
+            if (top < 45) {
+                top = rect.bottom + margin;
+            }
+            if (left < 10) left = 10;
+            if (left + tbWidth > window.innerWidth - 10) {
+                left = window.innerWidth - tbWidth - 10;
+            }
+
+            bubbleToolbar.style.top = `${top}px`;
+            bubbleToolbar.style.left = `${left}px`;
+            bubbleToolbar.classList.remove("hidden");
+        }
+
+        document.addEventListener("selectionchange", () => {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed) {
+                hideBubbleToolbar();
+            }
+        });
+
+        editor.addEventListener("mouseup", () => {
+            setTimeout(updateBubblePosition, 50);
+        });
+
+        bubbleToolbar.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+        });
+
+        bubbleToolbar.querySelectorAll(".bubble-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const cmd = btn.dataset.command;
+
+                if (cmd === "bold") {
+                    document.execCommand("bold");
+                    triggerSave();
+                } else if (cmd === "italic") {
+                    document.execCommand("italic");
+                    triggerSave();
+                } else if (cmd === "strike") {
+                    document.execCommand("strikeThrough");
+                    triggerSave();
+                } else if (cmd === "todo") {
+                    const sel = window.getSelection();
+                    const text = sel ? sel.toString().trim() : "";
+                    const todoHtml = `<div class="todo-item"><span class="todo-checkbox"></span><span class="todo-content">${escapeHtml(text) || "<br>"}</span></div>`;
+                    document.execCommand("insertHTML", false, todoHtml);
+                    triggerSave();
+                    hideBubbleToolbar();
+                } else if (cmd === "bullet") {
+                    document.execCommand("insertUnorderedList");
+                    triggerSave();
+                    hideBubbleToolbar();
+                } else if (cmd === "link") {
+                    const sel = window.getSelection();
+                    const text = sel ? sel.toString().trim() : "";
+                    if (text.startsWith("http://") || text.startsWith("https://")) {
+                        const linkEl = createLinkElement(text, text);
+                        insertNodeAtCaret(linkEl);
+                    } else {
+                        const url = prompt("Nhập đường dẫn URL liên kết:", "https://");
+                        if (url && url.trim()) {
+                            const linkEl = createLinkElement(text || url.trim(), url.trim());
+                            insertNodeAtCaret(linkEl);
+                        }
+                    }
+                    hideBubbleToolbar();
+                    triggerSave();
+                } else if (cmd === "ai") {
+                    const sel = window.getSelection();
+                    const text = sel ? sel.toString().trim() : "";
+                    hideBubbleToolbar();
+                    if (typeof toggleAIPromptBar === "function") {
+                        toggleAIPromptBar(text);
+                    }
+                }
+            });
+        });
+    }
+
+    // ==========================================
+    // MINI-NOTION UX: SLASH COMMAND MENU (/)
+    // ==========================================
+    function initSlashMenu() {
+        const slashMenu = document.getElementById("slash-menu");
+        const slashList = document.getElementById("slash-list");
+        if (!slashMenu || !slashList) return;
+
+        let isSlashOpen = false;
+        let slashQuery = "";
+
+        const allItems = [
+            { id: "text", title: "Văn bản thường", desc: "Đoạn văn bản bình thường", icon: "📝", keywords: ["text", "p"] },
+            { id: "todo", title: "Việc cần làm", desc: "Ô To-Do checkbox hoàn thành", icon: "☑️", keywords: ["todo", "task", "check"] },
+            { id: "bullet", title: "Gạch đầu dòng", desc: "Danh sách chấm tròn", icon: "•", keywords: ["bullet", "ul", "list"] },
+            { id: "number", title: "Danh sách số", desc: "Danh sách 1, 2, 3 tăng dần", icon: "1.", keywords: ["number", "ol"] },
+            { id: "h1", title: "Tiêu đề lớn", desc: "Tiêu đề chính cấp 1", icon: "H1", keywords: ["h1", "heading"] },
+            { id: "h2", title: "Tiêu đề vừa", desc: "Tiêu đề phân mục cấp 2", icon: "H2", keywords: ["h2", "heading"] },
+            { id: "table", title: "Bảng biểu", desc: "Chèn bảng dữ liệu", icon: "📊", keywords: ["table", "bang", "grid"] },
+            { id: "quote", title: "Trích dẫn", desc: "Khối trích dẫn viền đứng", icon: "💬", keywords: ["quote"] },
+            { id: "callout", title: "Hộp nổi bật", desc: "Khối ghi chú viền màu nổi bật", icon: "💡", keywords: ["callout", "box"] },
+            { id: "divider", title: "Đường phân cách", desc: "Vạch ngang chia phần", icon: "➖", keywords: ["divider", "hr", "line"] },
+            { id: "ai", title: "Trí tuệ nhân tạo (AI)", desc: "Nhờ AI viết tiếp, tóm tắt...", icon: "✨", keywords: ["ai", "ask", "prompt"] }
+        ];
+
+        closeSlashMenu = function() {
+            slashMenu.classList.add("hidden");
+            isSlashOpen = false;
+            slashQuery = "";
+        };
+
+        function renderSlashItems(items) {
+            slashList.innerHTML = "";
+            if (items.length === 0) {
+                slashList.innerHTML = `<div class="slash-item" style="color:var(--text-muted); cursor:default; padding: 8px;">Không tìm thấy lệnh</div>`;
+                return;
+            }
+            items.forEach((it, idx) => {
+                const el = document.createElement("div");
+                el.className = `slash-item ${idx === 0 ? "active" : ""} ${it.id === "ai" ? "slash-ai-item" : ""}`;
+                el.dataset.command = it.id;
+                el.innerHTML = `
+                    <span class="slash-icon">${it.icon}</span>
+                    <div class="slash-info">
+                        <span class="slash-title">${it.title}</span>
+                        <span class="slash-desc">${it.desc}</span>
+                    </div>
+                `;
+                el.addEventListener("click", () => {
+                    executeSlashCommand(it.id);
+                });
+                slashList.appendChild(el);
+            });
+        }
+
+        function filterSlashItems(query) {
+            if (!query) return allItems;
+            const q = query.toLowerCase().trim();
+            return allItems.filter(it => 
+                it.id.toLowerCase().includes(q) ||
+                it.title.toLowerCase().includes(q) ||
+                it.keywords.some(k => k.toLowerCase().includes(q))
+            );
+        }
+
+        function openSlashMenuAtCaret() {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+
+            let top = rect.bottom + 6;
+            let left = rect.left;
+            if (top + 280 > window.innerHeight) {
+                top = Math.max(10, rect.top - 280 - 6);
+            }
+            if (left + 230 > window.innerWidth - 10) {
+                left = window.innerWidth - 240;
+            }
+
+            slashMenu.style.top = `${top}px`;
+            slashMenu.style.left = `${left}px`;
+            renderSlashItems(allItems);
+            slashMenu.classList.remove("hidden");
+            isSlashOpen = true;
+            slashQuery = "";
+        }
+
+        function executeSlashCommand(cmd) {
+            closeSlashMenu();
+
+            // Xóa dấu / và query đã gõ trên dòng hiện tại
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const node = sel.anchorNode;
+                if (node && node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    const slashIdx = text.lastIndexOf("/");
+                    if (slashIdx !== -1) {
+                        node.textContent = text.substring(0, slashIdx);
+                    }
+                }
+            }
+
+            if (cmd === "text") {
+                document.execCommand("formatBlock", false, "p");
+            } else if (cmd === "todo") {
+                const todoHtml = `<div class="todo-item"><span class="todo-checkbox"></span><span class="todo-content"><br></span></div>`;
+                document.execCommand("insertHTML", false, todoHtml);
+            } else if (cmd === "bullet") {
+                document.execCommand("insertUnorderedList");
+            } else if (cmd === "number") {
+                document.execCommand("insertOrderedList");
+            } else if (cmd === "h1") {
+                document.execCommand("formatBlock", false, "h1");
+            } else if (cmd === "h2") {
+                document.execCommand("formatBlock", false, "h2");
+            } else if (cmd === "table") {
+                insertTable(3, 3);
+            } else if (cmd === "quote") {
+                document.execCommand("formatBlock", false, "blockquote");
+            } else if (cmd === "callout") {
+                const calloutHtml = `<blockquote style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 6px 12px; border-radius: 4px; font-style: normal; margin: 6px 0;">💡 Ghi chú nổi bật...</blockquote><p><br></p>`;
+                document.execCommand("insertHTML", false, calloutHtml);
+            } else if (cmd === "divider") {
+                document.execCommand("insertHorizontalRule");
+                document.execCommand("insertHTML", false, "<p><br></p>");
+            } else if (cmd === "ai") {
+                if (typeof toggleAIPromptBar === "function") {
+                    toggleAIPromptBar();
+                }
+            }
+            triggerSave();
+        }
+
+        editor.addEventListener("keydown", (e) => {
+            if (isSlashOpen) {
+                const activeItem = slashList.querySelector(".slash-item.active");
+                const items = Array.from(slashList.querySelectorAll(".slash-item:not([style*='cursor:default'])"));
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (items.length > 0) {
+                        let nextIdx = (items.indexOf(activeItem) + 1) % items.length;
+                        items.forEach(el => el.classList.remove("active"));
+                        items[nextIdx]?.classList.add("active");
+                        items[nextIdx]?.scrollIntoView({ block: "nearest" });
+                    }
+                    return;
+                }
+                if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    if (items.length > 0) {
+                        let prevIdx = (items.indexOf(activeItem) - 1 + items.length) % items.length;
+                        items.forEach(el => el.classList.remove("active"));
+                        items[prevIdx]?.classList.add("active");
+                        items[prevIdx]?.scrollIntoView({ block: "nearest" });
+                    }
+                    return;
+                }
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (activeItem && activeItem.dataset.command) {
+                        executeSlashCommand(activeItem.dataset.command);
+                    }
+                    return;
+                }
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeSlashMenu();
+                    return;
+                }
+                if (e.key === "Backspace") {
+                    if (slashQuery.length > 0) {
+                        slashQuery = slashQuery.slice(0, -1);
+                        renderSlashItems(filterSlashItems(slashQuery));
+                    } else {
+                        closeSlashMenu();
+                    }
+                    return;
+                }
+            }
+
+            if (e.key === "/" && !e.ctrlKey && !e.metaKey && !isSlashOpen) {
+                const sel = window.getSelection();
+                if (sel && sel.isCollapsed) {
+                    const node = sel.anchorNode;
+                    const offset = sel.anchorOffset;
+                    const isAtStart = (offset === 0) || (node && node.textContent && (node.textContent.trim() === "" || node.textContent[offset - 1] === " "));
+                    if (isAtStart) {
+                        setTimeout(openSlashMenuAtCaret, 20);
+                    }
+                }
+            }
+        });
+
+        editor.addEventListener("input", (e) => {
+            if (isSlashOpen && e.data) {
+                slashQuery += e.data;
+                renderSlashItems(filterSlashItems(slashQuery));
+            }
+        });
+
+        document.addEventListener("click", (e) => {
+            if (isSlashOpen && !slashMenu.contains(e.target)) {
+                closeSlashMenu();
+            }
+        });
+    }
+
+    // ==========================================
+    // MINI-NOTION UX: BLOCK HANDLES & CONTEXT MENU
+    // ==========================================
+    function initBlockHandles() {
+        const handle = document.getElementById("block-drag-handle");
+        const popover = document.getElementById("block-menu-popover");
+        if (!handle || !popover) return;
+
+        let currentHoverBlock = null;
+
+        editor.addEventListener("mousemove", (e) => {
+            if (!popover.classList.contains("hidden")) return;
+            const target = e.target.closest("#editor > *");
+            if (target && target !== editor) {
+                currentHoverBlock = target;
+                const rect = target.getBoundingClientRect();
+                const editorRect = editor.getBoundingClientRect();
+                handle.style.top = `${rect.top - editorRect.top + editor.scrollTop + 4}px`;
+                handle.classList.remove("hidden");
+            }
+        });
+
+        editor.addEventListener("mouseleave", () => {
+            if (popover.classList.contains("hidden")) {
+                handle.classList.add("hidden");
+            }
+        });
+
+        handle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (!currentHoverBlock) return;
+            const rect = handle.getBoundingClientRect();
+            popover.style.top = `${rect.bottom + 4}px`;
+            popover.style.left = `${rect.left}px`;
+            popover.classList.toggle("hidden");
+        });
+
+        popover.querySelectorAll(".block-menu-item").forEach(item => {
+            item.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (!currentHoverBlock) return;
+                const action = item.dataset.action;
+                if (action === "delete") {
+                    currentHoverBlock.remove();
+                    triggerSave();
+                } else if (action === "duplicate") {
+                    const clone = currentHoverBlock.cloneNode(true);
+                    currentHoverBlock.after(clone);
+                    triggerSave();
+                } else if (action === "turn-todo") {
+                    const text = currentHoverBlock.innerText || "";
+                    const newEl = document.createElement("div");
+                    newEl.className = "todo-item";
+                    newEl.innerHTML = `<span class="todo-checkbox"></span><span class="todo-content">${escapeHtml(text) || "<br>"}</span>`;
+                    currentHoverBlock.replaceWith(newEl);
+                    triggerSave();
+                } else if (action === "turn-bullet") {
+                    const text = currentHoverBlock.innerText || "";
+                    const ul = document.createElement("ul");
+                    ul.innerHTML = `<li>${escapeHtml(text) || "<br>"}</li>`;
+                    currentHoverBlock.replaceWith(ul);
+                    triggerSave();
+                } else if (action === "turn-h1") {
+                    const text = currentHoverBlock.innerText || "";
+                    const h1 = document.createElement("h1");
+                    h1.innerHTML = escapeHtml(text) || "<br>";
+                    currentHoverBlock.replaceWith(h1);
+                    triggerSave();
+                } else if (action === "turn-text") {
+                    const text = currentHoverBlock.innerText || "";
+                    const p = document.createElement("p");
+                    p.innerHTML = escapeHtml(text) || "<br>";
+                    currentHoverBlock.replaceWith(p);
+                    triggerSave();
+                }
+                popover.classList.add("hidden");
+                handle.classList.add("hidden");
+            });
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!popover.contains(e.target) && e.target !== handle) {
+                popover.classList.add("hidden");
+            }
+        });
+    }
+
+    // ==========================================
+    // MINI-NOTION AI: LOCAL (OLLAMA) & CLOUD AI
+    // ==========================================
+    function initAIIntegration() {
+        const aiPromptBar = document.getElementById("ai-prompt-bar");
+        const aiPromptInput = document.getElementById("ai-prompt-input");
+        const btnRunAi = document.getElementById("btn-run-ai");
+        const btnCloseAiBar = document.getElementById("btn-close-ai-bar");
+        const aiStatusRow = document.getElementById("ai-status-row");
+        const aiStatusText = document.getElementById("ai-status-text");
+        const aiProviderBadge = document.getElementById("ai-provider-badge");
+        if (!aiPromptBar) return;
+
+        let activeContextText = "";
+
+        toggleAIPromptBar = function(context = "") {
+            activeContextText = context || "";
+            const cfg = getAIConfig();
+            if (aiProviderBadge) {
+                if (cfg.provider === "local") {
+                    aiProviderBadge.textContent = `Local AI (${cfg.localModel})`;
+                } else if (cfg.provider === "cloud") {
+                    aiProviderBadge.textContent = `Cloud AI (${cfg.cloudModel})`;
+                } else {
+                    aiProviderBadge.textContent = `AI (Đang tắt)`;
+                }
+            }
+            if (aiPromptBar.classList.contains("hidden")) {
+                aiPromptBar.classList.remove("hidden");
+                aiPromptInput?.focus();
+            } else {
+                closeAIPromptBar();
+            }
+        };
+
+        closeAIPromptBar = function() {
+            aiPromptBar.classList.add("hidden");
+            if (aiStatusRow) aiStatusRow.classList.add("hidden");
+            if (aiPromptInput) aiPromptInput.value = "";
+            activeContextText = "";
+        };
+
+        btnCloseAiBar?.addEventListener("click", closeAIPromptBar);
+
+        // Preset Chips
+        aiPromptBar.querySelectorAll(".ai-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                const preset = chip.dataset.preset;
+                let prompt = "";
+                if (preset === "continue") {
+                    prompt = "Hãy viết tiếp đoạn văn bản này một cách tự nhiên, mạch lạc:";
+                } else if (preset === "summarize") {
+                    prompt = "Hãy tóm tắt ngắn gọn các ý chính trong 3-5 gạch đầu dòng:";
+                } else if (preset === "fix") {
+                    prompt = "Hãy sửa các lỗi chính tả, ngữ pháp và trau chuốt câu từ mượt mà hơn:";
+                } else if (preset === "translate") {
+                    prompt = "Hãy dịch đoạn văn này sang tiếng Anh (hoặc tiếng Việt nếu là tiếng Anh):";
+                }
+                if (aiPromptInput) {
+                    aiPromptInput.value = prompt;
+                    executeAIPrompt(prompt);
+                }
+            });
+        });
+
+        btnRunAi?.addEventListener("click", () => {
+            const prompt = aiPromptInput?.value.trim();
+            if (prompt) executeAIPrompt(prompt);
+        });
+
+        aiPromptInput?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const prompt = aiPromptInput.value.trim();
+                if (prompt) executeAIPrompt(prompt);
+            }
+        });
+
+        async function executeAIPrompt(userPrompt) {
+            const cfg = getAIConfig();
+            if (cfg.provider === "off") {
+                showToast("Trợ lý AI đang tắt. Hãy vào Cài đặt để bật Local AI hoặc Cloud AI!");
+                return;
+            }
+
+            if (aiStatusRow && aiStatusText) {
+                aiStatusRow.classList.remove("hidden");
+                aiStatusText.textContent = cfg.provider === "local" ? "Ollama đang tạo phản hồi..." : "Cloud AI đang tạo phản hồi...";
+            }
+            if (btnRunAi) btnRunAi.disabled = true;
+
+            const url = cfg.provider === "local"
+                ? `${cfg.localUrl.replace(/\/+$/, "")}/chat/completions`
+                : `${cfg.cloudUrl.replace(/\/+$/, "")}/chat/completions`;
+
+            const model = cfg.provider === "local" ? cfg.localModel : cfg.cloudModel;
+            const messages = [
+                { role: "system", content: "Bạn là trợ lý AI thông minh cho NoteLocal. Hãy trả lời trực tiếp, súc tích bằng tiếng Việt hoặc ngôn ngữ phù hợp, định dạng văn bản rõ ràng." }
+            ];
+
+            if (activeContextText && activeContextText.trim()) {
+                messages.push({
+                    role: "user",
+                    content: `Văn bản ngữ cảnh:\n"""\n${activeContextText.trim()}\n"""\n\nYêu cầu: ${userPrompt}`
+                });
+            } else {
+                messages.push({ role: "user", content: userPrompt });
+            }
+
+            const headers = { "Content-Type": "application/json" };
+            if (cfg.provider === "cloud" && cfg.cloudKey) {
+                headers["Authorization"] = `Bearer ${cfg.cloudKey}`;
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: 0.7
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100)}`);
+                }
+
+                const data = await res.json();
+                const content = data.choices?.[0]?.message?.content || "";
+                if (!content) {
+                    throw new Error("Phản hồi AI rỗng.");
+                }
+
+                insertAITextIntoEditor(content);
+                closeAIPromptBar();
+                showToast("✨ AI đã hoàn thành phản hồi!");
+            } catch (err) {
+                console.error("AI Error:", err);
+                let msg = err.message || err;
+                if (err.name === "AbortError") {
+                    msg = "Hết thời gian chờ phản hồi (35s).";
+                } else if (cfg.provider === "local") {
+                    msg = "Không kết nối được Ollama. Hãy đảm bảo đã chạy: ollama run " + cfg.localModel;
+                }
+                showToast("Lỗi AI: " + msg);
+                if (aiStatusRow) aiStatusRow.classList.add("hidden");
+            } finally {
+                if (btnRunAi) btnRunAi.disabled = false;
+            }
+        }
+
+        function insertAITextIntoEditor(text) {
+            editor.focus();
+            const formatted = text.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>");
+            document.execCommand("insertHTML", false, `<p>${formatted}</p>`);
+            triggerSave();
+        }
+    }
+
     // Khởi tạo các bộ điều khiển
     initTableControls();
     initLinkControls();
+    initBubbleToolbar();
+    initSlashMenu();
+    initBlockHandles();
+    initAIIntegration();
 
     // Khởi tạo ban đầu
     sendIPC("request_init", {});

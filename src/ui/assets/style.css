@@ -1430,3 +1430,375 @@ table.note-table td:focus {
     background: var(--border-subtle);
     margin: 2px 0;
 }
+
+/* =======================================================
+   MINI-NOTION UX: BUBBLE TOOLBAR, SLASH MENU & AI SYSTEM
+   ======================================================= */
+
+/* Floating Selection Bubble Toolbar */
+.bubble-toolbar {
+    position: absolute;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: #1c1c20;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 3px 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.bubble-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.12s;
+}
+
+.bubble-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+.bubble-ai-btn {
+    color: #c084fc;
+    font-weight: 500;
+}
+
+.bubble-ai-btn:hover {
+    background: rgba(168, 85, 247, 0.18);
+    color: #e9d5ff;
+}
+
+.bubble-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border-subtle);
+    margin: 0 2px;
+}
+
+/* Slash Command Menu (/ Notion Style) */
+.slash-menu {
+    position: absolute;
+    z-index: 1050;
+    width: 230px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #1c1c20;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+    padding: 4px;
+    font-size: 12px;
+    scrollbar-width: thin;
+}
+
+.slash-header {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    padding: 4px 8px 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.slash-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.slash-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.slash-item:hover,
+.slash-item.active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.slash-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.slash-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.slash-title {
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.slash-desc {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.slash-ai-item .slash-icon,
+.slash-ai-item .slash-title {
+    color: #c084fc;
+}
+
+/* Block Drag Handle (⋮⋮) & Block Menu */
+.block-drag-handle {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-subtle);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+    z-index: 50;
+    left: 4px;
+}
+
+.block-drag-handle:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.block-menu-popover {
+    position: absolute;
+    z-index: 1100;
+    min-width: 180px;
+    background: #1c1c20;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+    font-size: 12px;
+}
+
+.block-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: background 0.1s;
+}
+
+.block-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Floating AI Prompt Bar */
+.ai-prompt-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 440px;
+    max-width: calc(100vw - 32px);
+    background: #18181b;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 18px rgba(168, 85, 247, 0.15);
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.ai-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c084fc;
+}
+
+.ai-bar-title {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ai-presets-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.ai-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.ai-chip:hover {
+    background: rgba(168, 85, 247, 0.18);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #f4f4f5;
+}
+
+.ai-input-row {
+    display: flex;
+    gap: 6px;
+}
+
+.ai-input-row input {
+    flex: 1;
+    background: #222227;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    outline: none;
+}
+
+.ai-input-row input:focus {
+    border-color: #a855f7;
+}
+
+.ai-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #c084fc;
+    padding-top: 2px;
+}
+
+.ai-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    border-top-color: #c084fc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+/* AI Settings Modal Styles */
+.ai-provider-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0 10px 0;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+    accent-color: var(--accent);
+}
+
+.ai-sub-config {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-subgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-subgroup label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.input-subgroup input {
+    background: #18181b;
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    color: var(--text-main);
+    padding: 6px 8px;
+    font-size: 12px;
+    outline: none;
+}
+
+.input-subgroup input:focus {
+    border-color: var(--accent);
+}
+
+.test-conn-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.test-result {
+    font-size: 11px;
+}
+
+.test-result.success {
+    color: #10b981;
+}
+
+.test-result.error {
+    color: #ef4444;
+}
+

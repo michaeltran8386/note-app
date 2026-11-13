@@ -25,6 +25,15 @@
 ## ✨ Điểm nổi bật & Tính năng cốt lõi
 
 - ⚡ **Siêu nhẹ & Hiệu năng đỉnh cao**: Viết bằng C++17 và Win32 API native kết hợp Microsoft Edge WebView2 Evergreen, thời gian khởi động < 0.2s, bộ nhớ RAM tiêu thụ luôn dưới **60MB** (không giật lag, không ngốn tài nguyên như Electron hay Chromium cồng kềnh).
+- 🪄 **Trải nghiệm tương tác mượt mà phong cách Notion (Mini-Notion UX)**:
+  - **Thanh công cụ nổi ngữ cảnh (Floating Selection Bubble Toolbar)**: Bôi đen văn bản bất kỳ để kích hoạt thanh công cụ nổi ngay trên con trỏ chuột, cung cấp các nút tắt: **In đậm** (`B`), *In nghiêng* (`I`), ~~Gạch ngang~~ (`S`), Tạo việc cần làm (`[]`), Danh sách gạch đầu dòng (`•`), Chèn liên kết (`🔗`), và Gọi trợ lý AI (`✨ AI`).
+  - **Menu lệnh chéo (Slash Command `/`)**: Gõ `/` tại đầu dòng hoặc sau dấu cách để mở menu tìm kiếm lệnh trực quan: Văn bản thường, Ô việc cần làm, Gạch đầu dòng, Đánh số thứ tự, Tiêu đề Lớn (H1), Tiêu đề Vừa (H2), Bảng biểu (Table), Trích dẫn (Quote), Hộp ghi chú nổi bật (Callout), Đường kẻ ngang (Divider), và Trợ lý AI. Hỗ trợ phím mũi tên <kbd>↑</kbd> <kbd>↓</kbd> và <kbd>Enter</kbd> thao tác tức thì không cần chạm chuột.
+  - **Tay cầm thao tác khối (Block Handle `⋮⋮`)**: Rê chuột qua bất kỳ khối văn bản nào, biểu tượng `⋮⋮` sẽ xuất hiện ở lề trái. Nhấp vào để mở menu chuyển đổi nhanh khối (Chuyển thành To-Do, Bullet, Heading 1, Văn bản thường) hoặc Nhân bản (Duplicate) / Xóa khối (Delete).
+- 🤖 **Trợ lý AI linh hoạt (Local Ollama & Cloud API Key)**:
+  - **Local AI (Ollama)**: Kết nối cục bộ qua `http://localhost:11434/v1`, chạy 100% offline, miễn phí, không gửi dữ liệu ra ngoài, bảo mật tối đa.
+  - **Cloud AI (API Key ngoài)**: Hỗ trợ linh hoạt các nhà cung cấp AI phổ biến chuẩn OpenAI-compatible (Google Gemini qua endpoint OpenAI, OpenAI, DeepSeek, Groq). Tự do nhập API Key, Endpoint và Model tùy chọn trong Cài đặt.
+  - **Thanh lệnh AI siêu tốc (<kbd>Ctrl</kbd> + <kbd>J</kbd> hoặc gõ `/ai`)**: Kèm sẵn các chip tác vụ 1-click (*Viết tiếp*, *Tóm tắt*, *Sửa lỗi chính tả & văn phong*, *Dịch sang tiếng Anh*) và ô nhập yêu cầu tự do, phản hồi streaming trực tiếp vào ghi chú.
+  - **Kiểm tra kết nối trực quan**: Tích hợp nút kiểm tra kết nối ngay trong bảng Cài đặt với phản hồi thành công/thất bại rõ ràng.
 - 🎨 **Chuẩn giao diện Windows 11 & Biểu tượng Native**: Hỗ trợ bo góc DWM, dark mode native tinh tế, thanh tab tối giản tuyệt đối, tích hợp bộ biểu tượng ứng dụng Windows Native Icon (`app.ico`) chuẩn mọi độ phân giải (16x16 đến 256x256).
 - 📊 **Bảng biểu phong cách Office (Tables - Word / Excel / Notion)**:
   - **Tạo bảng trực quan**: Nhấp biểu tượng Table để chọn kích thước qua lưới 6x6 hoặc chọn nhanh preset (`2x2`, `3x3`, `4x3`, `5x4`).
@@ -105,7 +114,65 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 3. Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links)
+### 3. Trải nghiệm tương tác phong cách Notion (Mini-Notion UX)
+- **Thanh công cụ nổi ngữ cảnh (Selection Bubble Toolbar)**:
+  - Khi bôi đen bất kỳ đoạn văn bản nào, thanh công cụ nhỏ gọn lập tức xuất hiện ngay phía trên vùng chọn.
+  - Cung cấp các thao tác định dạng 1-click:
+    - **`B`**: In đậm (`**nội dung**`).
+    - **`I`**: In nghiêng (`*nội dung*`).
+    - **`S`**: Gạch ngang (`~~nội dung~~`).
+    - **`[]`**: Chuyển thành dòng Việc cần làm (To-Do Checkbox).
+    - **`•`**: Chuyển thành dòng Gạch đầu dòng (Bullet Point).
+    - **`🔗`**: Mở popover chèn hoặc sửa liên kết nhanh cho vùng chọn.
+    - **`✨ AI`**: Mở thanh trợ lý AI với ngữ cảnh là chính đoạn văn bản vừa chọn.
+- **Menu lệnh chéo (Slash Command `/`)**:
+  - Gõ ký tự `/` ở đầu dòng hoặc sau dấu cách để mở danh mục lệnh trực quan:
+    - `Văn bản thường (Text)`: Viết văn bản trơn.
+    - `Việc cần làm (To-Do)`: Chèn ô checkbox công việc.
+    - `Gạch đầu dòng (Bullet List)`: Danh sách chấm tròn.
+    - `Đánh số (Numbered List)`: Danh sách số thứ tự.
+    - `Tiêu đề lớn (Heading 1)`: Dòng `# Tiêu đề`.
+    - `Tiêu đề vừa (Heading 2)`: Dòng `## Tiêu đề`.
+    - `Bảng biểu (Table)`: Chèn bảng lưới 3x3 nhanh.
+    - `Trích dẫn (Quote)`: Khối blockquote thanh lịch.
+    - `Hộp ghi chú (Callout)`: Khối thông tin nổi bật với viền sáng.
+    - `Đường phân cách (Divider)`: Đường kẻ ngang ngăn cách nội dung (`---`).
+    - `Hỏi AI (AI Assistant)`: Kích hoạt thanh lệnh Trợ lý AI.
+  - Gõ phím để lọc danh sách lệnh tức thời (ví dụ: gõ `/tab` sẽ lọc ra Table, `/ai` mở AI).
+  - Sử dụng phím mũi tên <kbd>↑</kbd> <kbd>↓</kbd> để di chuyển và phím <kbd>Enter</kbd> để chọn lệnh; phím <kbd>Esc</kbd> để đóng menu.
+- **Tay cầm thao tác khối (Block Handle `⋮⋮`)**:
+  - Khi rê chuột qua các khối văn bản, biểu tượng `⋮⋮` thanh mảnh tự động xuất hiện ở lề trái của khối.
+  - Nhấp chuột vào biểu tượng để mở Menu ngữ cảnh khối:
+    - **Chuyển đổi kiểu khối**: Biến nhanh khối hiện tại thành *Việc cần làm*, *Gạch đầu dòng*, *Tiêu đề 1* hoặc *Văn bản thường*.
+    - **Nhân bản khối (Duplicate)**: Tạo một bản sao y hệt ngay bên dưới.
+    - **Xóa khối (Delete)**: Xóa nhanh toàn bộ nội dung của dòng hiện tại.
+
+---
+
+### 4. Trợ lý Trí tuệ Nhân tạo (Notion AI Assistant - Local & Cloud)
+- **Tùy chọn cấu hình trong Cài đặt (Settings)**:
+  - Nhấp vào biểu tượng bánh răng **Cài đặt** trên thanh Header để chọn chế độ AI:
+    1. **Local AI (Ollama)**: Dành cho người dùng ưu tiên quyền riêng tư tuyệt đối và miễn phí. Mặc định kết nối tới `http://localhost:11434/v1` (tương thích OpenAI schema). Chọn model cài sẵn trong máy bạn (ví dụ: `llama3.2`, `mistral`, `qwen2.5`...).
+    2. **Cloud AI (API Key ngoài)**: Hỗ trợ bất kỳ dịch vụ AI đám mây nào có API chuẩn OpenAI:
+       - **Google Gemini**: Dùng endpoint OpenAI tương thích của Google (`https://generativelanguage.googleapis.com/v1beta/openai/`) kèm API Key của bạn.
+       - **OpenAI**: Endpoint `https://api.openai.com/v1`, model `gpt-4o-mini`, `gpt-4o`.
+       - **DeepSeek**: Endpoint `https://api.deepseek.com/v1`, model `deepseek-chat`.
+       - **Groq**: Endpoint `https://api.groq.com/openai/v1`, model `llama-3.3-70b-versatile`.
+    3. **Tắt trợ lý AI**: Ẩn hoàn toàn tính năng AI nếu không có nhu cầu sử dụng.
+  - **Kiểm tra kết nối**: Cả 2 chế độ đều có nút *"Kiểm tra kết nối"* để bạn kiểm tra thông tuyến API trước khi sử dụng trong ghi chú.
+- **Kích hoạt & Sử dụng thanh lệnh AI**:
+  - Nhấn phím tắt <kbd>Ctrl</kbd> + <kbd>J</kbd>, gõ `/ai` trong Slash menu, hoặc bấm `✨ AI` trên Bubble Toolbar.
+  - **Các chip tác vụ nhanh 1-Click**:
+    - **Viết tiếp (Continue)**: AI tự đọc nội dung ghi chú phía trước và viết tiếp mạch suy nghĩ một cách tự nhiên.
+    - **Tóm tắt (Summarize)**: Rút gọn các ý chính của đoạn văn bản hoặc toàn bộ ghi chú thành các gạch đầu dòng súc tích.
+    - **Sửa lỗi chính tả & văn phong (Fix grammar)**: Tự động soát lỗi ngữ pháp tiếng Việt / tiếng Anh và trau chuốt câu từ chuẩn mực.
+    - **Dịch sang tiếng Anh (Translate)**: Dịch trôi chảy nội dung đã chọn sang tiếng Anh chuyên nghiệp.
+  - **Yêu cầu tự do (Custom Prompt)**: Nhập bất kỳ câu lệnh nào bạn muốn vào ô nhập và nhấn <kbd>Enter</kbd> (ví dụ: *"Lập dàn ý kế hoạch tuần tới"*, *"Liệt kê 5 ưu điểm của sản phẩm này"*).
+  - **Chèn phản hồi Streaming trực tiếp**: Nội dung do AI sinh ra được phát trực tiếp (stream) từng từ vào ngay vị trí con trỏ trong ghi chú, mang lại cảm giác sống động và phản hồi tức thời.
+
+---
+
+### 5. Liên kết Bookmark Tối giản & Tự động nhận diện (Auto-detect Links)
 - **Tự động nhận diện không cần cú pháp**:
   - Gõ hoặc dán thẳng bất kỳ đường link URL nào (ví dụ: `https://youtube.com` hay `https://github.com`) rồi nhấn phím <kbd>Space</kbd> hoặc phím <kbd>Enter</kbd>.
   - Đường link sẽ tự động chuyển hóa thành liên kết thông minh màu xanh thanh lịch với gạch chân trang nhã, nhấp vào để mở ngay trong trình duyệt mặc định của Windows.
@@ -123,7 +190,7 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 4. Bảng biểu phong cách Office (Tables)
+### 6. Bảng biểu phong cách Office (Tables)
 - **Chèn bảng mới**:
   - Nhấp vào biểu tượng **Table** trên thanh Header.
   - Rê chuột trên lưới 6x6 để chọn số hàng và số cột mong muốn, hoặc nhấp vào các nút preset nhanh (`2x2`, `3x3`, `4x3`, `5x4`).
@@ -146,7 +213,7 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 5. Chèn & Quản lý hình ảnh
+### 7. Chèn & Quản lý hình ảnh
 - **Dán ảnh (Ctrl + V)**:
   - Chụp ảnh màn hình qua <kbd>Win</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> hoặc copy ảnh từ trình duyệt.
   - Nhấn <kbd>Ctrl</kbd> + <kbd>V</kbd> vào trình soạn thảo: Ảnh tự động được nén tối ưu (giảm 95% dung lượng) và lưu vào thư mục `assets/` với độ rộng mặc định 30%.
@@ -159,7 +226,7 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 6. Quản lý Thẻ ghi chú (Tabs)
+### 8. Quản lý Thẻ ghi chú (Tabs)
 - **Tạo Tab mới**: Nhấn phím tắt <kbd>Ctrl</kbd> + <kbd>N</kbd> hoặc click nút `+` trên thanh tiêu đề.
 - **Chuyển Tab tuần hoàn**:
   - <kbd>Ctrl</kbd> + <kbd>Tab</kbd>: Chuyển sang tab kế tiếp.
@@ -172,13 +239,13 @@ Sau khi tải hoặc biên dịch:
 
 ---
 
-### 7. Ghim cửa sổ (Always on Top)
+### 9. Ghim cửa sổ (Always on Top)
 - Nhấp vào biểu tượng **Chiếc ghim** (Pin icon) ở góc phải thanh tiêu đề.
 - Khi được ghim, biểu tượng chuyển sang màu vàng hổ phách (`#f59e0b`). Cửa sổ sẽ luôn nổi trên các ứng dụng khác.
 
 ---
 
-### 8. Chia sẻ ghi chú Web Serverless & Hợp nhất 2 chiều (Share & Merge)
+### 10. Chia sẻ ghi chú Web Serverless & Hợp nhất 2 chiều (Share & Merge)
 - **1-Click Chia sẻ & Tự động sao chép Clipboard**:
   - Nhấp vào nút **Chia sẻ** (icon `share-2` trên thanh tiêu đề).
   - Hệ thống nén toàn bộ văn bản, bảng biểu, ảnh bằng thuật toán `deflate-raw` và **tự động sao chép ngay đường link vào Clipboard của bạn**, đồng thời bật thông báo Toast xác nhận: *"Đã sao chép link Web vào Clipboard!"*. Bạn chỉ việc <kbd>Ctrl</kbd> + <kbd>V</kbd> gửi đi.
@@ -210,6 +277,10 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển tiếp sang tab tiếp theo (Cycle forward) |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd> | Toàn ứng dụng | Chuyển lùi về tab trước (Cycle backward) |
 | <kbd>Ctrl</kbd> + <kbd>N</kbd> | Toàn ứng dụng | Tạo tab ghi chú mới |
+| <kbd>Ctrl</kbd> + <kbd>J</kbd> | Trình soạn thảo | Mở thanh nhập lệnh Trợ lý AI (Notion AI Prompt Bar) |
+| `/` (Slash) | Đầu dòng / sau dấu cách | Mở menu lệnh nhanh (Text, To-Do, Bullet, Heading, Table, AI...) |
+| Bôi đen văn bản | Trình soạn thảo | Hiện thanh công cụ nổi (Bubble Toolbar: B, I, S, [], •, 🔗, ✨ AI) |
+| Rê chuột vào lề khối | Trình soạn thảo | Hiện tay cầm khối `⋮⋮` (Menu đổi loại khối, Nhân bản, Xóa) |
 | `https://...` / `http://...` | Trình soạn thảo / Bảng | Tự động nhận diện và tạo liên kết thông minh |
 | Dán danh sách link | Trình soạn thảo | Tự động tách từng URL thành từng thẻ liên kết riêng |
 | `> https://...` | Trình soạn thảo / Bảng | Tạo link bookmark thủ công (tương thích ngược) |
@@ -227,7 +298,7 @@ Sau khi tải hoặc biên dịch:
 | <kbd>Ctrl</kbd> + <kbd>V</kbd> | Trình soạn thảo | Dán ảnh từ clipboard (nén tối ưu 95%, mặc định 30% width) |
 | <kbd>Double-click</kbd> vào ảnh | Trên ảnh | Mở Lightbox phóng to xem ảnh gốc toàn màn hình |
 | <kbd>Double-click</kbd> vào Tab | Thanh Header | Mở hộp thoại đổi tên tab |
-| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Popover Chia sẻ & Hợp nhất, Lightbox, Popover bảng, sửa link |
+| <kbd>Esc</kbd> | Toàn ứng dụng | Đóng Slash Menu, Thanh AI, Bubble Toolbar, Popover Chia sẻ, Lightbox, Bảng |
 
 ---
 
@@ -243,7 +314,9 @@ NOTE_LOCAL/
 │   └── logo/logo.svg           # Logo SVG gốc chuẩn tỷ lệ 100/100
 ├── specs/                      # Đặc tả kỹ thuật chi tiết (spec, plan, data model, tasks)
 │   └── 001-unified-notes-reminders/
-├── docs/                       # Web Viewer lưu trữ trên GitHub Pages
+├── docs/                       # Web Viewer & Tài liệu kỹ thuật
+│   ├── notion_outputs_reference/ # Bộ 6 tài liệu đảo ngược Notion Desktop bằng REA
+│   ├── superpowers/plans/      # Bản kế hoạch thiết kế và thực thi tính năng
 │   ├── index.html              # Trang web xem ghi chú công khai
 │   ├── app.js                  # Bộ giải nén client-side deflate-raw base64url & Markdown renderer
 │   └── style.css               # Phong cách giao diện dark-mode cho Web Viewer

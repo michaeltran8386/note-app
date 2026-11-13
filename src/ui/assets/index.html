@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Note Local</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="style.css?v=2.7">
+    <link rel="stylesheet" href="style.css?v=2.8">
     <script>
         window.addEventListener("error", function(e) {
             console.error("Global JS Error:", e.error || e.message);
@@ -79,7 +79,41 @@
 
     <!-- Ultra-Minimal Editor -->
     <main id="editor-container">
-        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ [] để tạo To-Do, gõ - để tạo gạch đầu dòng, gõ @15:30 để hẹn giờ, dán ảnh Ctrl+V)"></div>
+        <!-- Block Drag Handle (⋮⋮) -->
+        <div id="block-drag-handle" class="block-drag-handle hidden" title="Thao tác dòng">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+            </svg>
+        </div>
+
+        <!-- Block Context Menu -->
+        <div id="block-menu-popover" class="block-menu-popover hidden">
+            <div class="block-menu-item" data-action="delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Xóa dòng này</span>
+            </div>
+            <div class="block-menu-item" data-action="duplicate">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>Nhân bản dòng</span>
+            </div>
+            <div class="table-menu-divider"></div>
+            <div class="block-menu-item" data-action="turn-todo">
+                <span>Chuyển thành Việc cần làm</span>
+            </div>
+            <div class="block-menu-item" data-action="turn-bullet">
+                <span>Chuyển thành Gạch đầu dòng</span>
+            </div>
+            <div class="block-menu-item" data-action="turn-h1">
+                <span>Chuyển thành Tiêu đề 1</span>
+            </div>
+            <div class="block-menu-item" data-action="turn-text">
+                <span>Chuyển thành Văn bản thường</span>
+            </div>
+        </div>
+
+        <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="Viết ghi chú... (gõ / để mở menu lệnh, gõ [] tạo To-Do, gõ - tạo gạch đầu dòng, Ctrl+J gọi AI)"></div>
         
         <!-- Image Resizer Overlay -->
         <div id="image-resizer-box" class="hidden">
@@ -92,6 +126,106 @@
             </div>
         </div>
     </main>
+
+    <!-- Floating Selection Bubble Toolbar (Notion Style) -->
+    <div id="bubble-toolbar" class="bubble-toolbar hidden">
+        <button type="button" class="bubble-btn" data-command="bold" title="In đậm (Ctrl+B)"><b>B</b></button>
+        <button type="button" class="bubble-btn" data-command="italic" title="In nghiêng (Ctrl+I)"><i>I</i></button>
+        <button type="button" class="bubble-btn" data-command="strike" title="Gạch ngang (Ctrl+Shift+S)"><s>S</s></button>
+        <div class="bubble-divider"></div>
+        <button type="button" class="bubble-btn" data-command="todo" title="Việc cần làm ([] )">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m9 12 2 2 4-4"/></svg>
+        </button>
+        <button type="button" class="bubble-btn" data-command="bullet" title="Gạch đầu dòng (- )">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+        <button type="button" class="bubble-btn" data-command="link" title="Chèn liên kết">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <div class="bubble-divider"></div>
+        <button type="button" class="bubble-btn bubble-ai-btn" data-command="ai" title="Hỏi AI với đoạn này (Ctrl+J)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            <span>Hỏi AI</span>
+        </button>
+    </div>
+
+    <!-- Slash Command Menu (/ Notion Style) -->
+    <div id="slash-menu" class="slash-menu hidden">
+        <div class="slash-header">KHỐI & LỆNH NHANH</div>
+        <div class="slash-list" id="slash-list">
+            <div class="slash-item active" data-command="text">
+                <span class="slash-icon">📝</span>
+                <div class="slash-info"><span class="slash-title">Văn bản thường</span><span class="slash-desc">Đoạn văn bản bình thường</span></div>
+            </div>
+            <div class="slash-item" data-command="todo">
+                <span class="slash-icon">☑️</span>
+                <div class="slash-info"><span class="slash-title">Việc cần làm</span><span class="slash-desc">Ô To-Do checkbox hoàn thành</span></div>
+            </div>
+            <div class="slash-item" data-command="bullet">
+                <span class="slash-icon">•</span>
+                <div class="slash-info"><span class="slash-title">Gạch đầu dòng</span><span class="slash-desc">Danh sách chấm tròn</span></div>
+            </div>
+            <div class="slash-item" data-command="number">
+                <span class="slash-icon">1.</span>
+                <div class="slash-info"><span class="slash-title">Danh sách số</span><span class="slash-desc">Danh sách 1, 2, 3 tăng dần</span></div>
+            </div>
+            <div class="slash-item" data-command="h1">
+                <span class="slash-icon">H1</span>
+                <div class="slash-info"><span class="slash-title">Tiêu đề lớn</span><span class="slash-desc">Tiêu đề chính cấp 1</span></div>
+            </div>
+            <div class="slash-item" data-command="h2">
+                <span class="slash-icon">H2</span>
+                <div class="slash-info"><span class="slash-title">Tiêu đề vừa</span><span class="slash-desc">Tiêu đề phân mục cấp 2</span></div>
+            </div>
+            <div class="slash-item" data-command="table">
+                <span class="slash-icon">📊</span>
+                <div class="slash-info"><span class="slash-title">Bảng biểu</span><span class="slash-desc">Chèn bảng dữ liệu</span></div>
+            </div>
+            <div class="slash-item" data-command="quote">
+                <span class="slash-icon">💬</span>
+                <div class="slash-info"><span class="slash-title">Trích dẫn</span><span class="slash-desc">Khối trích dẫn viền đứng</span></div>
+            </div>
+            <div class="slash-item" data-command="callout">
+                <span class="slash-icon">💡</span>
+                <div class="slash-info"><span class="slash-title">Hộp nổi bật</span><span class="slash-desc">Khối ghi chú viền màu nổi bật</span></div>
+            </div>
+            <div class="slash-item" data-command="divider">
+                <span class="slash-icon">➖</span>
+                <div class="slash-info"><span class="slash-title">Đường phân cách</span><span class="slash-desc">Vạch ngang chia phần</span></div>
+            </div>
+            <div class="slash-item slash-ai-item" data-command="ai">
+                <span class="slash-icon">✨</span>
+                <div class="slash-info"><span class="slash-title">Trí tuệ nhân tạo (AI)</span><span class="slash-desc">Nhờ AI viết tiếp, tóm tắt...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating AI Prompt Bar -->
+    <div id="ai-prompt-bar" class="ai-prompt-bar hidden">
+        <div class="ai-bar-header">
+            <div class="ai-bar-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                <span id="ai-provider-badge">Trợ lý AI</span>
+            </div>
+            <button type="button" id="btn-close-ai-bar" class="icon-btn-close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="ai-presets-row">
+            <button type="button" class="ai-chip" data-preset="continue">🪄 Viết tiếp</button>
+            <button type="button" class="ai-chip" data-preset="summarize">📝 Tóm tắt</button>
+            <button type="button" class="ai-chip" data-preset="fix">🔍 Sửa chính tả</button>
+            <button type="button" class="ai-chip" data-preset="translate">🌐 Dịch Anh/Việt</button>
+        </div>
+        <div class="ai-input-row">
+            <input type="text" id="ai-prompt-input" placeholder="Hỏi hoặc ra lệnh cho AI... (Enter để gửi)">
+            <button type="button" id="btn-run-ai" class="btn-accent">Gửi</button>
+        </div>
+        <div id="ai-status-row" class="ai-status hidden">
+            <span class="ai-spinner"></span>
+            <span id="ai-status-text">Đang suy nghĩ...</span>
+        </div>
+    </div>
 
     <!-- Table Grid Picker Popover (Chèn bảng Office-style) -->
     <div id="table-picker-popover" class="table-popover hidden">
@@ -279,6 +413,60 @@
                     </ul>
                 </div>
                 <div class="setting-group">
+                    <label>Cấu hình Trí tuệ Nhân tạo (Notion AI):</label>
+                    <div class="ai-provider-selector">
+                        <label class="radio-label">
+                            <input type="radio" name="ai-provider" value="local" id="ai-radio-local" checked>
+                            <span>Local AI (Ollama - Chạy offline miễn phí)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ai-provider" value="cloud" id="ai-radio-cloud">
+                            <span>Cloud AI (API Key: Gemini / OpenAI / DeepSeek / Groq)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ai-provider" value="off" id="ai-radio-off">
+                            <span>Tắt trợ lý AI</span>
+                        </label>
+                    </div>
+
+                    <!-- Local AI config -->
+                    <div id="ai-config-local" class="ai-sub-config">
+                        <div class="input-subgroup">
+                            <label for="ai-local-url">Ollama Base URL (OpenAI-compatible):</label>
+                            <input type="text" id="ai-local-url" placeholder="http://localhost:11434/v1">
+                        </div>
+                        <div class="input-subgroup">
+                            <label for="ai-local-model">Tên mô hình (Model):</label>
+                            <input type="text" id="ai-local-model" placeholder="llama3.2 (hoặc qwen2.5, deepseek-r1)">
+                        </div>
+                        <div class="test-conn-row">
+                            <button type="button" id="btn-test-local-ai" class="btn-secondary">Kiểm tra kết nối Ollama</button>
+                            <span id="test-local-result" class="test-result"></span>
+                        </div>
+                    </div>
+
+                    <!-- Cloud AI config -->
+                    <div id="ai-config-cloud" class="ai-sub-config hidden">
+                        <div class="input-subgroup">
+                            <label for="ai-cloud-url">API Base URL:</label>
+                            <input type="text" id="ai-cloud-url" placeholder="https://generativelanguage.googleapis.com/v1beta/openai/ hoặc https://api.openai.com/v1">
+                        </div>
+                        <div class="input-subgroup">
+                            <label for="ai-cloud-key">API Key:</label>
+                            <input type="password" id="ai-cloud-key" placeholder="Nhập API Key cá nhân của bạn...">
+                        </div>
+                        <div class="input-subgroup">
+                            <label for="ai-cloud-model">Tên mô hình (Model):</label>
+                            <input type="text" id="ai-cloud-model" placeholder="gemini-1.5-flash hoặc gpt-4o-mini">
+                        </div>
+                        <div class="test-conn-row">
+                            <button type="button" id="btn-test-cloud-ai" class="btn-secondary">Kiểm tra API Key</button>
+                            <span id="test-cloud-result" class="test-result"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
                     <label for="txturl-service-input">Trình duyệt Web Viewer (GitHub Pages):</label>
                     <input type="text" id="txturl-service-input" placeholder="https://michaeltran8386.github.io/note-app/docs/viewer/">
                     <small class="helper-text">Địa chỉ web đọc ghi chú công khai hiển thị 100% nội dung và hình ảnh.</small>
@@ -304,6 +492,6 @@
     <!-- Minimal Toast Notification -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="editor.js?v=2.7"></script>
+    <script src="editor.js?v=2.8"></script>
 </body>
 </html>
