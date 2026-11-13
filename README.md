@@ -40,10 +40,15 @@
 
 ## ✨ Điểm nổi bật dành cho bạn
 
-### ⚡ 1. Siêu nhẹ, siêu mượt & Không giật lag
+### ⚡ 1. Siêu nhẹ, Đa tab & Ghim Always on Top
+<p align="center">
+  <img src="resources/demos/demo-tabs-pin.gif" alt="Tabs and Pin Demo" width="100%">
+</p>
+
 - Khởi động chỉ trong **0.2 giây**, sẵn sàng ghi chép ngay lập tức.
 - Bộ nhớ tiêu thụ luôn duy trì dưới **60MB RAM**, chạy mượt mà ngay cả trên máy tính văn phòng cấu hình yếu.
-- Giao diện Fluent Dark Mode hiện đại của Windows 11 với bo góc tinh tế, triệt tiêu hoàn toàn menu chuột phải rườm rà của trình duyệt.
+- **Quản lý đa Tab trực quan**: Tạo tab mới với <kbd>Ctrl</kbd> + <kbd>N</kbd>, tìm kiếm tab siêu tốc bằng <kbd>Ctrl</kbd> + <kbd>/</kbd>.
+- **Ghim luôn nổi trên cùng (Always on Top)**: Nhấn biểu tượng Ghim ở thanh tiêu đề để cửa sổ ghi chú luôn hiển thị trên các ứng dụng khác khi bạn tra cứu thông tin.
 
 ### 🪄 2. Trải nghiệm soạn thảo phong cách Notion
 <p align="center">
@@ -73,8 +78,13 @@
 - **Thanh tác vụ AI nhanh (<kbd>Ctrl</kbd> + <kbd>J</kbd>)**: Viết tiếp suy nghĩ, tóm tắt ý chính, sửa lỗi chính tả ngữ pháp hoặc dịch sang tiếng Anh chỉ bằng 1 cú nhấp.
 
 ### ⏰ 4. Hẹn giờ nhắc việc với Thông báo Windows Native
-- Gõ cú pháp tự nhiên như: `[] Gặp đối tác @14:30 15/11` hoặc `[] Uống nước @mai 09:00`.
-- Hệ thống tự tạo đồng hồ đếm giờ. Khi đến thời điểm, **Windows Action Center** sẽ gửi thông báo Toast ở góc màn hình ngay cả khi ứng dụng đang thu nhỏ.
+<p align="center">
+  <img src="resources/demos/demo-reminders.gif" alt="Reminders and Toast Demo" width="100%">
+</p>
+
+- Gõ cú pháp tự nhiên như: `[] Gặp đối tác @14:30 15/11` hoặc `[] Họp bàn giao @15:30`.
+- Hệ thống tự nhận diện và gắn thẻ nhắc việc trực quan. Nhấp vào thẻ để chọn nhanh preset 15 phút, 1 giờ hoặc ngày mai.
+- Khi đến thời điểm, **Windows Action Center** sẽ gửi thông báo Toast ở góc màn hình ngay cả khi ứng dụng đang thu nhỏ.
 
 ### 📊 5. Bảng biểu phong cách Office (Table)
 <p align="center">
@@ -86,6 +96,10 @@
 - Nhấn phím <kbd>Tab</kbd> để di chuyển mượt mà giữa các ô; nhấn <kbd>Tab</kbd> ở ô cuối cùng sẽ **tự động thêm hàng mới** chuẩn như Microsoft Word.
 
 ### 🌐 6. Chia sẻ ghi chú 1-Click (Không cần máy chủ)
+<p align="center">
+  <img src="resources/demos/demo-share-web.gif" alt="Share Web Demo" width="100%">
+</p>
+
 - Nhấn vào biểu tượng **Chia sẻ** (Share): Đường link xem trực tuyến lập tức được tạo và tự động sao chép vào Clipboard của bạn.
 - Người nhận mở link trên điện thoại hoặc máy tính để đọc ghi chú hiển thị đầy đủ văn bản, hình ảnh, checkbox thông qua trình xem web tĩnh bảo mật.
 
