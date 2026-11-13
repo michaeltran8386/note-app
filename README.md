@@ -36,6 +36,12 @@
 
 Được xây dựng bằng C++17 native tối ưu hóa sâu, NoteLocal tiêu thụ **chưa tới 60MB RAM** (thay vì 500MB–1GB như các ứng dụng nền Electron). Toàn bộ ghi chú được lưu dưới dạng tệp văn bản thuần Markdown (`.md`) trực tiếp trên ổ cứng máy tính của bạn — không phụ thuộc đám mây, không lo mất mạng và không bị khóa vào bất kỳ hệ sinh thái độc quyền nào.
 
+<p align="center">
+  <a href="resources/videos/note-local-demo.mp4">
+    <img src="https://img.shields.io/badge/🎬_Video_Review_Thực_Tế-Xem_Full_Demo_60fps_MP4-8b5cf6?style=for-the-badge&logo=media&logoColor=white" alt="Xem Full Demo 60fps MP4">
+  </a>
+</p>
+
 ---
 
 ## ✨ Điểm nổi bật dành cho bạn
@@ -44,6 +50,7 @@
 <p align="center">
   <img src="resources/demos/demo-tabs-pin.gif" alt="Tabs and Pin Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-tabs-pin.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - Khởi động chỉ trong **0.2 giây**, sẵn sàng ghi chép ngay lập tức.
 - Bộ nhớ tiêu thụ luôn duy trì dưới **60MB RAM**, chạy mượt mà ngay cả trên máy tính văn phòng cấu hình yếu.
@@ -54,6 +61,7 @@
 <p align="center">
   <img src="resources/demos/demo-notion-blocks.gif" alt="Notion Blocks Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-notion-blocks.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - **Kéo thả khối (Drag & Drop)**: Rê chuột vào lề trái để thấy tay cầm `⋮⋮`. Nhấc và kéo thả để sắp xếp lại các đoạn văn bản một cách trực quan với đường kẻ xanh dẫn hướng.
 - **Tự động mở rộng Markdown**:
@@ -71,6 +79,7 @@
 <p align="center">
   <img src="resources/demos/demo-ai-assistant.gif" alt="AI Assistant Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-ai-assistant.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - **Tự động nhận diện API Key (Key Sniffer)**: Bạn chỉ cần dán khóa API vào ô Cài đặt, NoteLocal sẽ tự động phát hiện nhà cung cấp tương ứng (Google Gemini, OpenAI, DeepSeek, Groq) mà không cần chỉnh tay phức tạp.
 - **Hỗ trợ Google Gemini 2.5 Flash**: Tận dụng model AI mới nhất của Google qua endpoint tốc độ cao, trả lời thông minh và súc tích bằng tiếng Việt.
@@ -81,6 +90,7 @@
 <p align="center">
   <img src="resources/demos/demo-reminders.gif" alt="Reminders and Toast Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-reminders.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - Gõ cú pháp tự nhiên như: `[] Gặp đối tác @14:30 15/11` hoặc `[] Họp bàn giao @15:30`.
 - Hệ thống tự nhận diện và gắn thẻ nhắc việc trực quan. Nhấp vào thẻ để chọn nhanh preset 15 phút, 1 giờ hoặc ngày mai.
@@ -90,6 +100,7 @@
 <p align="center">
   <img src="resources/demos/demo-tables.gif" alt="Tables Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-tables.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - Chèn bảng nhanh từ 2x2 đến 6x6.
 - Kéo thả mép cột để thay đổi độ rộng theo ý thích.
@@ -99,6 +110,7 @@
 <p align="center">
   <img src="resources/demos/demo-share-web.gif" alt="Share Web Demo" width="100%">
 </p>
+<p align="right"><a href="resources/demos/demo-share-web.mp4"><i>🎥 Xem video 60fps MP4</i></a></p>
 
 - Nhấn vào biểu tượng **Chia sẻ** (Share): Đường link xem trực tuyến lập tức được tạo và tự động sao chép vào Clipboard của bạn.
 - Người nhận mở link trên điện thoại hoặc máy tính để đọc ghi chú hiển thị đầy đủ văn bản, hình ảnh, checkbox thông qua trình xem web tĩnh bảo mật.
