@@ -14,6 +14,12 @@ config.json
 third_party/webview2/
 graphify-out/
 
+# Agent configs and skills
+.agents/
+
+# Internal viewer test share snapshots
+docs/viewer/shares/
+
 # Internal developer planning, notes, and handover documents
 docs/HANDOVER_CHATGPT_CODEX.md
 docs/notion_outputs_reference/
