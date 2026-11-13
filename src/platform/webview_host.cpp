@@ -177,7 +177,7 @@ bool WebViewHost::Initialize(HWND hwnd, const std::wstring& base_dir, const std:
                         m_webview->get_Settings(&settings);
                         if (settings) {
                             settings->put_IsScriptEnabled(TRUE);
-                            settings->put_AreDefaultContextMenusEnabled(TRUE);
+                            settings->put_AreDefaultContextMenusEnabled(FALSE);
                             settings->put_IsStatusBarEnabled(FALSE);
                             settings->put_AreDevToolsEnabled(TRUE);
                             settings->Release();

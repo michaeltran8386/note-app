@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/platform/webview_host.cpp": {
-    "mtime": 1794112980.777251,
-    "seen": 1794112984.145887,
-    "ast_hash": "6504eae9334d8928015007f64b511e52",
+    "mtime": 1794555105.3431888,
+    "seen": 1794557592.2541466,
+    "ast_hash": "a30ba0e3d5ec1088f8b67379048523d9",
     "semantic_hash": ""
   },
   "src/platform/webview_host.h": {
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "src/ui/assets/editor.js": {
-    "mtime": 1794552983.7330089,
-    "seen": 1794553176.7973087,
-    "ast_hash": "364ac9c53025734093b9e54c402c0db7",
+    "mtime": 1794555816.884612,
+    "seen": 1794557592.2546806,
+    "ast_hash": "440ea3bde3cbffd5b0735e3136f35351",
     "semantic_hash": ""
   },
   "tests/test_framework.h": {
@@ -132,9 +132,9 @@
     "semantic_hash": ""
   },
   "CMakeLists.txt": {
-    "mtime": 1794076135.635232,
-    "seen": 1794076303.3507514,
-    "ast_hash": "ab60160212708594fd0d2e9aeaaaca8b",
+    "mtime": 1794555466.3118274,
+    "seen": 1794557592.259619,
+    "ast_hash": "f475af20f76b14a7f791d1071038dd35",
     "semantic_hash": ""
   },
   "README.md": {
@@ -144,8 +144,8 @@
     "semantic_hash": ""
   },
   "docs/index.html": {
-    "mtime": 1794553018.2465804,
-    "seen": 1794553176.801181,
+    "mtime": 1794553499.5384793,
+    "seen": 1794554652.1584365,
     "ast_hash": "944300c71d58c0671da8034c3a8e6fad",
     "semantic_hash": ""
   },
@@ -162,8 +162,8 @@
     "semantic_hash": ""
   },
   "src/ui/assets/index.html": {
-    "mtime": 1794553004.686167,
-    "seen": 1794553176.803732,
+    "mtime": 1794553500.4346101,
+    "seen": 1794554652.1604242,
     "ast_hash": "67230f3b6d418ea63761a69aef2ee71c",
     "semantic_hash": ""
   },
@@ -735,6 +735,24 @@
     "mtime": 1794551755.4305737,
     "seen": 1794553176.8023694,
     "ast_hash": "c819586c10d531862b039d10385693eb",
+    "semantic_hash": ""
+  },
+  "docs/HANDOVER_CHATGPT_CODEX.md": {
+    "mtime": 1794554682.0594237,
+    "seen": 1794557592.259776,
+    "ast_hash": "b68bb29fb29b7a3b794f200d76913200",
+    "semantic_hash": ""
+  },
+  "tests/editor_interactions.mjs": {
+    "mtime": 1794555937.6025994,
+    "seen": 1794557592.2546942,
+    "ast_hash": "5bf22a7a30b729ee29ae9f89b2974519",
+    "semantic_hash": ""
+  },
+  ".github/workflows/release.yml": {
+    "mtime": 1794557877.879137,
+    "seen": 1794557937.6000674,
+    "ast_hash": "f56716e8ea6167866922ae4b8156fa66",
     "semantic_hash": ""
   }
 }

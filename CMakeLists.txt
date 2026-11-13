@@ -4,8 +4,13 @@ project(NoteLocal CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_EXE_LINKER_FLAGS "-static -Wl,--strip-all")
+if(MSVC)
+    add_compile_options(/utf-8)
+else()
+    set(CMAKE_EXE_LINKER_FLAGS "-static -Wl,--strip-all")
+endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+include(CTest)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -59,6 +64,12 @@ add_executable(test_share_contract
     src/platform/ipc_message.cpp
 )
 
+if(BUILD_TESTING)
+    foreach(test_name markdown_engine storage_manager window_controller ipc_message reminder_parser reminder_manager share_contract)
+        add_test(NAME ${test_name} COMMAND test_${test_name})
+    endforeach()
+endif()
+
 # Main Executable: NoteLocal
 add_executable(NoteLocal WIN32
     src/main.cpp
@@ -90,5 +101,5 @@ target_link_libraries(NoteLocal PRIVATE
 add_custom_command(TARGET NoteLocal POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll"
-    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/WebView2Loader.dll"
+    "$<TARGET_FILE_DIR:NoteLocal>/WebView2Loader.dll"
 )

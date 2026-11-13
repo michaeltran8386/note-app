@@ -320,6 +320,15 @@ body {
     margin: 4px 0;
 }
 
+.block-drop-line {
+    position: absolute;
+    height: 2px;
+    background: #60a5fa;
+    border-radius: 1px;
+    pointer-events: none;
+    z-index: 100;
+}
+
 .todo-check {
     appearance: none;
     -webkit-appearance: none;

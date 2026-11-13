@@ -8,6 +8,21 @@
 
     const editorContainer = document.getElementById("editor-container");
     const editor = document.getElementById("editor");
+    window.addEventListener("contextmenu", (e) => {
+        if (e.target.closest("table, #table-context-menu")) return;
+        e.preventDefault();
+    });
+
+    function collapseCaret(element) {
+        element.focus();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        selection.collapse(range.startContainer, range.startOffset);
+    }
     const tabsList = document.getElementById("tabs-list");
     const btnAddTab = document.getElementById("btn-add-tab");
     const btnPin = document.getElementById("btn-pin");
@@ -797,6 +812,68 @@
         };
     }
 
+    function exitListItem(li) {
+        const list = li.parentElement;
+        const tail = list.cloneNode(false);
+        while (li.nextSibling) tail.appendChild(li.nextSibling);
+        const p = document.createElement("p");
+        p.innerHTML = "<br>";
+        list.after(p);
+        if (tail.children.length) p.after(tail);
+        li.remove();
+        if (!list.children.length) list.remove();
+        collapseCaret(p);
+    }
+
+    function expandMarkdownBlock(range) {
+        if (!range.collapsed) return false;
+        const node = range.startContainer;
+        const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        if (element.closest("li, .todo-item, pre, code, table")) return false;
+        let block = element.closest("#editor > p, #editor > div");
+        if (!block && node.parentNode !== editor) return false;
+        const prefix = range.cloneRange();
+        if (block) prefix.selectNodeContents(block);
+        else prefix.selectNodeContents(node);
+        prefix.setEnd(range.startContainer, range.startOffset);
+        const marker = prefix.toString().replace(/\u00a0/g, " ");
+        const match = /^(?:([-*]) |(\[\]|\[ \]|- \[ \]) |(#{1,3}) |(>) |(---|\*\*\*)|(1\.) )$/.exec(marker);
+        if (!match) return false;
+        prefix.deleteContents();
+        if (!block) {
+            block = document.createElement("p");
+            node.before(block);
+            block.appendChild(node);
+        }
+        let replacement, caret;
+        if (match[1] || match[6]) {
+            replacement = document.createElement(match[6] ? "ol" : "ul");
+            caret = replacement.appendChild(document.createElement("li"));
+        } else if (match[2]) {
+            const todo = createTodoElement("");
+            replacement = todo.div;
+            caret = todo.span;
+        } else if (match[5]) {
+            replacement = document.createElement("hr");
+            caret = document.createElement("p");
+        } else {
+            replacement = document.createElement(match[3] ? `h${match[3].length}` : "blockquote");
+            caret = replacement;
+        }
+        while (block.firstChild) caret.appendChild(block.firstChild);
+        if (!caret.firstChild) caret.innerHTML = "<br>";
+        const previous = block.previousElementSibling;
+        if ((match[1] || match[6]) && previous?.tagName === replacement.tagName) {
+            previous.appendChild(caret);
+            block.remove();
+        } else {
+            block.replaceWith(replacement);
+        }
+        if (match[5]) replacement.after(caret);
+        collapseCaret(caret);
+        return true;
+    }
+
     // Chèn Todo Item mới
     function createTodoElement(text) {
         const div = document.createElement("div");
@@ -851,154 +928,33 @@
         return { div, cb, span, remBtn };
     }
 
+    function insertTodoAtCaret(text) {
+        const { div } = createTodoElement(text);
+        div.dataset.newTodo = "";
+        document.execCommand("insertHTML", false, div.outerHTML);
+        const inserted = editor.querySelector(".todo-item[data-new-todo]");
+        if (inserted) {
+            inserted.removeAttribute("data-new-todo");
+            setupCheckboxListeners();
+            collapseCaret(inserted.querySelector(".todo-text"));
+        }
+    }
+
     // Tự động nhận diện cú pháp Markdown trực tiếp khi gõ (Headings, Links, Checkbox, HR, Quote)
     editor.addEventListener("input", function(e) {
         hideImageResizer();
+        if (e.isComposing) return;
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
         const range = sel.getRangeAt(0);
 
+        if (expandMarkdownBlock(range)) {
+            triggerSave();
+            return;
+        }
         const node = range.startContainer;
         if (node && node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent;
-            const offset = range.startOffset;
-            const inTableCell = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("th, td");
-            const parentBlock = (node.parentNode && node.parentNode !== editor) ? node.parentNode : null;
-            const currentLi = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node)?.closest("li");
-
-            // 1. Tự động nhận diện [] hoặc [ ] hoặc - [ ] thành Checkbox
-            if ((offset >= 2 && text.substring(offset - 2, offset) === "[]") ||
-                (offset >= 3 && text.substring(offset - 3, offset) === "[ ]") ||
-                (offset >= 5 && text.substring(offset - 5, offset) === "- [ ]")) {
-                let cutLen = 2;
-                if (offset >= 5 && text.substring(offset - 5, offset) === "- [ ]") cutLen = 5;
-                else if (offset >= 3 && text.substring(offset - 3, offset) === "[ ]") cutLen = 3;
-
-                const before = text.substring(0, offset - cutLen);
-                const after = text.substring(offset);
-
-                const { div, span } = createTodoElement(after);
-
-                if (parentBlock) {
-                    if (before.trim() === "") {
-                        parentBlock.replaceWith(div);
-                    } else {
-                        node.textContent = before;
-                        if (parentBlock.nextSibling) {
-                            parentBlock.parentNode.insertBefore(div, parentBlock.nextSibling);
-                        } else {
-                            parentBlock.parentNode.appendChild(div);
-                        }
-                    }
-                } else {
-                    node.textContent = before;
-                    if (node.nextSibling) {
-                        editor.insertBefore(div, node.nextSibling);
-                    } else {
-                        editor.appendChild(div);
-                    }
-                }
-
-                const newRange = document.createRange();
-                newRange.setStart(span, 0);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-
-                triggerSave();
-                return;
-            }
-
-            // 1.5. Tự động nhận diện dấu gạch đầu dòng '- ' hoặc '* ' tạo Bullet List
-            if (!inTableCell && !currentLi && (text.startsWith("- ") || text.startsWith("* ")) && !text.startsWith("- [") && !text.startsWith("* [")) {
-                const afterText = text.substring(2);
-                const prevSibling = parentBlock ? parentBlock.previousElementSibling : node.previousElementSibling;
-                let ul = null;
-                let targetLi = document.createElement("li");
-
-                if (prevSibling && prevSibling.tagName === "UL") {
-                    ul = prevSibling;
-                    ul.appendChild(targetLi);
-                } else {
-                    ul = document.createElement("ul");
-                    ul.appendChild(targetLi);
-                    if (parentBlock) {
-                        parentBlock.replaceWith(ul);
-                    } else {
-                        node.replaceWith(ul);
-                    }
-                }
-
-                if (afterText.trim()) {
-                    targetLi.textContent = afterText;
-                } else {
-                    targetLi.innerHTML = "<br>";
-                }
-
-                if (prevSibling && prevSibling.tagName === "UL" && parentBlock && parentBlock.parentNode) {
-                    parentBlock.remove();
-                }
-
-                const newRange = document.createRange();
-                if (afterText.trim()) {
-                    newRange.selectNodeContents(targetLi);
-                    newRange.collapse(false);
-                } else {
-                    newRange.setStart(targetLi, 0);
-                    newRange.collapse(true);
-                }
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-
-                triggerSave();
-                return;
-            }
-
-            // 1.6. Tự động nhận diện danh sách đánh số '1. ' tạo Numbered List (OL)
-            const numMatch = text.match(/^1\.\s+(.*)/);
-            if (!inTableCell && !currentLi && numMatch) {
-                const afterText = numMatch[1];
-                const prevSibling = parentBlock ? parentBlock.previousElementSibling : node.previousElementSibling;
-                let ol = null;
-                let targetLi = document.createElement("li");
-
-                if (prevSibling && prevSibling.tagName === "OL") {
-                    ol = prevSibling;
-                    ol.appendChild(targetLi);
-                } else {
-                    ol = document.createElement("ol");
-                    ol.appendChild(targetLi);
-                    if (parentBlock) {
-                        parentBlock.replaceWith(ol);
-                    } else {
-                        node.replaceWith(ol);
-                    }
-                }
-
-                if (afterText.trim()) {
-                    targetLi.textContent = afterText;
-                } else {
-                    targetLi.innerHTML = "<br>";
-                }
-
-                if (prevSibling && prevSibling.tagName === "OL" && parentBlock && parentBlock.parentNode) {
-                    parentBlock.remove();
-                }
-
-                const newRange = document.createRange();
-                if (afterText.trim()) {
-                    newRange.selectNodeContents(targetLi);
-                    newRange.collapse(false);
-                } else {
-                    newRange.setStart(targetLi, 0);
-                    newRange.collapse(true);
-                }
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-
-                triggerSave();
-                return;
-            }
 
             // 2. Tự động nhận diện đường dẫn link khi gõ URL hoặc cú pháp Markdown
             // Cú pháp A: [tiêu đề](url) hoặc [tiêu đề]<url>
@@ -1068,80 +1024,6 @@
                 return;
             }
 
-            // 3. Tự động nhận diện Markdown Headings: # , ## , ###
-            if (!inTableCell && parentBlock && (parentBlock.tagName === "P" || parentBlock.tagName === "DIV")) {
-                let hLevel = 0;
-                let hContent = "";
-
-                if (text.startsWith("### ")) {
-                    hLevel = 3;
-                    hContent = text.slice(4);
-                } else if (text.startsWith("## ")) {
-                    hLevel = 2;
-                    hContent = text.slice(3);
-                } else if (text.startsWith("# ")) {
-                    hLevel = 1;
-                    hContent = text.slice(2);
-                }
-
-                if (hLevel > 0) {
-                    const h = document.createElement(`h${hLevel}`);
-                    h.textContent = hContent;
-                    if (!hContent.trim()) {
-                        h.innerHTML = "<br>";
-                    }
-                    parentBlock.replaceWith(h);
-
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(h);
-                    newRange.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-
-                    triggerSave();
-                    return;
-                }
-
-                // 4. Đường kẻ ngang: --- hoặc ***
-                if (text === "---" || text === "***") {
-                    const hr = document.createElement("hr");
-                    const nextP = document.createElement("p");
-                    nextP.innerHTML = "<br>";
-
-                    parentBlock.replaceWith(hr);
-                    hr.parentNode.insertBefore(nextP, hr.nextSibling);
-
-                    const newRange = document.createRange();
-                    newRange.setStart(nextP, 0);
-                    newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-
-                    triggerSave();
-                    return;
-                }
-
-                // 5. Blockquote: > (theo sau bởi khoảng trắng và không phải link)
-                if (text.startsWith("> ") && !text.startsWith("> http") && !text.startsWith("> [") && !text.startsWith("> <")) {
-                    const bq = document.createElement("blockquote");
-                    const bqContent = text.slice(2);
-                    bq.textContent = bqContent;
-                    if (!bqContent.trim()) {
-                        bq.innerHTML = "<br>";
-                    }
-                    parentBlock.replaceWith(bq);
-
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(bq);
-                    newRange.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-
-                    triggerSave();
-                    return;
-                }
-            }
-
             // Tự động nhận diện @... khi gõ trong .todo-text kết thúc bằng khoảng trắng
             const parentTodo = node.parentElement?.closest(".todo-item");
             if (parentTodo && (text.endsWith(" ") || text.endsWith("\u00A0"))) {
@@ -1158,7 +1040,7 @@
     // Xử lý phím Backspace & Enter trong Headings, Blockquotes, Checkboxes và Link
     editor.addEventListener("keydown", function(e) {
         const sel = window.getSelection();
-        if (!sel.rangeCount) return;
+        if (!sel.rangeCount || e.isComposing || e.defaultPrevented) return;
         const range = sel.getRangeAt(0);
 
         // 0. Xử lý phím Enter, Backspace, Tab trong danh sách LI (Bullet & Numbered Lists)
@@ -1174,40 +1056,14 @@
                 const isLiEmpty = (li.textContent.trim() === "" || li.innerHTML === "<br>" || li.innerHTML === "");
 
                 if (isLiEmpty) {
-                    // Người dùng ấn Enter ở dòng bullet rỗng -> Thoát danh sách (Exit list)!
-                    const p = document.createElement("p");
-                    p.innerHTML = "<br>";
-
-                    if (li.nextElementSibling) {
-                        const newParent = document.createElement(parentList ? parentList.tagName.toLowerCase() : "ul");
-                        while (li.nextSibling) {
-                            newParent.appendChild(li.nextSibling);
-                        }
-                        li.remove();
-                        if (parentList && parentList.parentNode) {
-                            parentList.parentNode.insertBefore(p, parentList.nextSibling);
-                            parentList.parentNode.insertBefore(newParent, p.nextSibling);
-                        }
-                    } else {
-                        li.remove();
-                        if (parentList && parentList.children.length === 0) {
-                            parentList.replaceWith(p);
-                        } else if (parentList && parentList.parentNode) {
-                            parentList.parentNode.insertBefore(p, parentList.nextSibling);
-                        }
-                    }
-
-                    const newRange = document.createRange();
-                    newRange.setStart(p, 0);
-                    newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
+                    exitListItem(li);
                     triggerSave();
                     return;
                 } else {
                     // Tạo li tiếp theo bên dưới và tách nội dung nếu con trỏ ở giữa
+                    range.deleteContents();
                     const afterRange = document.createRange();
-                    afterRange.setStart(range.endContainer, range.endOffset);
+                    afterRange.setStart(range.startContainer, range.startOffset);
                     afterRange.setEnd(li, li.childNodes.length);
                     const afterFrag = afterRange.extractContents();
 
@@ -1232,41 +1088,17 @@
 
             // 0.2. Phím Backspace ở đầu LI
             if (e.key === "Backspace") {
-                const isAtStart = (range.startOffset === 0 && (
-                    range.startContainer === li ||
-                    range.startContainer === li.firstChild ||
-                    (range.startContainer.nodeType === Node.TEXT_NODE && !range.startContainer.previousSibling)
-                ));
+                const before = range.cloneRange();
+                before.selectNodeContents(li);
+                before.setEnd(range.startContainer, range.startOffset);
+                const isAtStart = range.collapsed && before.toString() === "";
 
                 if (isAtStart) {
                     e.preventDefault();
                     const hasText = li.textContent.trim().length > 0;
 
                     if (!hasText) {
-                        // LI rỗng: xóa và đưa con trỏ về LI trước hoặc tạo <p>
-                        const prevLi = li.previousElementSibling;
-                        if (prevLi) {
-                            li.remove();
-                            const newRange = document.createRange();
-                            newRange.selectNodeContents(prevLi);
-                            newRange.collapse(false);
-                            sel.removeAllRanges();
-                            sel.addRange(newRange);
-                        } else {
-                            const p = document.createElement("p");
-                            p.innerHTML = "<br>";
-                            li.remove();
-                            if (parentList && parentList.children.length === 0) {
-                                parentList.replaceWith(p);
-                            } else if (parentList && parentList.parentNode) {
-                                parentList.parentNode.insertBefore(p, parentList);
-                            }
-                            const newRange = document.createRange();
-                            newRange.setStart(p, 0);
-                            newRange.collapse(true);
-                            sel.removeAllRanges();
-                            sel.addRange(newRange);
-                        }
+                        exitListItem(li);
                     } else {
                         // LI có text nhưng ấn Backspace ở đầu: chuyển thành <p> thường
                         const p = document.createElement("p");
@@ -1390,7 +1222,7 @@
         const bq = range.startContainer.parentElement?.closest("blockquote") ||
                    (range.startContainer.tagName === "BLOCKQUOTE" ? range.startContainer : null);
 
-        if (bq && e.key === "Enter" && (bq.textContent.trim() === "" || bq.innerHTML === "<br>")) {
+        if (bq && range.collapsed && (e.key === "Enter" || e.key === "Backspace") && (bq.textContent.trim() === "" || bq.innerHTML === "<br>")) {
             e.preventDefault();
             const p = document.createElement("p");
             p.innerHTML = "<br>";
@@ -1477,10 +1309,14 @@
 
             // Phím Backspace: xóa ô checkbox nếu text rỗng
             if (e.key === "Backspace") {
-                if (todoText.textContent.length === 0 || (range.startOffset === 0 && range.endOffset === 0)) {
+                const before = range.cloneRange();
+                before.selectNodeContents(todoText);
+                before.setEnd(range.startContainer, range.startOffset);
+                if (range.collapsed && before.toString() === "") {
                     e.preventDefault();
                     const p = document.createElement("p");
-                    p.innerHTML = todoText.textContent.length > 0 ? todoText.textContent : "<br>";
+                    p.textContent = todoText.textContent;
+                    if (!p.textContent) p.innerHTML = "<br>";
                     todoItem.replaceWith(p);
 
                     const newRange = document.createRange();
@@ -1497,7 +1333,7 @@
             // Phím Enter: tạo todo tiếp theo hoặc thoát todo
             if (e.key === "Enter") {
                 e.preventDefault();
-                checkAndApplyReminder(todoItem);
+                range.deleteContents();
                 if (todoText.textContent.trim() === "") {
                     const p = document.createElement("p");
                     p.innerHTML = "<br>";
@@ -1508,7 +1344,13 @@
                     sel.removeAllRanges();
                     sel.addRange(newRange);
                 } else {
+                    const after = range.cloneRange();
+                    after.setEnd(todoText, todoText.childNodes.length);
+                    const tail = after.extractContents();
                     const { div, span } = createTodoElement("");
+                    span.appendChild(tail);
+                    if (!todoText.textContent) todoText.innerHTML = "<br>";
+                    checkAndApplyReminder(todoItem);
                     if (todoItem.nextSibling) {
                         todoItem.parentNode.insertBefore(div, todoItem.nextSibling);
                     } else {
@@ -2148,7 +1990,9 @@
                 localModel: parsed.localModel || "llama3.2",
                 cloudUrl: parsed.cloudUrl || "https://generativelanguage.googleapis.com/v1beta/openai/",
                 cloudKey: parsed.cloudKey || "",
-                cloudModel: parsed.cloudModel || "gemini-1.5-flash"
+                cloudModel: parsed.cloudModel === "gemini-1.5-flash" &&
+                    (!parsed.cloudUrl || parsed.cloudUrl.startsWith("https://generativelanguage.googleapis.com/"))
+                    ? "gemini-2.5-flash" : parsed.cloudModel || "gemini-2.5-flash"
             };
         } catch (e) {
             return {
@@ -2157,7 +2001,7 @@
                 localModel: "llama3.2",
                 cloudUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
                 cloudKey: "",
-                cloudModel: "gemini-1.5-flash"
+                cloudModel: "gemini-2.5-flash"
             };
         }
     }
@@ -2226,7 +2070,7 @@
     const cloudProviders = {
         gemini: {
             url: "https://generativelanguage.googleapis.com/v1beta/openai/",
-            model: "gemini-1.5-flash"
+            model: "gemini-2.5-flash"
         },
         deepseek: {
             url: "https://api.deepseek.com/v1",
@@ -2254,6 +2098,21 @@
         });
     });
 
+    aiCloudKey?.addEventListener("input", () => {
+        const key = aiCloudKey.value.trim();
+        let provider;
+        if (key.startsWith("AQ.") || key.startsWith("AIzaSy")) provider = "gemini";
+        else if (key.startsWith("gsk_")) provider = "groq";
+        else if (key.startsWith("sk-") && !key.startsWith("sk-ant")) {
+            provider = document.querySelector('.cloud-preset-btn.active')?.dataset.provider === "deepseek"
+                ? "deepseek" : "openai";
+        }
+        if (provider) {
+            selectAIMode("cloud");
+            document.querySelector(`.cloud-preset-btn[data-provider="${provider}"]`)?.click();
+        }
+    });
+
     // Password Visibility Toggle for Cloud API Key
     const btnToggleKey = document.getElementById("btn-toggle-key-visibility");
     if (btnToggleKey && aiCloudKey) {
@@ -2276,6 +2135,10 @@
         if (aiCloudUrl) aiCloudUrl.value = aiCfg.cloudUrl;
         if (aiCloudKey) aiCloudKey.value = aiCfg.cloudKey;
         if (aiCloudModel) aiCloudModel.value = aiCfg.cloudModel;
+        cloudPresetBtns.forEach(btn => {
+            btn.classList.toggle("active", cloudProviders[btn.dataset.provider]?.url.replace(/\/+$/, "") ===
+                aiCfg.cloudUrl.replace(/\/+$/, ""));
+        });
         if (testLocalResult) testLocalResult.textContent = "";
         if (testCloudResult) testCloudResult.textContent = "";
 
@@ -2295,14 +2158,15 @@
         const service = txturlServiceInput.value.trim() || "https://michaeltran8386.github.io/note-app/";
         localStorage.setItem("note_local_txturl_service", service);
 
-        const selectedProvider = document.querySelector('input[name="ai-provider"]:checked')?.value || "local";
+        const selectedProvider = document.querySelector(".ai-mode-card.selected")?.dataset.mode || "local";
+        selectAIMode(selectedProvider);
         const aiCfg = {
             provider: selectedProvider,
             localUrl: aiLocalUrl?.value.trim() || "http://localhost:11434/v1",
             localModel: aiLocalModel?.value.trim() || "llama3.2",
             cloudUrl: aiCloudUrl?.value.trim() || "https://generativelanguage.googleapis.com/v1beta/openai/",
             cloudKey: aiCloudKey?.value.trim() || "",
-            cloudModel: aiCloudModel?.value.trim() || "gemini-1.5-flash"
+            cloudModel: aiCloudModel?.value.trim() || "gemini-2.5-flash"
         };
         localStorage.setItem("note_local_ai_config", JSON.stringify(aiCfg));
 
@@ -2341,7 +2205,7 @@
         testCloudResult.textContent = "Đang kiểm tra API Key...";
         const url = (aiCloudUrl?.value.trim() || "https://generativelanguage.googleapis.com/v1beta/openai/").replace(/\/+$/, "");
         const key = aiCloudKey?.value.trim() || "";
-        const model = aiCloudModel?.value.trim() || "gemini-1.5-flash";
+        const model = aiCloudModel?.value.trim() || "gemini-2.5-flash";
         if (!key) {
             testCloudResult.className = "test-result error";
             testCloudResult.textContent = "✗ Vui lòng nhập API Key";
@@ -3813,8 +3677,7 @@
                 } else if (cmd === "todo") {
                     const sel = window.getSelection();
                     const text = sel ? sel.toString().trim() : "";
-                    const todoHtml = `<div class="todo-item"><span class="todo-checkbox"></span><span class="todo-content">${escapeHtml(text) || "<br>"}</span></div>`;
-                    document.execCommand("insertHTML", false, todoHtml);
+                    insertTodoAtCaret(text);
                     triggerSave();
                     hideBubbleToolbar();
                 } else if (cmd === "bullet") {
@@ -3975,8 +3838,7 @@
             if (cmd === "text") {
                 document.execCommand("formatBlock", false, "p");
             } else if (cmd === "todo") {
-                const todoHtml = `<div class="todo-item"><span class="todo-checkbox"></span><span class="todo-content"><br></span></div>`;
-                document.execCommand("insertHTML", false, todoHtml);
+                insertTodoAtCaret("");
             } else if (cmd === "bullet") {
                 const bulletHtml = `<ul><li><br></li></ul>`;
                 document.execCommand("insertHTML", false, bulletHtml);
@@ -4098,8 +3960,74 @@
         if (!handle || !popover || !editorContainer) return;
 
         let currentHoverBlock = null;
+        let draggedBlock = null;
+        let dropTarget = null;
+        let dropAfter = false;
+        let didDrag = false;
+        const dropLine = document.createElement("div");
+        dropLine.className = "block-drop-line hidden";
+        editorContainer.appendChild(dropLine);
+
+        function clearDrag() {
+            draggedBlock = null;
+            dropTarget = null;
+            dropLine.classList.add("hidden");
+        }
+
+        handle.addEventListener("mousedown", () => {
+            handle.draggable = true;
+            didDrag = false;
+        });
+        handle.addEventListener("dragstart", (e) => {
+            if (!currentHoverBlock || currentHoverBlock.parentNode !== editor) {
+                e.preventDefault();
+                return;
+            }
+            draggedBlock = currentHoverBlock;
+            didDrag = true;
+            popover.classList.add("hidden");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", "");
+            e.dataTransfer.setDragImage(draggedBlock, 0, 0);
+        });
+        editor.addEventListener("dragover", (e) => {
+            if (!draggedBlock) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            dropTarget = e.target.closest("#editor > *");
+            if (!dropTarget || dropTarget === draggedBlock) {
+                dropTarget = null;
+                dropLine.classList.add("hidden");
+                return;
+            }
+            const rect = dropTarget.getBoundingClientRect();
+            const containerRect = editorContainer.getBoundingClientRect();
+            dropAfter = e.clientY >= rect.top + rect.height / 2;
+            dropLine.style.top = `${(dropAfter ? rect.bottom : rect.top) - containerRect.top + editorContainer.scrollTop}px`;
+            dropLine.style.left = `${rect.left - containerRect.left + editorContainer.scrollLeft}px`;
+            dropLine.style.width = `${rect.width}px`;
+            dropLine.classList.remove("hidden");
+        });
+        editor.addEventListener("drop", (e) => {
+            if (!draggedBlock) return;
+            e.preventDefault();
+            if (dropTarget?.parentNode === editor && draggedBlock.parentNode === editor) {
+                editor.insertBefore(draggedBlock, dropAfter ? dropTarget.nextSibling : dropTarget);
+                triggerSave();
+            }
+            clearDrag();
+        });
+        editor.addEventListener("dragleave", (e) => {
+            if (!editor.contains(e.relatedTarget)) {
+                dropTarget = null;
+                dropLine.classList.add("hidden");
+            }
+        });
+        window.addEventListener("dragend", clearDrag);
+        window.addEventListener("drop", clearDrag);
 
         editorContainer.addEventListener("mousemove", (e) => {
+            if (draggedBlock) return;
             if (!popover.classList.contains("hidden")) return;
             // Nếu con trỏ chuột đang ở trên chính chiếc tay cầm hoặc menu popover thì giữ nguyên, không giật
             if (e.target === handle || handle.contains(e.target)) return;
@@ -4121,13 +4049,14 @@
         });
 
         editorContainer.addEventListener("mouseleave", () => {
-            if (popover.classList.contains("hidden")) {
+            if (!draggedBlock && popover.classList.contains("hidden")) {
                 handle.classList.add("hidden");
             }
         });
 
         handle.addEventListener("click", (e) => {
             e.stopPropagation();
+            if (didDrag) { didDrag = false; return; }
             if (!currentHoverBlock) return;
             const rect = handle.getBoundingClientRect();
             popover.style.top = `${rect.bottom + 4}px`;
@@ -4146,12 +4075,11 @@
                 } else if (action === "duplicate") {
                     const clone = currentHoverBlock.cloneNode(true);
                     currentHoverBlock.after(clone);
+                    setupCheckboxListeners();
                     triggerSave();
                 } else if (action === "turn-todo") {
                     const text = currentHoverBlock.innerText || "";
-                    const newEl = document.createElement("div");
-                    newEl.className = "todo-item";
-                    newEl.innerHTML = `<span class="todo-checkbox"></span><span class="todo-content">${escapeHtml(text) || "<br>"}</span>`;
+                    const { div: newEl } = createTodoElement(text);
                     currentHoverBlock.replaceWith(newEl);
                     triggerSave();
                 } else if (action === "turn-bullet") {
@@ -4308,9 +4236,10 @@
                 headers["Authorization"] = `Bearer ${cfg.cloudKey}`;
             }
 
+            let timeoutId;
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 35000);
+                timeoutId = setTimeout(() => controller.abort(), 35000);
 
                 const res = await fetch(url, {
                     method: "POST",
@@ -4326,7 +4255,12 @@
 
                 if (!res.ok) {
                     const errText = await res.text();
-                    throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100)}`);
+                    let message = errText || res.statusText;
+                    try {
+                        const error = JSON.parse(errText);
+                        message = error.error?.message || error.message || message;
+                    } catch (_) { /* Plain-text API errors are valid too. */ }
+                    throw new Error(`HTTP ${res.status}: ${message}`);
                 }
 
                 const data = await res.json();
@@ -4343,12 +4277,13 @@
                 let msg = err.message || err;
                 if (err.name === "AbortError") {
                     msg = "Hết thời gian chờ phản hồi (35s).";
-                } else if (cfg.provider === "local") {
+                } else if (cfg.provider === "local" && err instanceof TypeError) {
                     msg = "Không kết nối được Ollama. Hãy đảm bảo đã chạy: ollama run " + cfg.localModel;
                 }
                 showToast("Lỗi AI: " + msg);
                 if (aiStatusRow) aiStatusRow.classList.add("hidden");
             } finally {
+                clearTimeout(timeoutId);
                 if (btnRunAi) btnRunAi.disabled = false;
             }
         }

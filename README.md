@@ -13,12 +13,33 @@
 <p align="center">
   <a href="https://github.com/michaeltran8386/note-app"><img src="https://img.shields.io/badge/GitHub-note--app-18181b?logo=github" alt="GitHub"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078d4?logo=windows" alt="Platform">
-  <img src="https://img.shields.io/badge/Tech-C%2B%2B17%20%7C%20Win32%20%7C%20WebView2-blue" alt="C++ WebView2">
+  <img src="https://img.shields.io/badge/Version-v3.0.0-blueviolet" alt="Version">
+  <img src="https://img.shields.io/badge/Installer-2.45MB%20Setup.exe-22c55e" alt="Installer">
   <img src="https://img.shields.io/badge/Memory-%3C%2060MB%20RAM-success" alt="Memory">
   <img src="https://img.shields.io/badge/Storage-100%25%20Local%20Markdown-orange" alt="Local Markdown">
-  <img src="https://img.shields.io/badge/Tests-8%2F8%20Suites%20Passed-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-7%20Native%20%2B%2029%20E2E%20Passed-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
 </p>
+
+<p align="center">
+  <a href="https://github.com/michaeltran8386/note-app/releases/latest/download/NoteLocal-Setup-x64.exe">
+    <img src="https://img.shields.io/badge/Tải_ngay_cho_Windows-NoteLocal--Setup--x64.exe_(2.45_MB)-22c55e?style=for-the-badge&logo=windows&logoColor=white" alt="Download NoteLocal Setup">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/michaeltran8386/note-app/releases">
+    <img src="https://img.shields.io/badge/Xem_Tất_cả_Releases-GitHub-3b82f6?style=for-the-badge&logo=github&logoColor=white" alt="All Releases">
+  </a>
+</p>
+
+---
+
+## 📦 Tải về & Cài đặt 1-Click (User-Level Installer)
+
+NoteLocal được đóng gói thành **1 tệp cài đặt `.exe` duy nhất** cực nhẹ (chỉ **2.45 MB**), mang lại trải nghiệm cài đặt mượt mà hệt như VS Code hay Sonora:
+- 🚀 **Cài đặt trong 1 giây**: Chỉ cần tải file `NoteLocal-Setup-x64.exe` và nhấp cài đặt.
+- 🛡️ **Không đòi quyền Administrator (Zero UAC Prompt)**: Tự động cài vào `%LocalAppData%\Programs\NoteLocal`, an toàn tuyệt đối cho máy tính công ty hoặc cá nhân.
+- 🖥️ **Tự động tạo biểu tượng**: Tạo sẵn Shortcut trên Màn hình chính (Desktop) và Start Menu Windows 11.
+- 🧹 **Gỡ cài đặt sạch sẽ**: Tích hợp chuẩn trong Windows Settings $\rightarrow$ Installed Apps.
 
 ---
 
@@ -26,14 +47,18 @@
 
 - ⚡ **Siêu nhẹ & Hiệu năng đỉnh cao**: Viết bằng C++17 và Win32 API native kết hợp Microsoft Edge WebView2 Evergreen, thời gian khởi động < 0.2s, bộ nhớ RAM tiêu thụ luôn dưới **60MB** (không giật lag, không ngốn tài nguyên như Electron hay Chromium cồng kềnh).
 - 🪄 **Trải nghiệm tương tác mượt mà phong cách Notion (Mini-Notion UX)**:
-  - **Thanh công cụ nổi ngữ cảnh (Floating Selection Bubble Toolbar)**: Bôi đen văn bản bất kỳ để kích hoạt thanh công cụ nổi ngay trên con trỏ chuột, cung cấp các nút tắt: **In đậm** (`B`), *In nghiêng* (`I`), ~~Gạch ngang~~ (`S`), Tạo việc cần làm (`[]`), Danh sách gạch đầu dòng (`•`), Chèn liên kết (`🔗`), và Gọi trợ lý AI (`✨ AI`).
-  - **Menu lệnh chéo (Slash Command `/`)**: Gõ `/` tại đầu dòng hoặc sau dấu cách để mở menu tìm kiếm lệnh trực quan: Văn bản thường, Ô việc cần làm, Gạch đầu dòng, Đánh số thứ tự, Tiêu đề Lớn (H1), Tiêu đề Vừa (H2), Bảng biểu (Table), Trích dẫn (Quote), Hộp ghi chú nổi bật (Callout), Đường kẻ ngang (Divider), và Trợ lý AI. Hỗ trợ phím mũi tên <kbd>↑</kbd> <kbd>↓</kbd> và <kbd>Enter</kbd> thao tác tức thì không cần chạm chuột.
-  - **Tay cầm thao tác khối (Block Handle `⋮⋮`)**: Rê chuột qua bất kỳ khối văn bản nào, biểu tượng `⋮⋮` sẽ xuất hiện ở lề trái. Nhấp vào để mở menu chuyển đổi nhanh khối (Chuyển thành To-Do, Bullet, Heading 1, Văn bản thường) hoặc Nhân bản (Duplicate) / Xóa khối (Delete).
-- 🤖 **Trợ lý AI linh hoạt (Local Ollama & Cloud API Key)**:
-  - **Local AI (Ollama)**: Kết nối cục bộ qua `http://localhost:11434/v1`, chạy 100% offline, miễn phí, không gửi dữ liệu ra ngoài, bảo mật tối đa.
-  - **Cloud AI (API Key ngoài)**: Hỗ trợ linh hoạt các nhà cung cấp AI phổ biến chuẩn OpenAI-compatible (Google Gemini qua endpoint OpenAI, OpenAI, DeepSeek, Groq). Tự do nhập API Key, Endpoint và Model tùy chọn trong Cài đặt.
-  - **Thanh lệnh AI siêu tốc (<kbd>Ctrl</kbd> + <kbd>J</kbd> hoặc gõ `/ai`)**: Kèm sẵn các chip tác vụ 1-click (*Viết tiếp*, *Tóm tắt*, *Sửa lỗi chính tả & văn phong*, *Dịch sang tiếng Anh*) và ô nhập yêu cầu tự do, phản hồi streaming trực tiếp vào ghi chú.
-  - **Kiểm tra kết nối trực quan**: Tích hợp nút kiểm tra kết nối ngay trong bảng Cài đặt với phản hồi thành công/thất bại rõ ràng.
+  - **Tự động mở rộng Markdown siêu tốc (Markdown Auto-expansion)**: Gõ `- ` hoặc `* ` tạo bullet; `1. ` tạo danh sách số; `[] ` tạo checkbox; `# `, `## `, `### ` tạo Heading 1/2/3; `> ` tạo trích dẫn; `---` tạo vạch kẻ ngang. Con trỏ soạn thảo luôn được bảo toàn vị trí ổn định tuyệt đối, không bị giật trỏ.
+  - **Quy tắc Enter & Backspace thông minh**: Nhấn <kbd>Enter</kbd> trên dòng việc cần làm sinh việc cần làm mới; nhấn <kbd>Enter</kbd> trên dòng trống tự động thoát ra đoạn văn thường `<p>`; nhấn <kbd>Backspace</kbd> ở đầu khối rỗng chuyển đổi êm ái về đoạn văn bình thường.
+  - **Kéo thả khối vật lý (HTML5 Drag & Drop)**: Tay cầm `⋮⋮` ở lề trái hỗ trợ kéo thả trực tiếp (`draggable="true"`), hiển thị đường kẻ xanh chỉ thị vị trí thả (`.block-drop-line`), tự động sắp xếp lại vị trí khối và lưu dữ liệu tức thì.
+  - **Thanh công cụ nổi ngữ cảnh (Selection Bubble Toolbar)**: Bôi đen văn bản bất kỳ để kích hoạt thanh công cụ nổi ngay trên con trỏ chuột: **In đậm** (`B`), *In nghiêng* (`I`), ~~Gạch ngang~~ (`S`), Tạo việc cần làm (`[]`), Danh sách gạch đầu dòng (`•`), Chèn liên kết (`🔗`), và Gọi trợ lý AI (`✨ AI`). Không bao giờ bị mất vùng chọn khi nhấn nút.
+  - **Menu lệnh chéo (Slash Command `/`)**: Gõ `/` tại đầu dòng để mở danh mục lệnh trực quan: Văn bản thường, Ô việc cần làm, Gạch đầu dòng, Đánh số thứ tự, Tiêu đề H1/H2, Bảng biểu (Table), Trích dẫn (Quote), Hộp ghi chú (Callout), Đường kẻ ngang (Divider), và Trợ lý AI.
+- 🤖 **Trợ lý AI thông minh (Local Ollama & Google Gemini 2.5 / OpenAI / DeepSeek / Groq)**:
+  - **Tự động nhận diện khóa API (Key Sniffer)**: Tự động phát hiện loại khóa khi dán vào ô Cloud API Key (`AQ.` / `AIzaSy` $\rightarrow$ Gemini 2.5 Flash, `gsk_` $\rightarrow$ Groq, `sk-` $\rightarrow$ OpenAI/DeepSeek) và tự động chuyển sang chế độ Cloud AI.
+  - **Google Gemini 2.5 Flash**: Cập nhật model tối tân nhất của Google qua chuẩn OpenAI-compatible, độ trễ cực thấp, thông minh và súc tích.
+  - **Local AI (Ollama)**: Kết nối cục bộ qua `http://localhost:11434/v1`, chạy 100% offline, miễn phí, bảo mật tối đa.
+  - **Thanh lệnh AI siêu tốc (<kbd>Ctrl</kbd> + <kbd>J</kbd> hoặc gõ `/ai`)**: Kèm sẵn các chip tác vụ 1-click (*Viết tiếp*, *Tóm tắt*, *Sửa lỗi chính tả & văn phong*, *Dịch sang tiếng Anh*) và ô nhập yêu cầu tự do.
+- 🖥️ **Giao diện Windows 11 Native & Triệt tiêu Context Menu trình duyệt**:
+  - Tắt hoàn toàn menu chuột phải mặc định của Edge (`put_AreDefaultContextMenusEnabled(FALSE)`), mang lại cảm giác ứng dụng Windows 11 thuần khiết, sạch sẽ, không có bất kỳ menu trình duyệt thừa thãi nào.
 - 🎨 **Chuẩn giao diện Windows 11 & Biểu tượng Native**: Hỗ trợ bo góc DWM, dark mode native tinh tế, thanh tab tối giản tuyệt đối, tích hợp bộ biểu tượng ứng dụng Windows Native Icon (`app.ico`) chuẩn mọi độ phân giải (16x16 đến 256x256).
 - 📊 **Bảng biểu phong cách Office (Tables - Word / Excel / Notion)**:
   - **Tạo bảng trực quan**: Nhấp biểu tượng Table để chọn kích thước qua lưới 6x6 hoặc chọn nhanh preset (`2x2`, `3x3`, `4x3`, `5x4`).
@@ -382,6 +407,13 @@ cmake --build build --target NoteLocal
 # 5. Khởi chạy ứng dụng
 .\build\bin\NoteLocal.exe
 ```
+
+### Đóng gói Trình cài đặt Installer (.exe) với Inno Setup:
+```powershell
+# Tạo gói cài đặt NoteLocal-Setup-x64.exe (chỉ 2.45 MB)
+& "$env:LocalAppData\Programs\Inno Setup 6\ISCC.exe" installer.iss
+```
+File cài đặt sẽ được tạo ra tại `dist/NoteLocal-Setup-x64.exe`.
 
 ---
 
