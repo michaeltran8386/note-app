@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "src/platform/webview_host.h": {
-    "mtime": 1794027777.379881,
-    "seen": 1794051908.539594,
-    "ast_hash": "f96054ca443cb19ac1c17f99ae9414db",
+    "mtime": 1794558666.0978217,
+    "seen": 1794558993.0990756,
+    "ast_hash": "9e95aa6e232a5685a281ecbc13d2fe5c",
     "semantic_hash": ""
   },
   "src/platform/window_controller.cpp": {
@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1794552075.7549975,
-    "seen": 1794553176.801177,
-    "ast_hash": "676716102f522113c75825e71c194dfb",
+    "mtime": 1794558292.6397345,
+    "seen": 1794558993.1021447,
+    "ast_hash": "7a83e338d58ef4e76f50f87a05008885",
     "semantic_hash": ""
   },
   "docs/index.html": {
@@ -744,15 +744,15 @@
     "semantic_hash": ""
   },
   "tests/editor_interactions.mjs": {
-    "mtime": 1794555937.6025994,
-    "seen": 1794557592.2546942,
-    "ast_hash": "5bf22a7a30b729ee29ae9f89b2974519",
+    "mtime": 1794558707.7032065,
+    "seen": 1794558993.0993974,
+    "ast_hash": "9a3a6300f338b596b4a01f3291b9d0e5",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794557877.879137,
-    "seen": 1794557937.6000674,
-    "ast_hash": "f56716e8ea6167866922ae4b8156fa66",
+    "mtime": 1794558848.9967177,
+    "seen": 1794558993.0924726,
+    "ast_hash": "20eacb5c3f40173940db6cecb2aa1278",
     "semantic_hash": ""
   }
 }
