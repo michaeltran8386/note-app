@@ -87,3 +87,42 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-release-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (macOS Universal arm64 + x86_64)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+
+      - name: Build NoteLocal.app
+        run: cmake --build build --config Release
+
+      - name: Run Native C++ Tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package macOS App (.dmg and .zip)
+        run: |
+          mkdir -p dist
+          # Create zip archive
+          ditto -c -k --sequesterRsrc --keepParent build/bin/NoteLocal.app dist/NoteLocal-macOS-Universal.zip
+          # Create dmg
+          hdiutil create -volname "NoteLocal" -srcfolder build/bin/NoteLocal.app -ov -format UDZO dist/NoteLocal-macOS-Universal.dmg
+
+      - name: Publish macOS Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: |
+            dist/NoteLocal-macOS-Universal.dmg
+            dist/NoteLocal-macOS-Universal.zip
+          name: NoteLocal ${{ inputs.tag || github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

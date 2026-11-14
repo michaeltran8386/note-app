@@ -95,26 +95,39 @@
             .replace(/'/g, "&#039;");
     }
 
-    // Gửi thông điệp tới C++ Host
+    // Gửi thông điệp tới C++ Host (Hỗ trợ cả Windows WebView2 và macOS WKWebView)
     function sendIPC(action, payload) {
+        const jsonStr = JSON.stringify({ action: action, payload: payload });
         if (window.chrome && window.chrome.webview) {
-            window.chrome.webview.postMessage(JSON.stringify({ action: action, payload: payload }));
+            window.chrome.webview.postMessage(jsonStr);
+        } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.noteLocal) {
+            window.webkit.messageHandlers.noteLocal.postMessage(jsonStr);
         } else {
             console.log("IPC Mock:", action, payload);
         }
     }
 
-    // Nhận thông điệp từ C++ Host
+    // Nhận thông điệp từ Windows WebView2
     if (window.chrome && window.chrome.webview) {
         window.chrome.webview.addEventListener("message", function(e) {
             try {
                 const msg = (typeof e.data === "string") ? JSON.parse(e.data) : e.data;
                 handleIPC(msg.action, msg.payload);
             } catch (err) {
-                console.error("IPC Parse Error:", err);
+                console.error("Windows IPC Parse Error:", err);
             }
         });
     }
+
+    // Nhận thông điệp từ macOS WKWebView
+    window.__onMacIPCMessage = function(jsonStr) {
+        try {
+            const msg = (typeof jsonStr === "string") ? JSON.parse(jsonStr) : jsonStr;
+            handleIPC(msg.action, msg.payload);
+        } catch (err) {
+            console.error("macOS IPC Parse Error:", err);
+        }
+    };
 
     function handleIPC(action, payload) {
         if (action === "init_state") {
