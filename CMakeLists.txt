@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
+
+# Statically link C/C++ runtime library (/MT for Release, /MTd for Debug)
+# Ensures NoteLocal.exe is completely self-contained with no dependency on VCRUNTIME140_1.dll / MSVCP140.dll
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 project(NoteLocal CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -6,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
     add_compile_options(/utf-8)
+    add_compile_options($<$<CONFIG:Release>:/MT>)
+    add_compile_options($<$<CONFIG:Debug>:/MTd>)
 else()
     set(CMAKE_EXE_LINKER_FLAGS "-static -Wl,--strip-all")
 endif()
@@ -88,14 +95,25 @@ set_source_files_properties(resources/app.rc PROPERTIES
     COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/resources"
 )
 
-target_link_libraries(NoteLocal PRIVATE
-    user32
-    dwmapi
-    ole32
-    shell32
-    winhttp
-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll.lib
-)
+if(MSVC)
+    target_link_libraries(NoteLocal PRIVATE
+        user32
+        dwmapi
+        ole32
+        shell32
+        winhttp
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2LoaderStatic.lib
+    )
+else()
+    target_link_libraries(NoteLocal PRIVATE
+        user32
+        dwmapi
+        ole32
+        shell32
+        winhttp
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2/build/native/x64/WebView2Loader.dll.lib
+    )
+endif()
 
 # Copy WebView2Loader.dll next to NoteLocal.exe
 add_custom_command(TARGET NoteLocal POST_BUILD
