@@ -131,3 +131,4 @@ void WebViewHostMac::SetFocus() {
         [impl->webView.window makeFirstResponder:impl->webView];
     });
 }
+

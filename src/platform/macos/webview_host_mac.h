@@ -27,3 +27,4 @@ public:
 private:
     void* m_impl{nullptr};
 };
+

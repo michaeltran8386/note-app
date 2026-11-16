@@ -40,3 +40,4 @@ void WindowControllerMac::ApplyMacOSStyling(NSWindow* window) {
     
     [window.contentView addSubview:visualEffect positioned:NSWindowBelow relativeTo:nil];
 }
+

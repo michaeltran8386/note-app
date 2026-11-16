@@ -10,3 +10,4 @@ namespace PlatformUtilsMac {
     void ShowNotification(const std::string& title, const std::string& message);
     std::string ShortenUrlWithTinyUrl(const std::string& long_url);
 }
+

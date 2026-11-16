@@ -13,3 +13,4 @@ public:
     static bool IsAlwaysOnTop(NSWindow* window);
     static void ApplyMacOSStyling(NSWindow* window);
 };
+

@@ -88,3 +88,4 @@ std::string ShortenUrlWithTinyUrl(const std::string& long_url) {
 }
 
 } // namespace PlatformUtilsMac
+
